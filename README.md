@@ -69,6 +69,8 @@
 
 2. Register the `Operator`
 
+    Note: `register-operator` is not fully worked right now, please skip this step.
+
     ```bash
     make register-operator 
     ```
