@@ -1,6 +1,7 @@
 /* eslint-disable no-await-in-loop */
 
 const ethers = require('ethers');
+const fs = require('fs');
 
 const DEFAULT_MNEMONIC = 'exchange holiday girl alone head gift unfair resist void voice people tobacco';
 const DEFAULT_NUM_ACCOUNTS = 20;
@@ -9,11 +10,12 @@ async function main() {
     const currentProvider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
     const signerNode = await currentProvider.getSigner();
 
+    const accounts = {};
+
     for (let i = 0; i < DEFAULT_NUM_ACCOUNTS; i++) {
         const pathWallet = `m/44'/60'/0'/0/${i}`;
         const accountWallet = ethers.Wallet.fromMnemonic(DEFAULT_MNEMONIC, pathWallet);
-        console.log(`Account ${i}: ${accountWallet.address}`);
-        console.log(`Private key: ${accountWallet.privateKey}`);
+        accounts[accountWallet.address] = accountWallet.privateKey;
         const params = [{
             from: await signerNode.getAddress(),
             to: accountWallet.address,
@@ -23,6 +25,14 @@ async function main() {
         if (i === DEFAULT_NUM_ACCOUNTS - 1) {
             await currentProvider.waitForTransaction(tx);
         }
+    }
+
+    try {
+        await fs.promises.writeFile('./accounts.json', JSON.stringify(accounts, null, 2));
+        console.log(`Accounts saved to ./accounts.json\n${JSON.stringify(accounts, null, 2)}`);
+    }
+    catch (err) {
+        console.error('Error writing to file:', err);
     }
 }
 

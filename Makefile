@@ -4,10 +4,10 @@ PRIVATE_KEY=0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c
 run-geth:
 	cd docker && DEV_PERIOD=1 docker-compose up -d geth
 
-run-ganache:
-	ganache --db ./ganache-db/chaindata
+init-accounts:
+	cd docker && npm run init-accounts
 
-.PHONY: run-ganache run-geth
+.PHONY: run-geth init-accounts
 
 # Deploy contracts
 
@@ -17,13 +17,16 @@ deploy-eigenlayer:
 deploy-weth9:
 	forge script script/DeployWETH9.s.sol:DeployWETH9 --rpc-url http://localhost:8545 --private-key 0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c --broadcast -vvvvv
 
+add-strategy:
+	forge script script/AddStrategy.s.sol:AddStrategy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+
 register-operator:
-	forge script script/RegisterOperator.s.sol:RegisterOperator --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	cd docker && npm run register-operator
 
 deploy-lagrange:
 	forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
-.PHONY: deploy-weth9 deploy-eigenlayer  register-operator deploy-lagrange
+.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-lagrange
 
 # Build docker image
 
