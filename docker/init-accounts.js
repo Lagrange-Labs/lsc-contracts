@@ -6,7 +6,7 @@ const DEFAULT_MNEMONIC = 'exchange holiday girl alone head gift unfair resist vo
 const DEFAULT_NUM_ACCOUNTS = 20;
 
 async function main() {
-    const currentProvider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+    const currentProvider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
     const signerNode = await currentProvider.getSigner();
 
     for (let i = 0; i < DEFAULT_NUM_ACCOUNTS; i++) {
