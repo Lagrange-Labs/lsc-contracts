@@ -1,16 +1,29 @@
 # Lagrange Contracts
 
+## Prerequisites
+
+1. Install [Node.js](https://nodejs.org/en/download/) 
+2. Install [Docker](https://docs.docker.com/get-docker/)
+3. Install [Docker Compose](https://docs.docker.com/compose/install/)
+4. Install [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
+After cloning the repository, run the following command to install the dependencies
+
+```bash
+forge install
+```
+
 ## Local Deployment
 
 1. Eigenlayer Deployment
 
-    - Execute the `geth` node using the following command
+    - Run the `geth` node using the following command
 
         ```bash
-        cd docker && DEV_PERIOD=1 docker-compose up -d geth
+        make run-geth
         ```
 
-    - Execute the `cd docker && node init-accounts.js` to initialize the accounts
+    - Execute `make init-accounts` to initialize the accounts
     
         ```address
         Available Accounts
@@ -60,16 +73,20 @@
         ```bash
         make deploy-weth9
         ```
+    - Update the `communityMultisig` of `eigenlayer-contracts/script/M1_deploy.config.json` with the first addres of the above list
 
-    - Deploy the `Eigenlayer` smart contracts, pick one private key from the available accounts and update the `communityMultisig` of `eigenlayer-contracts/script/M1_deploy.config.json` with the given address
-
+    - Deploy the `Eigenlayer` smart contracts, 
         ```bash
         make deploy-eigenlayer
         ```
 
-2. Register the `Operator`
+2. Add the `WETH` strategy to the `Eigenlayer` StrategyManager
 
-    Note: `register-operator` is not fully worked right now, please skip this step.
+    ```bash
+    make add-strategy
+    ```
+
+2. Register the `Operator`
 
     ```bash
     make register-operator 

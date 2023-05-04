@@ -4,7 +4,8 @@
   "description": "",
   "main": "init-accounts.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "init-accounts" : "node init-accounts.js",
+    "register-operator" : "node register-operator.js"
   },
   "author": "",
   "license": "ISC",
