@@ -19,8 +19,8 @@ contract LagrangeService is Ownable {
         bytes32 nextCommitteeRoot;
         bytes32 correctNextCommitteeRoot;
         uint256 blockNumber;
-        bytes96 blockSignature;
-        bytes96 commitSignature;
+        bytes blockSignature; // 96-byte
+        bytes commitSignature; // 96-byte
         uint32 chainID;
     }
 
@@ -36,7 +36,7 @@ contract LagrangeService is Ownable {
     uint32 public latestServeUntilBlock = 0;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
-    event UploadEvidence(address operator, bytes32 blockHash, bytes32 stateRoot, bytes32 currentCommitteeRoot, bytes32 nextCommitteeRoot, uint256 blockNumber, bytes96 blockSignature, bytes96 commitSignature, uint32 chainID);
+    event UploadEvidence(address operator, bytes32 blockHash, bytes32 stateRoot, bytes32 currentCommitteeRoot, bytes32 nextCommitteeRoot, uint256 blockNumber, bytes blockSignature, bytes commitSignature, uint32 chainID);
     event OperatorSlashed(address operator);
 
     constructor(ISlasher _slasher) {
