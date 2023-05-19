@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12;
+
+interface ILagrangeCommittee {
+
+    function committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) external;
+    
+    function removeCommitteeAddr(uint256 chainID, address addr) external;
+    
+    function getCommitteeStart(uint256 chainID) external returns (uint256);
+
+    function getCommitteeDuration(uint256 chainID) external returns (uint256);
+    
+    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool);
+}

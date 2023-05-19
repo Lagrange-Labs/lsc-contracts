@@ -9,7 +9,7 @@ import {IDelegationTerms} from "eigenlayer-contracts/interfaces/IDelegationTerms
 import {DelegationManager} from "eigenlayer-contracts/core/DelegationManager.sol";
 
 import {Slasher} from "eigenlayer-contracts/core/Slasher.sol";
-import {LagrangeService} from "src/LagrangeService.sol";
+import {LagrangeService} from "src/protocol/LagrangeService/LagrangeService.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 

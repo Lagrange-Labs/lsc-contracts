@@ -45,7 +45,6 @@ contract LagrangeService is Ownable, Initializable {
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 96-byte
         uint32 chainID;
-        bytes memory rawBlockHeader;
     }
 
     struct OperatorStatus {
@@ -113,21 +112,21 @@ contract LagrangeService is Ownable, Initializable {
 
         // require(_checkCommitSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.blockNumber, evidence.chainID, evidence.commitSignature), "The commit signature is not correct");
 
-        // if (!_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
+        // if (_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
         //     _freezeOperator(evidence.operator);
         // }
 
-        if (!_checkBlockHash(evidence.correctBlockHash, evidence.blockHash, evidence.blockNumber, evidence.rawBlockHeader)) {
-            _freezeOperator(evidence.operator);
-        }
+        // if (_checkBlockHash(evidence.correctBlockHash, evidence.blockHash, evidence.blockNumber)) {
+        //     _freezeOperator(evidence.operator);
+        // }
 
-        if (!_checkCurrentCommitteeRoot(evidence.correctCurrentCommitteeRoot, evidence.currentCommitteeRoot, evidence.epochNumber, evidence.chainID)) {
-            _freezeOperator(evidence.operator);
-        }
+        // if (_checkCurrentCommitteeRoot(evidence.correctCurrentCommitteeRoot, evidence.currentCommitteeRoot, evidence.epochNumber)) {
+        //     _freezeOperator(evidence.operator);
+        // }
 
-        if (!_checkNextCommitteeRoot(evidence.correctNextCommitteeRoot, evidence.nextCommitteeRoot, evidence.epochNumber, evidence.chainID)) {
-            _freezeOperator(evidence.operator);
-        }
+        // if (_checkNextCommitteeRoot(evidence.correctNextCommitteeRoot, evidence.nextCommitteeRoot, evidence.epochNumber)) {
+        //     _freezeOperator(evidence.operator);
+        // }
 
         _freezeOperator(evidence.operator);
 
@@ -142,22 +141,6 @@ contract LagrangeService is Ownable, Initializable {
             evidence.commitSignature,
             evidence.chainID
         );
-    }
-    
-    function _checkBlockHash(_checkBlockHash(bytes32 correctBlockHash, bytes32 blockHash, uint256 blockNumber, bytes memory rawBlockHeader, uint256 chainID) internal returns (bool) {
-        return LGRCommittee.verifyBlockNumber(blockNumber, rawBlockHeader, correctBlockHash, chainID) && blockHash == correctBlockHash;
-    }
-    
-    function _checkCurrentCommitteeRoot(uint256 correctCurrentCommitteeRoot, uint256 currentCommitteeRoot, uint256 epochNumber, uint256 chainID) internal returns (bool) {
-        uint256 realCurrentCommitteeRoot = LGRCommittee.getCommitteeRoot(chainID, epochNumber);
-        require(correctNextCommitteeRoot == realNextCommitteeRoot, "Reference committee roots do not match.");
-        return currentCommitteeRoot == realCurrentCommitteeRoot;
-    }
-
-    function _checkNextCurrentCommitteeRoot(uint256 correctNextCommitteeRoot, uint256 nextCommitteeRoot, uint256 epochNumber, uint256 chainID) internal returns (bool) {
-        uint256 realNextCommitteeRoot = LGRCommittee.getNextCommitteeRoot(chainID, epochNumber + 1);
-        require(correctNextCommitteeRoot == realNextCommitteeRoot, "Reference committee roots do not match.");
-        return nextCommitteeRoot == realNextCommitteeRoot;
     }
 
     /// slash the given operator
