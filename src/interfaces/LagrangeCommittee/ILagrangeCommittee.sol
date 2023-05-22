@@ -3,9 +3,9 @@ pragma solidity ^0.8.12;
 
 interface ILagrangeCommittee {
 
-    function committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) external;
+    function committeeAdd(uint256 chainID, uint256 stake, bytes memory _blsPubKey) external;
     
-    function removeCommitteeAddr(uint256 chainID, address addr) external;
+    function removeCommitteeAddr(uint256 chainID) external;
     
     function getCommitteeStart(uint256 chainID) external returns (uint256);
 
