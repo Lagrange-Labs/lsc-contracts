@@ -98,7 +98,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 	        
 	        CommitteeMapKeys[chainID][i] = CommitteeMapKeys[chainID][CommitteeMapKeys[chainID].length - 1];
 	        CommitteeMapKeys[chainID].pop;
-                CommiteeMapLength[chainID]--;
+                CommitteeMapLength[chainID]--;
 	    }
 	}
     }
@@ -114,7 +114,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 next3
     );
 
-    function rotateCommittee(uint256 chainID) external onlyOwner {
+    function rotateCommittee(uint256 chainID) external {
         require(block.number > COMMITTEE_START[chainID] + COMMITTEE_DURATION[chainID], "Block number does not exceed end block of current committee");
         
         COMMITTEE_START[chainID] = block.number;
@@ -148,7 +148,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 lhash = _hash2Elements([uint256(uint160(cleaf.addr)), uint256(cleaf.stake)]);
         CommitteeMap[chainID][lhash] = cleaf;
         CommitteeMapKeys[chainID].push(lhash);
-        CommiteeMapLength[chainID]++;
+        CommitteeMapLength[chainID]++;
         CommitteeNodes[chainID].push(lhash);
         compCommitteeRoot(chainID);
     }
