@@ -19,7 +19,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     uint256 public constant COMMITTEE_CURRENT = 0;
     uint256 public constant COMMITTEE_NEXT_1 = 1;
     uint256 public constant COMMITTEE_NEXT_2 = 2;
-    uint256 public constant COMMITTEE_NEXT_3 = 3;
 
 
     mapping(uint256 => uint256) public COMMITTEE_START;
@@ -110,8 +109,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 chainID,
         uint256 current,
         uint256 next1,
-        uint256 next2,
-        uint256 next3
+        uint256 next2
     );
 
     function rotateCommittee(uint256 chainID) external {
@@ -121,11 +119,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         
         CommitteeRoot[chainID][COMMITTEE_CURRENT] = CommitteeRoot[chainID][COMMITTEE_NEXT_1];
         CommitteeRoot[chainID][COMMITTEE_NEXT_1] = CommitteeRoot[chainID][COMMITTEE_NEXT_2];
-        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeRoot[chainID][COMMITTEE_NEXT_3];
         
         epoch2committee[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_2] = CommitteeRoot[chainID][COMMITTEE_NEXT_2];
         
-        CommitteeRoot[chainID][COMMITTEE_NEXT_3] = uint256(0);
+        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = uint256(0);
         
         EpochNumber[chainID]++;
         
@@ -133,8 +130,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             chainID,
             CommitteeRoot[chainID][COMMITTEE_CURRENT],
             CommitteeRoot[chainID][COMMITTEE_NEXT_1],
-            CommitteeRoot[chainID][COMMITTEE_NEXT_2],
-            CommitteeRoot[chainID][COMMITTEE_NEXT_3]
+            CommitteeRoot[chainID][COMMITTEE_NEXT_2]
         );
     }
     
@@ -142,7 +138,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         address addr = msg.sender;
         
         CommitteeNodes[chainID] = new uint256[](0);
-        CommitteeRoot[chainID][COMMITTEE_NEXT_3] = uint256(0);
+        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = uint256(0);
         
         CommitteeLeaf memory cleaf = CommitteeLeaf(addr,stake,_blsPubKey);
         uint256 lhash = _hash2Elements([uint256(uint160(cleaf.addr)), uint256(cleaf.stake)]);
@@ -163,10 +159,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     
     function compCommitteeRoot(uint256 chainID) internal {
         if(CommitteeNodes[chainID].length == 0) {
-            CommitteeRoot[chainID][COMMITTEE_NEXT_3] = _hash2Elements([uint256(0),uint256(0)]);
+            CommitteeRoot[chainID][COMMITTEE_NEXT_2] = _hash2Elements([uint256(0),uint256(0)]);
             return;
         } else if(CommitteeNodes[chainID].length == 1) {
-            CommitteeRoot[chainID][COMMITTEE_NEXT_3] = CommitteeNodes[chainID][0];
+            CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[chainID][0];
             return;
         }
         uint256 _len = CommitteeNodes[chainID].length;
@@ -182,7 +178,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             _start += _len;
             _len = _len / 2;
         }
-        CommitteeRoot[chainID][COMMITTEE_NEXT_3] = CommitteeNodes[chainID][CommitteeNodes[chainID].length - 1];
+        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[chainID][CommitteeNodes[chainID].length - 1];
     }    
 
     using RLPReader for RLPReader.RLPItem;
@@ -201,6 +197,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
     
     uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
+    uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
 
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
@@ -216,5 +213,26 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             value = value * 256 + uint(uint8(src[i]));
         }
         return value;
+    }
+    
+    IRollupCore	public ArbRollupCore;
+    IOutbox	public ArbOutbox;
+    
+    function verifyArbBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
+        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
+        RLPReader.RLPItem memory extraDataItem = decoded[BLOCK_HEADER_EXTRADATA_INDEX];
+        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
+        bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
+        bytes32 l2Hash = IOutbox.roots[extraData];
+        if (l2Hash == bytes32(0)) {
+            // No such confirmed node... TODO determine how these should be handled
+            return false;
+        }
+        uint number = blockNumberItem.toUint();
+        
+        bool hashCheck = l2hash == comparisonBlockHash;
+        bool numberCheck = number == comparisonNumber;
+        bool res = hashCheck && numberCheck;
+        return res;
     }
 }
