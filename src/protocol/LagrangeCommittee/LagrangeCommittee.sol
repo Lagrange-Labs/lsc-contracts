@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 import "../../hermez/HermezHelpers.sol";
 
@@ -149,12 +149,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         compCommitteeRoot(chainID);
     }
     
-    function getCommitteeRoot(uint256 chainID, uint256 _epoch) public view returns (uint256) {
-        return epoch2committee[chainID][_epoch];
+    function getCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32) {
+        return bytes32(epoch2committee[chainID][_epoch]);
     }
 
-    function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) public view returns (uint256) {
-        return epoch2committee[chainID][_epoch+1];
+    function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32) {
+        return bytes32(epoch2committee[chainID][_epoch+1]);
     }
     
     function compCommitteeRoot(uint256 chainID) internal {
@@ -215,7 +215,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return value;
     }
     
-    IRollupCore	public ArbRollupCore;
+/*
+    //IRollupCore	public ArbRollupCore;
     IOutbox	public ArbOutbox;
     
     function verifyArbBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
@@ -223,7 +224,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         RLPReader.RLPItem memory extraDataItem = decoded[BLOCK_HEADER_EXTRADATA_INDEX];
         RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
         bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
-        bytes32 l2Hash = IOutbox.roots[extraData];
+        bytes32 l2Hash = ArbOutbox.roots[extraData];
         if (l2Hash == bytes32(0)) {
             // No such confirmed node... TODO determine how these should be handled
             return false;
@@ -235,4 +236,14 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         bool res = hashCheck && numberCheck;
         return res;
     }
+    
+    IICanonicalTransactionChain public Optimism;
+    
+    function verifyOptBlockNumber(uint comparisonNumber, bytes32 comparisonBatchRoot, uint256 chainID) external view returns (bool) {
+        // BlockHash does not seem to be available, but root and number can be verified onchain.
+//        uint number = 
+        bool res = false;
+        return res;
+    }
+*/
 }

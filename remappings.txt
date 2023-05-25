@@ -3,3 +3,4 @@
 ds-test/=lib/eigenlayer-contracts/lib/ds-test/src/
 eigenlayer-contracts/=lib/eigenlayer-contracts/src/contracts/
 forge-std/=lib/forge-std/src/
+solidity-rlp/=node_modules/solidity-rlp/

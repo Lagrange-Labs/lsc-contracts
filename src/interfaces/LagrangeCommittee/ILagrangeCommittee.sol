@@ -12,4 +12,9 @@ interface ILagrangeCommittee {
     function getCommitteeDuration(uint256 chainID) external returns (uint256);
     
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool);
+
+    function getCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32);
+
+    function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32);
 }
+
