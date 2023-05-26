@@ -36,11 +36,11 @@ async function deployPoseidon() {
     
     jsonAddrs = JSON.stringify(poseidonAddrs,null,2);
     
-    fs.writeFile(path.join(__dirname, 'addresses.json'), jsonAddrs, err => {
+    fs.writeFile(path.join(__dirname, 'output/poseidonAddresses.json'), jsonAddrs, err => {
         if (err) {
             console.log('Error writing addresses to file:', err)
         } else {
-            console.log('Addresses written to addresses.json')
+            console.log('Addresses written to output/poseidonAddresses.json')
         }
     });
     console.log(jsonAddrs);
