@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "hermez-contracts": "github:hermeznetwork/contracts",
     "solidity-rlp": "github:hamdiallam/Solidity-RLP"
   }
 }
