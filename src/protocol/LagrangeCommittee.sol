@@ -4,9 +4,9 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-import "../../hermez/HermezHelpers.sol";
+import "../library/HermezHelpers.sol";
 
-import "../../interfaces/LagrangeCommittee/ILagrangeCommittee.sol";
+import "../interfaces/ILagrangeCommittee.sol";
 
 import "solidity-rlp/contracts/Helper.sol";
 
@@ -82,7 +82,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // ChainID => Committee Leaf Hash => Committee Leaf
     mapping(uint256 => mapping(uint256 => CommitteeLeaf)) public CommitteeMap;
     // ChainID => Merkle Nodes
-    mapping(uint256 => uint256[]) public CommitteeNodes;
+    mapping(uint256 => uint256[]) public CommitteeLeaves;
     // ChainID => Committee Index (Current, Next, ...) => Committee Root
     mapping(uint256 => mapping(uint256 => uint256)) public CommitteeRoot;
 
@@ -137,7 +137,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     function committeeAdd(uint256 chainID, uint256 stake, bytes memory _blsPubKey) external {
         address addr = msg.sender;
         
-        CommitteeNodes[chainID] = new uint256[](0);
+        // TODO this should only happen during initialization
+        CommitteeLeaves[chainID] = new uint256[](0);
         CommitteeRoot[chainID][COMMITTEE_NEXT_2] = uint256(0);
         
         CommitteeLeaf memory cleaf = CommitteeLeaf(addr,stake,_blsPubKey);
@@ -145,7 +146,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeMap[chainID][lhash] = cleaf;
         CommitteeMapKeys[chainID].push(lhash);
         CommitteeMapLength[chainID]++;
-        CommitteeNodes[chainID].push(lhash);
+        CommitteeLeaves[chainID].push(lhash);
         compCommitteeRoot(chainID);
     }
     
@@ -158,27 +159,42 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
     
     function compCommitteeRoot(uint256 chainID) internal {
-        if(CommitteeNodes[chainID].length == 0) {
+        if(CommitteeLeaves[chainID].length == 0) {
             CommitteeRoot[chainID][COMMITTEE_NEXT_2] = _hash2Elements([uint256(0),uint256(0)]);
             return;
-        } else if(CommitteeNodes[chainID].length == 1) {
-            CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[chainID][0];
+        } else if(CommitteeLeaves[chainID].length == 1) {
+            CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeLeaves[chainID][0];
             return;
         }
-        uint256 _len = CommitteeNodes[chainID].length;
+        
+        // First pass: compute committee nodes in memory from leaves
+        uint256 _len = CommitteeLeaves[chainID].length;
+        uint256[] memory CommitteeNodes = new uint256[](_len/2);
         uint256 _start = 0;
+	for(uint256 i = 0; i < _len - 1; i += 2) {
+	    CommitteeNodes[i/2] = _hash2Elements([
+	        CommitteeLeaves[chainID][_start + i],
+	        CommitteeLeaves[chainID][_start + i + 1]
+	    ]);
+	}
+        
+        // Second pass: compute committee nodes in memory from nodes
+        _len = _len/2;
         while(_len > 0) {
-            for(uint256 i = 0; i < _len - 1; i += 2) {
-                CommitteeNodes[chainID].push(_hash2Elements([
-                        CommitteeNodes[chainID][_start + i],
-                        CommitteeNodes[chainID][_start + i + 1]
-                    ])
-                );
-            }
-            _start += _len;
+            uint256[] memory NLCommitteeNodes = new uint256[](_len/2);
+	    for(uint256 i = 0; i < _len - 1; i += 2) {
+	        NLCommitteeNodes[i/2] = _hash2Elements([
+	            CommitteeNodes[_start + i],
+	            CommitteeNodes[_start + i + 1]
+	        ]);
+	    }
+	    CommitteeNodes = NLCommitteeNodes;
+            _start = 0;
             _len = _len / 2;
         }
-        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[chainID][CommitteeNodes[chainID].length - 1];
+        
+        // Update roots
+        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[CommitteeNodes.length - 1];
     }    
 
     using RLPReader for RLPReader.RLPItem;
@@ -189,7 +205,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return keccak256(rlpData);
     }
 
-    function checkAndDecodeRLP(bytes memory rlpData, bytes32 comparisonBlockHash) public view returns (RLPReader.RLPItem[] memory) {
+    function checkAndDecodeRLP(bytes memory rlpData, bytes32 comparisonBlockHash) public pure returns (RLPReader.RLPItem[] memory) {
         bytes32 blockHash = keccak256(rlpData);
         require(blockHash == comparisonBlockHash, "Hash of RLP data diverges from comparison block hash");
         RLPReader.RLPItem[] memory decoded = rlpData.toRlpItem().toList();
@@ -198,8 +214,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     
     uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
     uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
+    
+    uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
+    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external pure returns (bool) {
+        if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
+            // 
+        }
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
         RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
         uint number = blockNumberItem.toUint();
