@@ -23,6 +23,9 @@ add-strategy:
 register-operator:
 	cd docker && npm run register-operator
 
+deploy-poseidon:
+	node util/deploy_poseidon.js
+
 deploy-lagrange:
 	forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
@@ -45,4 +48,4 @@ test:
 	forge test --rpc-url http://localhost:8545  -vvvvv
 	docker ps -q --filter ancestor="lagrange/contracts" | xargs -r docker rm -f
 .PHONY: test
-	
+
