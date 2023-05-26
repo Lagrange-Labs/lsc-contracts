@@ -8,7 +8,7 @@ import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "../../interfaces/LagrangeCommittee/ILagrangeCommittee.sol";
+import "../interfaces/ILagrangeCommittee.sol";
 
 contract LagrangeService is Ownable, Initializable {
     ISlasher public immutable slasher;
@@ -17,18 +17,18 @@ contract LagrangeService is Ownable, Initializable {
     ILagrangeCommittee public LGRCommittee;
     
     // Service Mgr
-    IServiceManager public ELServiceMgr;
+//    IServiceManager public ELServiceMgr;
     
     IStrategy WETHStrategy;
 
     function initialize(
-      ILagrangeCommittee _lgrCommittee,
+      ILagrangeCommittee _lgrCommittee/*,
       IServiceManager _ELServiceMgr,
       IStrategy _WETHStrategy
-    ) initializer public {
+    */) initializer public {
         LGRCommittee = _lgrCommittee;
-        ELServiceMgr = _ELServiceMgr;
-        WETHStrategy = _WETHStrategy;
+//        ELServiceMgr = _ELServiceMgr;
+//        WETHStrategy = _WETHStrategy;
         //__Ownable_init();
     }    
     // End NodeStaking Imports
