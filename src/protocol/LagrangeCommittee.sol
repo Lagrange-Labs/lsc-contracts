@@ -16,22 +16,29 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     	return super.owner();
     }
  
+    // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
+    // Frozen Committee - Next "Current" Committee
     uint256 public constant COMMITTEE_NEXT_1 = 1;
+    // Flux Committee - Changes dynamically prior to freeze as "Next" committee
     uint256 public constant COMMITTEE_NEXT_2 = 2;
 
-
+    // ChainID => Start Block
     mapping(uint256 => uint256) public COMMITTEE_START;
+    // ChainID => Committee Duration (Blocks)
     mapping(uint256 => uint256) public COMMITTEE_DURATION;
-    
+
+    // Wrapper function for COMMITTEE_START - returns start block based on ChainID    
     function getCommitteeStart(uint256 chainID) external view returns (uint256) {
     	return COMMITTEE_START[chainID];
     }
 
+    // Wrapper function for COMMITTEE_DURATION - returns duration in blocks based on ChainID    
     function getCommitteeDuration(uint256 chainID) external view returns (uint256) {
     	return COMMITTEE_DURATION[chainID];
     }
     
+    // Constructor: Accepts poseidon contracts for 2, 3, and 4 elements
     constructor(
       address _poseidon2Elements,
       address _poseidon3Elements,
@@ -44,11 +51,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         );
     }
 
+    // Event fired on initialization of a new committee
     event InitCommittee(
         uint256 chainID,
         uint256 duration
     );
 
+    // Initialize new committee.  TODO only sequencer access for testnet
     function initCommittee(uint256 _chainID, uint256 _duration) public {
         require(COMMITTEE_START[_chainID] == 0, "Committee has already been initialized.");
         
@@ -60,20 +69,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         emit InitCommittee(_chainID, _duration);
     }
 
-    /// Committee Implementation
+    /// Leaf in Lagrange State Committee Trie
     struct CommitteeLeaf {
         address	addr;
         uint256	stake;
         bytes blsPubKey;
     }
-    // residual committee prevhash tracking?
-    // current, next, next-next tree
-    // N3 - flux
-    // N2 - frozen proposal
-    // N1 - snapshot, proposed committee
-    // C - current
-    // evidence for l2s may need to include height.  block header, cur c, next c, height - state root contained within block header / block hash
-    // cc, nc, block hash, height
     
     // ChainID => Committee Map Length
     mapping(uint256 => uint256) public CommitteeMapLength;
@@ -86,6 +87,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // ChainID => Committee Index (Current, Next, ...) => Committee Root
     mapping(uint256 => mapping(uint256 => uint256)) public CommitteeRoot;
 
+    // Remove address from committee map for chainID, update keys and length/height
     function removeCommitteeAddr(uint256 chainID) external {
         address addr = msg.sender;
         for (uint256 i = 0; i < CommitteeMapKeys[chainID].length; i++) {
@@ -102,9 +104,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 	}
     }
     
+    // ChainID => Epoch/Committee Number
     mapping(uint256 => uint256) public EpochNumber;
+    // Epoch/Committee Number => Committee Root
     mapping(uint256 => mapping(uint256 => uint256)) public epoch2committee;
 
+    // Fired on successful rotation of committee
     event RotateCommittee(
         uint256 chainID,
         uint256 current,
@@ -112,8 +117,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 next2
     );
 
+    // Rotate committees: CURRENT retired, NEXT_1 becomes CURRENT, NEXT_2 becomes NEXT_1
     function rotateCommittee(uint256 chainID) external {
         require(block.number > COMMITTEE_START[chainID] + COMMITTEE_DURATION[chainID], "Block number does not exceed end block of current committee");
+        compCommitteeRoot(chainID);
         
         COMMITTEE_START[chainID] = block.number;
         
@@ -125,6 +132,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeRoot[chainID][COMMITTEE_NEXT_2] = uint256(0);
         
         EpochNumber[chainID]++;
+
         
         emit RotateCommittee(
             chainID,
@@ -134,6 +142,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         );
     }
     
+    // Add address to committee (NEXT_2) trie
     function committeeAdd(uint256 chainID, uint256 stake, bytes memory _blsPubKey) external {
         address addr = msg.sender;
         
@@ -147,17 +156,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeMapKeys[chainID].push(lhash);
         CommitteeMapLength[chainID]++;
         CommitteeLeaves[chainID].push(lhash);
-        compCommitteeRoot(chainID);
     }
     
+    // Returns current committee root for chainID at given epoch
     function getCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32) {
         return bytes32(epoch2committee[chainID][_epoch]);
     }
 
+    // Returns next_1 committee root for chainID at given epoch
     function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32) {
         return bytes32(epoch2committee[chainID][_epoch+1]);
     }
     
+    // Recalculates committee root (next_2)
     function compCommitteeRoot(uint256 chainID) internal {
         if(CommitteeLeaves[chainID].length == 0) {
             CommitteeRoot[chainID][COMMITTEE_NEXT_2] = _hash2Elements([uint256(0),uint256(0)]);
@@ -197,6 +208,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[CommitteeNodes.length - 1];
     }    
 
+    // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
         return LibLagrangeCommittee.verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
     }
