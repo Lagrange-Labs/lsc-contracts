@@ -39,8 +39,7 @@ contract Deploy is Script, Test {
         address poseidon3 = stdJson.readAddress(poseidonData, ".3");
         address poseidon4 = stdJson.readAddress(poseidonData, ".4");
         // Initialize and deploy LagrangeCommittee
-        LagrangeCommittee lagrangeCommittee = new LagrangeCommittee();
-        lagrangeCommittee.initialize(poseidon2,poseidon3,poseidon4);
+        LagrangeCommittee lagrangeCommittee = new LagrangeCommittee(poseidon2,poseidon3,poseidon4);
         console.log("LagrangeService deployed at: ", address(lagrangeCommittee));
         
         return lagrangeCommittee;

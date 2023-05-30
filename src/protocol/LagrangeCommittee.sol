@@ -32,7 +32,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     	return COMMITTEE_DURATION[chainID];
     }
     
-    function initialize(
+    constructor(
       address _poseidon2Elements,
       address _poseidon3Elements,
       address _poseidon4Elements
