@@ -8,7 +8,7 @@ import "../library/HermezHelpers.sol";
 
 import "../interfaces/ILagrangeCommittee.sol";
 
-import "solidity-rlp/contracts/Helper.sol";
+import "../library/LibLagrangeCommittee.sol";
 
 contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, ILagrangeCommittee {
     
@@ -36,7 +36,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
       address _poseidon2Elements,
       address _poseidon3Elements,
       address _poseidon4Elements
-    ) initializer public {
+    ) initializer {
         _initializeHelpers(
             _poseidon2Elements,
             _poseidon3Elements,
@@ -197,43 +197,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[CommitteeNodes.length - 1];
     }    
 
-    using RLPReader for RLPReader.RLPItem;
-    using RLPReader for RLPReader.Iterator;
-    using RLPReader for bytes;
-    
-    function calculateBlockHash(bytes memory rlpData) public pure returns (bytes32) {
-        return keccak256(rlpData);
-    }
-
-    function checkAndDecodeRLP(bytes memory rlpData, bytes32 comparisonBlockHash) public pure returns (RLPReader.RLPItem[] memory) {
-        bytes32 blockHash = keccak256(rlpData);
-        require(blockHash == comparisonBlockHash, "Hash of RLP data diverges from comparison block hash");
-        RLPReader.RLPItem[] memory decoded = rlpData.toRlpItem().toList();
-	return decoded;
-    }
-    
-    uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
-    uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
-    
-    uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
-
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external pure returns (bool) {
-        if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-            // 
-        }
-        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
-        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
-        uint number = blockNumberItem.toUint();
-        bool res = number == comparisonNumber;
-        return res;
-    }
-
-    function toUint(bytes memory src) internal pure returns (uint) {
-        uint value;
-        for (uint i = 0; i < src.length; i++) {
-            value = value * 256 + uint(uint8(src[i]));
-        }
-        return value;
+    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
+        return LibLagrangeCommittee.verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
     }
     
 /*
