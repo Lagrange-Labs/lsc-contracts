@@ -168,14 +168,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return bytes32(epoch2committee[chainID][_epoch+1]);
     }
     
-    // Recalculates committee root (next_2)
-    function compCommitteeRoot(uint256 chainID) internal {
+    function getNext1CommitteeRoot(uint256 chainID) public view returns (uint256) {
         if(CommitteeLeaves[chainID].length == 0) {
-            CommitteeRoot[chainID][COMMITTEE_NEXT_2] = _hash2Elements([uint256(0),uint256(0)]);
-            return;
+            return _hash2Elements([uint256(0),uint256(0)]);
         } else if(CommitteeLeaves[chainID].length == 1) {
-            CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeLeaves[chainID][0];
-            return;
+            return CommitteeLeaves[chainID][0];
         }
         
         // First pass: compute committee nodes in memory from leaves
@@ -203,9 +200,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             _start = 0;
             _len = _len / 2;
         }
+        return CommitteeNodes[CommitteeNodes.length - 1];
+    }
+    
+    // Recalculates committee root (next_2)
+    function compCommitteeRoot(uint256 chainID) internal {
+        uint256 nextRoot = getNext1CommitteeRoot(chainID);
         
         // Update roots
-        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = CommitteeNodes[CommitteeNodes.length - 1];
+        CommitteeRoot[chainID][COMMITTEE_NEXT_2] = nextRoot;
     }    
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
