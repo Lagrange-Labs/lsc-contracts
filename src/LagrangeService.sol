@@ -3,25 +3,10 @@ pragma solidity ^0.8.12;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
+import {EvidenceVerifier} from "./library/EvidenceVerifier.sol";
 
-contract LagrangeService is Ownable {
+contract LagrangeService is EvidenceVerifier, Ownable {
     ISlasher public immutable slasher;
-
-    struct Evidence {
-        address operator;
-        bytes32 blockHash;
-        bytes32 correctBlockHash;
-        bytes32 currentCommitteeRoot;
-        bytes32 correctCurrentCommitteeRoot;
-        bytes32 nextCommitteeRoot;
-        bytes32 correctNextCommitteeRoot;
-        uint256 blockNumber;
-        uint256 epochNumber;
-        bytes blockSignature; // 96-byte
-        bytes commitSignature; // 96-byte
-        uint32 chainID;
-    }
-
     struct OperatorStatus {
         uint256 amount;
         uint32 serveUntilBlock;
@@ -81,7 +66,10 @@ contract LagrangeService is Ownable {
             "The operator is slashed"
         );
 
-        // require(_checkCommitSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.blockNumber, evidence.chainID, evidence.commitSignature), "The commit signature is not correct");
+        require(
+            checkCommitSignature(evidence),
+            "The commit signature is not correct"
+        );
 
         // if (_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
         //     _freezeOperator(evidence.operator);
