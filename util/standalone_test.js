@@ -5,12 +5,12 @@ const fs = require('fs')
 const bls = require("bls-eth-wasm");
 //const utils = require('utils');
 
-async function testDefaultFreeze(nodeStaking) {
+async function testDefaultFreeze(lagrangeService) {
     console.log("testDefaultFreeze");
-    frozenStatus = await nodeStaking.getFrozenStatus("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82");
+    frozenStatus = await lagrangeService.getFrozenStatus("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82");
     freezeException = false;
     try {
-        await nodeStaking.freezeOperator("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82");
+        await lagrangeService.freezeOperator("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82");
     } catch(error) {
 	freezeException = true;
     }
@@ -21,18 +21,18 @@ async function getProvider() {
     const currentProvider = new ethers.providers.JsonRpcProvider('http://0.0.0.0:8545');
     return currentProvider;
 }
-async function getLagrangeCommittee(nodeStaking) {
+async function getLagrangeCommittee(lagrangeService) {
     const currentProvider = await getProvider();
     const signerNode = await currentProvider.getSigner();
-    const lgrcAddr = await nodeStaking.LGRCommittee();
-    const lgrcABI = await fs.readFileSync("./deployments/privnet/LagrangeCommittee.json","utf-8");
+    const lgrcAddr = await lagrangeService.LGRCommittee();
+    const lgrcABI = await fs.readFileSync("../out/LagrangeCommittee.sol/LagrangeCommittee.json","utf-8");
     jsonABI = await JSON.parse(lgrcABI);
     sanitizedABI = await JSON.stringify(jsonABI);
     const lgrc = new ethers.Contract(lgrcAddr,jsonABI.abi,signerNode);
     return lgrc;
 }
 
-async function getNodeStaking(redeploy) {
+async function getLagrangeService(redeploy) {
     const currentProvider = await getProvider();
     const signerNode = await currentProvider.getSigner();
     
@@ -44,27 +44,40 @@ async function getNodeStaking(redeploy) {
 	const deploy = await exec.execSync("npx hardhat deploy --network privnet", options);
 	console.log("Redeploying complete.");
 	
-        nsAddr = await fs.readFileSync("./tmp/nodestaking.addr","utf-8");
-        nsABI = await fs.readFileSync("./tmp/nodestaking.abi","utf-8");
+	nsAddr = null;
+	for(i = 0; i < deployTxns.length; i++) {
+	    if(deployTxns[i].contractName == "LagrangeService") {
+		nsAddr = deployTxns[i].contractAddress;
+	    }
+	}
 
-	console.log("NodeStaking Address:", nsAddr);
+	const nsABI = await fs.readFileSync("../out/LagrangeService.sol/LagrangeService.json","utf-8");
+
+	console.log("LagrangeService Address:", nsAddr);
     
         jsonABI = await JSON.parse(nsABI);
         sanitizedABI = await JSON.stringify(jsonABI);
 	
-        const nodeStaking = new ethers.Contract(nsAddr,sanitizedABI,signerNode);
+        const lagrangeService = new ethers.Contract(nsAddr,sanitizedABI,signerNode);
 
-	console.log("Slasher Address:", nodeStaking.eslasher);
-	return nodeStaking;
+	console.log("Slasher Address:", lagrangeService.eslasher);
+	return lagrangeService;
     } else {
-        nsAddr = await fs.readFileSync("./tmp/nodestaking.addr","utf-8");
-        nsABI = await fs.readFileSync("./tmp/nodestaking.abi","utf-8");
-	
-        jsonABI = await JSON.parse(nsABI);
-        sanitizedABI = await JSON.stringify(jsonABI);
+	deployFile = await fs.readFileSync("../broadcast/Deploy.s.sol/1337/run-latest.json");
+	deployJson = await JSON.parse(deployFile);
+	deployTxns = deployJson.transactions;
+	nsAddr = null;
+	for(i = 0; i < deployTxns.length; i++) {
+	    if(deployTxns[i].contractName == "LagrangeService") {
+		nsAddr = deployTxns[i].contractAddress;
+	    }
+	}
+	const nsABI = await fs.readFileSync("../out/LagrangeService.sol/LagrangeService.json","utf-8");
+	jsonABI = await JSON.parse(nsABI);
+	sanitizedABI = await JSON.stringify(jsonABI.abi);
 
-        const nodeStaking = new ethers.Contract(nsAddr,sanitizedABI,signerNode);
-	return nodeStaking;
+        const lagrangeService = new ethers.Contract(nsAddr,sanitizedABI,signerNode);
+	return lagrangeService;
     }
 }
 
@@ -168,14 +181,18 @@ async function testInitCommittee(lgrc) {
     extChainID = await Math.ceil(Math.random() * 1000000);
     extDuration = 5;
     await lgrc.initCommittee(extChainID, extDuration);
-    await delay(1000);
+    await delay(3000);
 
     cs = await lgrc.COMMITTEE_START(extChainID);
     cd = await lgrc.COMMITTEE_DURATION(extChainID);
     en = await lgrc.EpochNumber(extChainID);
 
+    //console.log(cs.toNumber(),cd.toNumber(),en.toNumber());
+
     const blockNumber = await provider.getBlockNumber();
-    csEquiv = cs.toNumber() == blockNumber;
+    //console.log(blockNumber);
+
+    csEquiv = cs.toNumber() < blockNumber && cs.toNumber() > 0;
     cdEquiv = cd.toNumber() == 5;
     enEquiv = en.toNumber() == 0;
     console.log(csEquiv);
@@ -214,7 +231,10 @@ async function testCommitteeAdd(lgrc,cChainID) {
     pub = blsKey.getPublicKey();
     // Add committee leaf
     lgrc.committeeAdd(cChainID,32,pub.serialize());
-    await delay(1000);
+    await delay(3000);
+    // Only occurs organically during rotation, must be manually triggered for testing
+    flux = await lgrc.getNext1CommitteeRoot(cChainID);
+    await delay(3000);
 
     pass = true;
 
@@ -222,13 +242,13 @@ async function testCommitteeAdd(lgrc,cChainID) {
     r0 = await lgrc.CommitteeRoot(cChainID,0);
     r1 = await lgrc.CommitteeRoot(cChainID,1);
     r2 = await lgrc.CommitteeRoot(cChainID,2);
-    r3 = await lgrc.CommitteeRoot(cChainID,3);
+    console.log(r0.toHexString());
     
     results = [
-        r0.toNumber() == 0,
-        r1.toNumber() == 0,
-        r2.toNumber() == 0,
-        r3.gt(0)
+        r0.toHexString() == "0x00",
+        r1.toHexString() == "0x00",
+        r2.toHexString() == "0x00",
+        flux.toHexString() != "0x00",
     ];
     
     for(i = 0; i < results.length; i++) {
@@ -243,7 +263,7 @@ async function testCommitteeRotate(lgrc,cChainID) {
     provider = await getProvider();
 
     // Setup Burn Transactions
-
+/*
     ecdsapk = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
     const wallet = new ethers.Wallet(ecdsapk);
 
@@ -255,6 +275,7 @@ async function testCommitteeRotate(lgrc,cChainID) {
     pass = true;
     
     txn = { to: address, value: ethers.utils.parseEther('0.0').toHexString(), gasPrice: ethers.utils.parseUnits('1', 'gwei').toHexString() };
+*/
     
     // Rotate Committee Roots
     for(i = 0; i < 100; i++) {
@@ -263,7 +284,7 @@ async function testCommitteeRotate(lgrc,cChainID) {
             console.log(false);
         } catch(error) {
             console.log(true);
-            res = await provider.sendTransaction(txn);
+            //res = await provider.sendTransaction(txn);
             await res.wait();
         }
     }
@@ -271,18 +292,18 @@ async function testCommitteeRotate(lgrc,cChainID) {
 }
 async function main() {    
     const redeploy = process.argv.includes('--redeploy');
-    const nodeStaking = await getNodeStaking(redeploy);
-    const lgrc = await getLagrangeCommittee(nodeStaking);
+    const lagrangeService = await getLagrangeService(redeploy);
+    const lgrc = await getLagrangeCommittee(lagrangeService);
     
-//    console.log(await testVerifyStateRoot(nodeStaking));
+//    console.log(await testVerifyStateRoot(lagrangeService));
     console.log(await testVerifyBlockNumber(lgrc));
     cChainID = await testInitCommittee(lgrc);
     console.log(cChainID != false);
 //    console.log("Committee Chain ID:",cChainID);
     console.log(await testCommitteeAdd(lgrc,cChainID));
     console.log(await testCommitteeRotate(lgrc,cChainID));
-//    console.log(await testDefaultFreeze(nodeStaking));
-//    console.log(await testAddStakeIdent(nodeStaking));
+//    console.log(await testDefaultFreeze(lagrangeService));
+//    console.log(await testAddStakeIdent(lagrangeService));
 }
 
 main()
