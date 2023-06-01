@@ -58,11 +58,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     );
 
     // Initialize new committee.  TODO only sequencer access for testnet
-    function initCommittee(uint256 _chainID, uint256 _duration) public {
+    function initCommittee(uint256 _chainID, uint256 _duration) onlyOwner {
         require(COMMITTEE_START[_chainID] == 0, "Committee has already been initialized.");
         
         COMMITTEE_START[_chainID] = block.number;
         COMMITTEE_DURATION[_chainID] = _duration;
+
+//        epoch2starblock[chainID][COMMITTEE_CURRENT] = block.number;
+//        epoch2starblock[chainID][COMMITTEE_NEXT_1] = block.number + _duration;
+        epoch2starblock[chainID][COMMITTEE_NEXT_2] = block.number + _duration * 2;
         
         EpochNumber[_chainID] = 0;
         
@@ -88,8 +92,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     mapping(uint256 => mapping(uint256 => uint256)) public CommitteeRoot;
 
     // Remove address from committee map for chainID, update keys and length/height
-    function removeCommitteeAddr(uint256 chainID) external {
-        address addr = msg.sender;
+    function removeCommitteeAddr(uint256 chainID/*, addr address*/) external {
+        /**/address addr = msg.sender;
+        /*
+        if(addr != msg.sender) {
+            require(addr == owner(),"Only the contract owner can remove other addresses from committee.");
+        }
+        */
         for (uint256 i = 0; i < CommitteeMapKeys[chainID].length; i++) {
 	    uint256 _i = CommitteeMapKeys[chainID][i];
 	    uint256 _if = CommitteeMapKeys[chainID][CommitteeMapKeys[chainID].length - 1];
@@ -106,8 +115,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     
     // ChainID => Epoch/Committee Number
     mapping(uint256 => uint256) public EpochNumber;
-    // Epoch/Committee Number => Committee Root
+    // ChainID => Epoch/Committee Number => Committee Root
     mapping(uint256 => mapping(uint256 => uint256)) public epoch2committee;
+    // ChainID => Epoch/Committee Number => Committee Start Block
+    mapping(uint256 => mapping(uint256 => uint256)) public epoch2startblock;
+    // ChainID => Epoch/Committee Number => Committee Height
+    mapping(uint256 => mapping(uint256 => uint256)) public epoch2height;
 
     // Fired on successful rotation of committee
     event RotateCommittee(
@@ -128,6 +141,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeRoot[chainID][COMMITTEE_NEXT_1] = CommitteeRoot[chainID][COMMITTEE_NEXT_2];
         
         epoch2committee[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_2] = CommitteeRoot[chainID][COMMITTEE_NEXT_2];
+        epoch2starblock[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_2] = epoch2startblock[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_1];
+        epoch2height[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_2] = CommitteeMapLength[chainID];
         
         CommitteeRoot[chainID][COMMITTEE_NEXT_2] = uint256(0);
         
