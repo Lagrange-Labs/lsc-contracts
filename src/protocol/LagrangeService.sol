@@ -2,35 +2,32 @@
 pragma solidity ^0.8.12;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
 import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/ILagrangeCommittee.sol";
+import "../protocol/LagrangeServiceManager.sol";
 
 contract LagrangeService is Ownable, Initializable {
-    ISlasher public immutable slasher;
-    
-    // NodeStaking Imports
+    IServiceManager public LGRServiceMgr;
+
     ILagrangeCommittee public LGRCommittee;
-    
-    // Service Mgr
-//    IServiceManager public ELServiceMgr;
     
     IStrategy WETHStrategy;
 
+/*
     function initialize(
-      ILagrangeCommittee _lgrCommittee/*,
-      IServiceManager _ELServiceMgr,
-      IStrategy _WETHStrategy
-    */) initializer public {
+      ILagrangeCommittee _lgrCommittee//,
+      //IStrategy _WETHStrategy
+    ) initializer public {
         LGRCommittee = _lgrCommittee;
-//        ELServiceMgr = _ELServiceMgr;
 //        WETHStrategy = _WETHStrategy;
         //__Ownable_init();
     }    
+*/
+
     // End NodeStaking Imports
 
     struct Evidence {
@@ -74,17 +71,14 @@ contract LagrangeService is Ownable, Initializable {
     );
     event OperatorSlashed(address operator);
 
-    constructor(ISlasher _slasher) {
-        slasher = _slasher;
-    }
-
-    function owner() public view override(Ownable) returns (address) {
-        return Ownable.owner();
+    constructor(IServiceManager _LGRServiceMgr, ILagrangeCommittee _LGRCommittee) {
+        LGRServiceMgr = _LGRServiceMgr;
+        LGRCommittee = _LGRCommittee;
     }
 
     /// Add the operator to the service.
     function register(uint32 serveUntilBlock) external {
-        _recordFirstStakeUpdate(msg.sender, serveUntilBlock);
+        LGRServiceMgr.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         
 //        ([]IStrategy memory strats, uint256[] shares) = ELServiceMgr.depositor(msg.sender);
 //        uint256 amount = strats[WETHStrategy];
@@ -96,6 +90,8 @@ contract LagrangeService is Ownable, Initializable {
         });
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
+        
+        LGRCommittee.committeeAdd(1 /* TODO chainID */, 0 /* TODO stake */, "" /* TODO _plsPubKey */);
     }
 
     /// upload the evidence to punish the operator.
@@ -163,44 +159,20 @@ contract LagrangeService is Ownable, Initializable {
 
     /// slash the given operator
     function _freezeOperator(address operator) internal {
-        slasher.freezeOperator(operator);
+        LGRServiceMgr.freezeOperator(operator);
         operators[operator].slashed = true;
 
         emit OperatorSlashed(operator);
     }
 
-    function isFrozen(address operator) public view returns (bool) {
-        return slasher.isFrozen(operator);
+/*
+    function _isFrozen(address operator) public view returns (bool) {
+        return LGRServiceManager.isFrozen(operator);
     }
+*/
 
-    function _recordFirstStakeUpdate(
-        address operator,
-        uint32 serveUntilBlock
-    ) internal {
-        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
-    }
-
-    function recordLastStakeUpdateAndRevokeSlashingAbility(
-        address operator,
-        uint32 serveUntilBlock
-    ) external {
-        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(
-            operator,
-            serveUntilBlock
-        );
-    }
-
-    function recordStakeUpdate(
-        address operator,
-        uint32 updateBlock,
-        uint32 serveUntilBlock,
-        uint256 prevElement
-    ) external {
-        slasher.recordStakeUpdate(
-            operator,
-            updateBlock,
-            serveUntilBlock,
-            prevElement
-        );
+    function owner() public view override(Ownable) returns (address) {
+        return Ownable.owner();
     }
 }
+

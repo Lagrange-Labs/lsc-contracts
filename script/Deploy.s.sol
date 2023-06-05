@@ -10,6 +10,7 @@ import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.s
 import {DelegationManager} from "eigenlayer-contracts/core/DelegationManager.sol";
 
 import {Slasher} from "eigenlayer-contracts/core/Slasher.sol";
+import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 
@@ -40,7 +41,7 @@ contract Deploy is Script, Test {
         address poseidon4 = stdJson.readAddress(poseidonData, ".4");
         // Initialize and deploy LagrangeCommittee
         LagrangeCommittee lagrangeCommittee = new LagrangeCommittee(poseidon2,poseidon3,poseidon4);
-        console.log("LagrangeService deployed at: ", address(lagrangeCommittee));
+        console.log("LagrangeCommittee deployed at: ", address(lagrangeCommittee));
         
         return lagrangeCommittee;
     }
@@ -55,16 +56,18 @@ contract Deploy is Script, Test {
         Slasher slasher = Slasher(
             stdJson.readAddress(deployData, ".addresses.slasher")
         );
-        LagrangeService service = new LagrangeService(slasher);
-        service.initialize(lagrangeCommittee/*, serviceManager, wethStrategy*/);
+        LagrangeServiceManager serviceMgr = new LagrangeServiceManager(slasher);
+        console.log("LagrangeServiceManager deployed at: ", address(serviceMgr));
+        LagrangeService service = new LagrangeService(serviceMgr,lagrangeCommittee);
+        //service.initialize(lagrangeCommittee/*, serviceManager, wethStrategy*/);
         console.log("LagrangeService deployed at: ", address(service));
 
         // call optIntoSlashing on slasher
-        slasher.unpause(0);
-        slasher.optIntoSlashing(address(service));
+//        slasher.unpause(0);
+//        slasher.optIntoSlashing(address(service));
 
         // register the service
-        service.register(type(uint32).max);        
+//        service.register(type(uint32).max);        
     }
 
     function run() public {
