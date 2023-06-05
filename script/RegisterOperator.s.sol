@@ -19,6 +19,12 @@ contract RegisterOperator is Script, Test {
                 "lib/eigenlayer-contracts/script/output/M1_deployment_data.json"
             )
         );
+    string public procDataPath =
+        string(
+            bytes(
+                "util/output/eigenlayer.json"
+            )
+        );
     bytes4 private constant WETH_DEPOSIT_SELECTOR =
         bytes4(keccak256(bytes("deposit()")));
 
@@ -26,14 +32,16 @@ contract RegisterOperator is Script, Test {
         vm.startBroadcast(msg.sender);
 
         string memory deployData = vm.readFile(deployDataPath);
+        string memory procData = vm.readFile(procDataPath);
+        
         address WETHStractegyAddress = stdJson.readAddress(
-            deployData,
-            ".addresses.strategies.WETH"
+            procData,
+            ".WETH"
         );
         IStrategy WETHStrategy = IStrategy(WETHStractegyAddress);
         
         IERC20 WETH = WETHStrategy.underlyingToken();
-
+        
         // send 1e19 wei to the WETH contract to get WETH
         (bool success, ) = address(WETH).call{value: 1e19}(
             abi.encodeWithSelector(WETH_DEPOSIT_SELECTOR)
@@ -44,7 +52,9 @@ contract RegisterOperator is Script, Test {
         StrategyManager strategyManager = StrategyManager(
             stdJson.readAddress(deployData, ".addresses.strategyManager")
         );
+        console.log("StrategyManager",address(strategyManager));
         WETH.approve(address(strategyManager), 1e30);
+        console.log("WETH approved.");
         // deposit 1e18 WETH into strategy
         strategyManager.depositIntoStrategy(WETHStrategy, WETH, 1e18);
 
