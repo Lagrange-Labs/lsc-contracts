@@ -3,14 +3,15 @@ const ethers = require("ethers");
 //const { JsonRpcProvider } = require('ethers/providers');
 const fs = require('fs')
 const bls = require("bls-eth-wasm");
+const path = require("path");
 //const utils = require('utils');
 
 async function testDefaultFreeze(lagrangeService) {
     console.log("testDefaultFreeze");
-    frozenStatus = await lagrangeService.getFrozenStatus("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82");
+    frozenStatus = await lagrangeService.getFrozenStatus("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
     freezeException = false;
     try {
-        await lagrangeService.freezeOperator("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82");
+        await lagrangeService.freezeOperator("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
     } catch(error) {
 	freezeException = true;
     }
@@ -24,11 +25,15 @@ async function getProvider() {
 async function getLagrangeCommittee(lagrangeService) {
     const currentProvider = await getProvider();
     const signerNode = await currentProvider.getSigner();
+    
+    ecdsapk = "3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c";
+    const wallet = new ethers.Wallet(ecdsapk, currentProvider);
+    
     const lgrcAddr = await lagrangeService.LGRCommittee();
-    const lgrcABI = await fs.readFileSync("../out/LagrangeCommittee.sol/LagrangeCommittee.json","utf-8");
+    const lgrcABI = await fs.readFileSync(path.join(__dirname,"../out/LagrangeCommittee.sol/LagrangeCommittee.json"),"utf-8");
     jsonABI = await JSON.parse(lgrcABI);
     sanitizedABI = await JSON.stringify(jsonABI);
-    const lgrc = new ethers.Contract(lgrcAddr,jsonABI.abi,signerNode);
+    const lgrc = new ethers.Contract(lgrcAddr,jsonABI.abi,wallet);
     return lgrc;
 }
 
@@ -51,7 +56,7 @@ async function getLagrangeService(redeploy) {
 	    }
 	}
 
-	const nsABI = await fs.readFileSync("../out/LagrangeService.sol/LagrangeService.json","utf-8");
+	const nsABI = await fs.readFileSync(path.join(__dirname,"../out/LagrangeService.sol/LagrangeService.json"),"utf-8");
 
 	console.log("LagrangeService Address:", nsAddr);
     
@@ -63,7 +68,7 @@ async function getLagrangeService(redeploy) {
 	console.log("Slasher Address:", lagrangeService.eslasher);
 	return lagrangeService;
     } else {
-	deployFile = await fs.readFileSync("../broadcast/Deploy.s.sol/1337/run-latest.json");
+	deployFile = await fs.readFileSync(path.join(__dirname,"../broadcast/Deploy.s.sol/1337/run-latest.json"));
 	deployJson = await JSON.parse(deployFile);
 	deployTxns = deployJson.transactions;
 	nsAddr = null;
@@ -72,11 +77,12 @@ async function getLagrangeService(redeploy) {
 		nsAddr = deployTxns[i].contractAddress;
 	    }
 	}
-	const nsABI = await fs.readFileSync("../out/LagrangeService.sol/LagrangeService.json","utf-8");
+	const nsABI = await fs.readFileSync(path.join(__dirname,"../out/LagrangeService.sol/LagrangeService.json"),"utf-8");
 	jsonABI = await JSON.parse(nsABI);
 	sanitizedABI = await JSON.stringify(jsonABI.abi);
 
         const lagrangeService = new ethers.Contract(nsAddr,sanitizedABI,signerNode);
+        console.log("LagrangeService loaded.");
 	return lagrangeService;
     }
 }
@@ -96,7 +102,7 @@ async function testAddStakeIdent(nodeStaking) {
     console.log("BLS secret key:",priv);
     console.log("BLS public key:",await pub.serializeToHexStr());
 
-    ecdsapk = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+    ecdsapk = "3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c";
     const wallet = new ethers.Wallet(ecdsapk);
 
     const publicKey = wallet.publicKey;
@@ -260,11 +266,11 @@ async function testCommitteeAdd(lgrc,cChainID) {
 }
 async function testCommitteeRotate(lgrc,cChainID) {
     console.log('testCommitteeRotate');
+/*
     provider = await getProvider();
 
     // Setup Burn Transactions
-/*
-    ecdsapk = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+    ecdsapk = "3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c";
     const wallet = new ethers.Wallet(ecdsapk);
 
     const publicKey = wallet.publicKey;
@@ -282,19 +288,28 @@ async function testCommitteeRotate(lgrc,cChainID) {
         try {
             await lgrc.rotateCommittee(cChainID);
             console.log(false);
+	    await delay(3000);
         } catch(error) {
             console.log(true);
+            console.log(error);
+	    await delay(3000);
             //res = await provider.sendTransaction(txn);
-            await res.wait();
+            //await res.wait();
         }
     }
     return pass;
+}
+async function testOwner(lagrangeService) {
+    const owner = await lagrangeService.owner();
+    console.log(owner);
+    return false;
 }
 async function main() {    
     const redeploy = process.argv.includes('--redeploy');
     const lagrangeService = await getLagrangeService(redeploy);
     const lgrc = await getLagrangeCommittee(lagrangeService);
     
+    console.log(await testOwner(lagrangeService));
 //    console.log(await testVerifyStateRoot(lagrangeService));
     console.log(await testVerifyBlockNumber(lgrc));
     cChainID = await testInitCommittee(lgrc);
