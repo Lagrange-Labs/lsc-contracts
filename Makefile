@@ -18,6 +18,9 @@ deploy-eigenlayer:
 eigenlayer-addresses:
 	node util/extract_eigenlayer_addresses.js
 
+export-abi:
+	node util/export_abis.js
+
 deploy-weth9:
 	forge script script/DeployWETH9.s.sol:DeployWETH9 --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
