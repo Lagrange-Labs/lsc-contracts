@@ -29,6 +29,12 @@ contract Deploy is Script, Test {
                 "util/output/poseidonAddresses.json"
             )
         );
+    string public procDataPath =
+        string(
+            bytes(
+                "util/output/eigenlayer.json"
+            )
+        );
         
     address WETHStrategyAddress;
     address IServiceManagerAddress;
@@ -48,6 +54,14 @@ contract Deploy is Script, Test {
 
     function deployLagrangeService(LagrangeCommittee lagrangeCommittee) public {
         string memory deployData = vm.readFile(deployDataPath);
+        string memory procData = vm.readFile(procDataPath);
+        address WETHStractegyAddress = stdJson.readAddress(
+            procData,
+            ".WETH"
+        );
+        IStrategy WETHStrategy = IStrategy(WETHStractegyAddress);
+
+        StrategyManager strategyManager = StrategyManager(stdJson.readAddress(deployData, ".addresses.strategyManager"));
         // Load Dependencies
         //IServiceManager ServiceManager = 
         //
@@ -58,7 +72,7 @@ contract Deploy is Script, Test {
         );
         LagrangeServiceManager serviceMgr = new LagrangeServiceManager(slasher);
         console.log("LagrangeServiceManager deployed at: ", address(serviceMgr));
-        LagrangeService service = new LagrangeService(serviceMgr,lagrangeCommittee);
+        LagrangeService service = new LagrangeService(serviceMgr,lagrangeCommittee,strategyManager,WETHStrategy);
         //service.initialize(lagrangeCommittee/*, serviceManager, wethStrategy*/);
         console.log("LagrangeService deployed at: ", address(service));
 

@@ -12,10 +12,20 @@ import "../protocol/LagrangeServiceManager.sol";
 
 contract LagrangeService is Ownable, Initializable {
     IServiceManager public LGRServiceMgr;
-
+    IStrategyManager public StrategyMgr;
+    IStrategy public WETHStrategy;
+    
     ILagrangeCommittee public LGRCommittee;
     
-    IStrategy WETHStrategy;
+    /*
+    mapping(address => bool) sequencerWhitelist;    
+    function addSequencer(address seqAddr) onlyOwner {
+        sequencerWhitelist[seqAddr] = true;
+    }
+    function removeSequencer(address seqAddr) onlyOwner {
+        sequencerWhitelist[seqAddr] = false;
+    }
+    */
 
 /*
     function initialize(
@@ -71,13 +81,15 @@ contract LagrangeService is Ownable, Initializable {
     );
     event OperatorSlashed(address operator);
 
-    constructor(IServiceManager _LGRServiceMgr, ILagrangeCommittee _LGRCommittee) {
+    constructor(IServiceManager _LGRServiceMgr, ILagrangeCommittee _LGRCommittee, IStrategyManager _StrategyMgr, IStrategy _WETHStrategy) {
         LGRServiceMgr = _LGRServiceMgr;
         LGRCommittee = _LGRCommittee;
+        StrategyMgr = _StrategyMgr;
+        WETHStrategy = _WETHStrategy;
     }
 
     /// Add the operator to the service.
-    function register(uint32 serveUntilBlock) external {
+    function register(uint32 serveUntilBlock) external onlyOwner {
         LGRServiceMgr.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         
 //        ([]IStrategy memory strats, uint256[] shares) = ELServiceMgr.depositor(msg.sender);
@@ -95,7 +107,7 @@ contract LagrangeService is Ownable, Initializable {
     }
 
     /// upload the evidence to punish the operator.
-    function uploadEvidence(Evidence calldata evidence) external {
+    function uploadEvidence(Evidence calldata evidence) external /*onlySequencer*/ {
         // check the operator is registered or not
         require(
             operators[evidence.operator].serveUntilBlock > 0,

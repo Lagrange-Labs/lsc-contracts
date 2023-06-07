@@ -10,6 +10,7 @@ contract DeployWETH9 is Script, Test {
         // deploy WETH9
         vm.broadcast(msg.sender);
         WETH9 weth9 = new WETH9();
+        weth9.initialize();
         console.logAddress(address(weth9));
     }
 }
