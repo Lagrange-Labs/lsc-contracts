@@ -68,6 +68,7 @@ contract LagrangeService is Ownable, Initializable {
     uint32 public latestServeUntilBlock = 0;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
+    
     event UploadEvidence(
         address operator,
         bytes32 blockHash,
@@ -79,6 +80,7 @@ contract LagrangeService is Ownable, Initializable {
         bytes commitSignature,
         uint32 chainID
     );
+    
     event OperatorSlashed(address operator);
 
     constructor(IServiceManager _LGRServiceMgr, ILagrangeCommittee _LGRCommittee, IStrategyManager _StrategyMgr, IStrategy _WETHStrategy) {
@@ -89,25 +91,25 @@ contract LagrangeService is Ownable, Initializable {
     }
 
     /// Add the operator to the service.
-    function register(uint32 serveUntilBlock) external onlyOwner {
+    function register(uint256 chainID, uint256 stake, bytes memory _blsPubKey, uint32 serveUntilBlock) external onlyOwner {
         LGRServiceMgr.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         
 //        ([]IStrategy memory strats, uint256[] shares) = ELServiceMgr.depositor(msg.sender);
 //        uint256 amount = strats[WETHStrategy];
         
         operators[msg.sender] = OperatorStatus({
-            amount: 0,//amount,
-            serveUntilBlock: serveUntilBlock,
-            slashed: false
+            amount: stake,//amount,
+            serveUntilBlock: serveUntilBlock, // TODO does this refer to the end of the committee period?  if so, we can infer this from committee storage data rather than using calldata.
+            slashed: false //TODO block against slashed nodes re-registering
         });
 
+        LGRCommittee.committeeAdd(chainID, msg.sender, stake, _blsPubKey);
+
         emit OperatorRegistered(msg.sender, serveUntilBlock);
-        
-        LGRCommittee.committeeAdd(1 /* TODO chainID */, 0 /* TODO stake */, "" /* TODO _plsPubKey */);
     }
 
     /// upload the evidence to punish the operator.
-    function uploadEvidence(Evidence calldata evidence) external /*onlySequencer*/ {
+    function uploadEvidence(Evidence calldata evidence) external /*onlySequencer TODO*/ {
         // check the operator is registered or not
         require(
             operators[evidence.operator].serveUntilBlock > 0,
@@ -127,18 +129,18 @@ contract LagrangeService is Ownable, Initializable {
         // }
 
         if (!_checkBlockHash(evidence.correctBlockHash, evidence.blockHash, evidence.blockNumber, evidence.rawBlockHeader, evidence.chainID)) {
-            _freezeOperator(evidence.operator);
+            _freezeOperator(evidence.operator,evidence.chainID);
         }
 
         if (!_checkCurrentCommitteeRoot(evidence.correctCurrentCommitteeRoot, evidence.currentCommitteeRoot, evidence.epochNumber, evidence.chainID)) {
-            _freezeOperator(evidence.operator);
+            _freezeOperator(evidence.operator,evidence.chainID);
         }
 
         if (!_checkNextCommitteeRoot(evidence.correctNextCommitteeRoot, evidence.nextCommitteeRoot, evidence.epochNumber, evidence.chainID)) {
-            _freezeOperator(evidence.operator);
+            _freezeOperator(evidence.operator,evidence.chainID);
         }
 
-        _freezeOperator(evidence.operator);
+        //_freezeOperator(evidence.operator,evidence.chainID); // TODO what is this for?
 
         emit UploadEvidence(
             evidence.operator,
@@ -170,9 +172,10 @@ contract LagrangeService is Ownable, Initializable {
     }
 
     /// slash the given operator
-    function _freezeOperator(address operator) internal {
+    function _freezeOperator(address operator, uint256 chainID) internal {
         LGRServiceMgr.freezeOperator(operator);
         operators[operator].slashed = true;
+        LGRCommittee.remove(chainID, operator);
 
         emit OperatorSlashed(operator);
     }

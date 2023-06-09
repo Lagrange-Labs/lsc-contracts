@@ -3,9 +3,9 @@ pragma solidity ^0.8.12;
 
 interface ILagrangeCommittee {
 
-    function committeeAdd(uint256 chainID, uint256 stake, bytes memory _blsPubKey) external;
+    function committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) external;
     
-    function removeCommitteeAddr(uint256 chainID) external;
+    //function removeCommitteeAddr(uint256 chainID) external;
     
     function getCommitteeStart(uint256 chainID) external returns (uint256);
 
@@ -16,5 +16,11 @@ interface ILagrangeCommittee {
     function getCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32);
 
     function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32);
+////
+    function add(uint256 chainID, address addr) external;
+
+    function remove(uint256 chainID, address addr) external;
+
+    function update(uint256 chainID) external;
 }
 

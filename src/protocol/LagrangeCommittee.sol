@@ -22,6 +22,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     uint256 public constant COMMITTEE_NEXT_1 = 1;
     // Flux Committee - Changes dynamically prior to freeze as "Next" committee
     uint256 public constant COMMITTEE_NEXT_2 = 2;
+    
+    // ChainID => Address
+    mapping(uint256 => address[]) addedAddrs;
+    mapping(uint256 => address[]) removedAddrs;
 
     // ChainID => Start Block
     mapping(uint256 => uint256) public COMMITTEE_START;
@@ -57,9 +61,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 chainID,
         uint256 duration
     );
-
-    // Initialize new committee.  TODO only sequencer access for testnet
-    function initCommittee(uint256 _chainID, uint256 _duration) public onlyOwner {
+    
+    // Initialize new committee.  TODO only sequencer access for testnet.
+    function initCommittee(uint256 _chainID, uint256 _duration) public onlyOwner /* TODO onlySequencer */ {
         require(COMMITTEE_START[_chainID] == 0, "Committee has already been initialized.");
         
         COMMITTEE_START[_chainID] = block.number;
@@ -98,8 +102,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
     
     // Remove address from committee map for chainID, update keys and length/height
-    function removeCommitteeAddr(uint256 chainID/*, addr address*/) external {
-        /**/address addr = msg.sender;
+    function removeCommitteeAddr(uint256 chainID, address addr) /*internal*/ public {
+        /*
+        address addr = msg.sender;
+        */
         /*
         if(addr != msg.sender) {
             require(addr == owner(),"Only the contract owner can remove other addresses from committee.");
@@ -122,7 +128,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // ChainID => Epoch/Committee Number
     mapping(uint256 => uint256) public EpochNumber;
     // ChainID => Epoch/Committee Number => Committee Root
-    mapping(uint256 => mapping(uint256 => uint256)) public epoch2committee;
+    mapping(uint256 => mapping(uint256 => uint256)) public epoch2committee; //epochRoots
     // ChainID => Epoch/Committee Number => Committee Start Block
     mapping(uint256 => mapping(uint256 => uint256)) public epoch2startblock;
     // ChainID => Epoch/Committee Number => Committee Height
@@ -180,8 +186,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
     
     // Add address to committee (NEXT_2) trie
-    function committeeAdd(uint256 chainID, uint256 stake, bytes memory _blsPubKey) external {
-        address addr = msg.sender;
+    function committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) public /* external */ {
+        //TODO segmentation/restriction: address addr = msg.sender;
         
         // TODO this should only happen during initialization
         CommitteeLeaves[chainID] = new uint256[](0);
@@ -284,4 +290,62 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return res;
     }
 */
+
+    function registerChain(
+        uint256 chainID,
+        address[] memory /* TODO calldata? */ stakedAddrs,
+        uint256 epochPeriod, //TODO this is committee duration?
+        uint256 freezeDuration, //TODO lastnlock is the epoch freeze period?
+        uint256 startBlockNumber //TODO should committees not start during the block of the transaction?
+    ) public {
+        require(startBlockNumber >= block.number, "Committee should begin during or after the current block.");
+        initCommittee(chainID, epochPeriod);
+    }
+    
+    function add(uint256 chainID, address addr) external {
+        addedAddrs[chainID].push(addr);
+    }
+
+    function remove(uint256 chainID, address addr) external {
+        removedAddrs[chainID].push(addr);
+    }
+    
+    function update(uint256 chainID) external /*internal*/ /* TODO onlySequencer */ {
+        uint256 epochEnd = 0;//TODO
+        uint256 freezeDuration = 0;//TODO
+        require(block.number > epochEnd - freezeDuration, "Block number is prior to committee freeze window.");
+        // TODO store updated_number
+        for (uint256 i = 0; i < addedAddrs[chainID].length; i++) {
+            committeeAdd(chainID, addedAddrs[chainID][i], 0 /* TODO */, "" /* TODO */);
+        }
+        for (uint256 i = 0; i < removedAddrs[chainID].length; i++) {
+            removeCommitteeAddr(chainID, removedAddrs[chainID][i]);
+        }
+        delete addedAddrs[chainID];
+        delete removedAddrs[chainID];
+    }
+    
+    function getEpochNumber(uint256 chainID, uint256 blockNumber) public returns (uint256) {
+        uint256 startBlockNumber = 0;//TODO
+        uint epochPeriod = 0;//TODO
+        uint256 epochNumber = (blockNumber - startBlockNumber) / epochPeriod;
+        return epochNumber;
+    }
+
+    function getCurrentCommittee(uint256 chainID, uint256 blockNumber) public returns (uint256) {
+        uint256 epochNumber = getEpochNumber(chainID, blockNumber) + 1;
+        return getCommittee(chainID, epochNumber);
+    }
+    
+    function getNextCommittee(uint256 chainID, uint256 blockNumber) public returns (uint256) {
+        uint256 epochNumber = getEpochNumber(chainID, blockNumber);
+        // if (blockNumber > updated_number && blockNumber < epochPeriod * (epoch_number + 1) {
+        // TODO what is this
+        // }
+        return getCommittee(chainID, epochNumber);
+    }
+    
+    function getCommittee(uint256 chainID, uint256 epochNumber) public returns (uint256) {
+        return epoch2committee[chainID][epochNumber];
+    }
 }
