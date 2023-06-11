@@ -15,6 +15,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     function owner() public view override(OwnableUpgradeable) returns (address) {
     	return OwnableUpgradeable.owner();
     }
+
+    struct Committee {
+        uint256 startBlock;
+        uint256 duration;
+        uint256 freezeDuration;
+    }
  
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
@@ -26,20 +32,36 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // ChainID => Address
     mapping(uint256 => address[]) addedAddrs;
     mapping(uint256 => address[]) removedAddrs;
+    
+    // ChainID => Committee
+    mapping(uint256 => Committee) Committees;
+    
+    //
+    
+    // ChainID => Committee Map Length
+    mapping(uint256 => uint256) public CommitteeMapLength;
+    // ChainID => Committee Leaf Hash
+    mapping(uint256 => uint256[]) public CommitteeMapKeys;
+    // ChainID => Committee Leaf Hash => Committee Leaf
+    mapping(uint256 => mapping(uint256 => CommitteeLeaf)) public CommitteeMap;
+    // ChainID => Merkle Nodes
+    mapping(uint256 => uint256[]) public CommitteeLeaves;
+    // ChainID => Committee Index (Current, Next, ...) => Committee Root
+    mapping(uint256 => mapping(uint256 => uint256)) public CommitteeRoot;
 
-    // ChainID => Start Block
-    mapping(uint256 => uint256) public COMMITTEE_START;
-    // ChainID => Committee Duration (Blocks)
-    mapping(uint256 => uint256) public COMMITTEE_DURATION;
+    // ChainID => Epoch/Committee Number => Committee Root
+    mapping(uint256 => mapping(uint256 => uint256)) public epoch2committee; //epochRoots
+    // ChainID => Epoch/Committee Number => Committee Height
+    mapping(uint256 => mapping(uint256 => uint256)) public epoch2height;
 
-    // Wrapper function for COMMITTEE_START - returns start block based on ChainID    
-    function getCommitteeStart(uint256 chainID) external view returns (uint256) {
-    	return COMMITTEE_START[chainID];
+    // Wrapper function for committeeStartBlock - returns start block based on ChainID    
+    function getCommitteeStart(uint256 chainID) public view returns (uint256) {
+    	return Committees[chainID].startBlock;
     }
 
     // Wrapper function for COMMITTEE_DURATION - returns duration in blocks based on ChainID    
-    function getCommitteeDuration(uint256 chainID) external view returns (uint256) {
-    	return COMMITTEE_DURATION[chainID];
+    function getCommitteeDuration(uint256 chainID) public view returns (uint256) {
+    	return Committees[chainID].duration;
     }
     
     // Constructor: Accepts poseidon contracts for 2, 3, and 4 elements
@@ -63,18 +85,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     );
     
     // Initialize new committee.  TODO only sequencer access for testnet.
-    function initCommittee(uint256 _chainID, uint256 _duration) public onlyOwner /* TODO onlySequencer */ {
-        require(COMMITTEE_START[_chainID] == 0, "Committee has already been initialized.");
+    function initCommittee(uint256 _chainID, uint256 _duration, uint256 freezeDuration) public onlyOwner /* TODO onlySequencer */ {
+        require(getCommitteeStart(_chainID) == 0, "Committee has already been initialized.");
         
-        COMMITTEE_START[_chainID] = block.number;
-        COMMITTEE_DURATION[_chainID] = _duration;
+        Committees[_chainID] = Committee(block.number, _duration, freezeDuration);
 
-//        epoch2startblock[chainID][COMMITTEE_CURRENT] = block.number;
-//        epoch2startblock[chainID][COMMITTEE_NEXT_1] = block.number + _duration;
-        epoch2startblock[_chainID][COMMITTEE_NEXT_2] = block.number + _duration * 2;
-        
-        EpochNumber[_chainID] = 0;
-        
         emit InitCommittee(_chainID, _duration);
     }
 
@@ -85,17 +100,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         bytes blsPubKey;
     }
     
-    // ChainID => Committee Map Length
-    mapping(uint256 => uint256) public CommitteeMapLength;
-    // ChainID => Committee Leaf Hash
-    mapping(uint256 => uint256[]) public CommitteeMapKeys;
-    // ChainID => Committee Leaf Hash => Committee Leaf
-    mapping(uint256 => mapping(uint256 => CommitteeLeaf)) public CommitteeMap;
-    // ChainID => Merkle Nodes
-    mapping(uint256 => uint256[]) public CommitteeLeaves;
-    // ChainID => Committee Index (Current, Next, ...) => Committee Root
-    mapping(uint256 => mapping(uint256 => uint256)) public CommitteeRoot;
-
     // Constructs and returns new CommitteeLeaf instance
     function newCommitteeLeaf(address addr, uint256 stake, bytes memory blsPubKey) internal returns (CommitteeLeaf memory) {
         return CommitteeLeaf(addr,stake,blsPubKey);
@@ -125,15 +129,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 	}
     }
     
-    // ChainID => Epoch/Committee Number
-    mapping(uint256 => uint256) public EpochNumber;
-    // ChainID => Epoch/Committee Number => Committee Root
-    mapping(uint256 => mapping(uint256 => uint256)) public epoch2committee; //epochRoots
-    // ChainID => Epoch/Committee Number => Committee Start Block
-    mapping(uint256 => mapping(uint256 => uint256)) public epoch2startblock;
-    // ChainID => Epoch/Committee Number => Committee Height
-    mapping(uint256 => mapping(uint256 => uint256)) public epoch2height;
-
     // Fired on successful rotation of committee
     event RotateCommittee(
         uint256 chainID,
@@ -144,22 +139,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     // Rotate committees: CURRENT retired, NEXT_1 becomes CURRENT, NEXT_2 becomes NEXT_1
     function rotateCommittee(uint256 chainID) external {
-        require(block.number > COMMITTEE_START[chainID] + COMMITTEE_DURATION[chainID], "Block number does not exceed end block of current committee");
+        require(block.number > getCommitteeStart(chainID) + getCommitteeDuration(chainID), "Block number does not exceed end block of current committee");
+        uint256 epochNumber = getEpochNumber(chainID, block.number); // TODO
         compCommitteeRoot(chainID);
         
-        COMMITTEE_START[chainID] = block.number;
+        Committees[chainID].startBlock = block.number;
         
         CommitteeRoot[chainID][COMMITTEE_CURRENT] = CommitteeRoot[chainID][COMMITTEE_NEXT_1];
         CommitteeRoot[chainID][COMMITTEE_NEXT_1] = CommitteeRoot[chainID][COMMITTEE_NEXT_2];
         
-        epoch2committee[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_2] = CommitteeRoot[chainID][COMMITTEE_NEXT_2];
-        epoch2startblock[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_2] = epoch2startblock[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_1];
-        epoch2height[chainID][EpochNumber[chainID] + COMMITTEE_NEXT_2] = CommitteeMapLength[chainID];
+        epoch2committee[chainID][epochNumber + COMMITTEE_NEXT_2] = CommitteeRoot[chainID][COMMITTEE_NEXT_2];
+        epoch2height[chainID][epochNumber + COMMITTEE_NEXT_2] = CommitteeMapLength[chainID];
         
         CommitteeRoot[chainID][COMMITTEE_NEXT_2] = uint256(0);
-        
-        EpochNumber[chainID]++;
-
         
         emit RotateCommittee(
             chainID,
@@ -295,11 +287,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 chainID,
         address[] memory /* TODO calldata? */ stakedAddrs,
         uint256 epochPeriod, //TODO this is committee duration?
-        uint256 freezeDuration, //TODO lastnlock is the epoch freeze period?
-        uint256 startBlockNumber //TODO should committees not start during the block of the transaction?
+        uint256 freezeDuration //TODO lastnlock is the epoch freeze period?
     ) public {
-        require(startBlockNumber >= block.number, "Committee should begin during or after the current block.");
-        initCommittee(chainID, epochPeriod);
+        initCommittee(chainID, epochPeriod, freezeDuration);
     }
     
     function add(uint256 chainID, address addr) external {
