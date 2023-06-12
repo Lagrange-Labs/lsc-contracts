@@ -16,6 +16,10 @@ contract LagrangeService is Ownable, Initializable {
     function addSequencer(address seqAddr) public onlyOwner {
         sequencers[seqAddr] = true;
     }
+
+    function removeSequencer(address seqAddr) public onlyOwner {
+        sequencers[seqAddr] = false;
+    }
     
     modifier onlySequencer() {
         require(sequencers[msg.sender] == true, "Only sequencer nodes can call this function.");
@@ -28,16 +32,6 @@ contract LagrangeService is Ownable, Initializable {
     
     ILagrangeCommittee public LGRCommittee;
     
-    /*
-    mapping(address => bool) sequencerWhitelist;    
-    function addSequencer(address seqAddr) onlyOwner {
-        sequencerWhitelist[seqAddr] = true;
-    }
-    function removeSequencer(address seqAddr) onlyOwner {
-        sequencerWhitelist[seqAddr] = false;
-    }
-    */
-
 /*
     function initialize(
       ILagrangeCommittee _lgrCommittee//,
@@ -152,7 +146,7 @@ contract LagrangeService is Ownable, Initializable {
             _freezeOperator(evidence.operator,evidence.chainID);
         }
 
-        //_freezeOperator(evidence.operator,evidence.chainID); // TODO what is this for?
+        //_freezeOperator(evidence.operator,evidence.chainID); // TODO what is this for (no condition)?
 
         emit UploadEvidence(
             evidence.operator,
