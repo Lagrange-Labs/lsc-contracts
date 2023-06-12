@@ -18,7 +18,6 @@ contract LagrangeServiceManager is Ownable, Initializable, IServiceManager {
         slasher = _slasher;
     }
     
-/////
     uint32 public taskNumber = 0;
 
     // slash the given operator
@@ -62,5 +61,4 @@ contract LagrangeServiceManager is Ownable, Initializable, IServiceManager {
     function owner() public view override(Ownable, IServiceManager) returns (address) {
         return Ownable.owner();
     }
-    /////
 }
