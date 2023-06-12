@@ -102,7 +102,7 @@ contract LagrangeService is Ownable, Initializable {
     }
 
     /// Add the operator to the service.
-    function register(uint256 chainID, uint256 stake, bytes memory _blsPubKey, uint32 serveUntilBlock) external onlyOwner {
+    function register(uint256 chainID, uint256 stake, bytes memory _blsPubKey, uint32 serveUntilBlock) external {
         LGRServiceMgr.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         
 //        ([]IStrategy memory strats, uint256[] shares) = ELServiceMgr.depositor(msg.sender);
@@ -110,13 +110,12 @@ contract LagrangeService is Ownable, Initializable {
         
         operators[msg.sender] = OperatorStatus({
             amount: stake,//amount,
-            serveUntilBlock: serveUntilBlock, // TODO does this refer to the end of the committee period?  if so, we can infer this from committee storage data rather than using calldata.
-            slashed: false //TODO block against slashed nodes re-registering
+            serveUntilBlock: serveUntilBlock,
+            slashed: false
         });
 
-	LGRCommittee.BLSAssoc(msg.sender, _blsPubKey);
-	LGRCommittee.add(chainID, msg.sender);
-        //LGRCommittee.committeeAdd(chainID, msg.sender, stake, _blsPubKey);
+	LGRCommittee.BLSAssoc(_blsPubKey);
+	LGRCommittee.add(chainID);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
@@ -185,7 +184,7 @@ contract LagrangeService is Ownable, Initializable {
     }
 
     /// slash the given operator
-    function _freezeOperator(address operator, uint256 chainID) internal {
+    function _freezeOperator(address operator, uint256 chainID) internal onlySequencer {
         LGRServiceMgr.freezeOperator(operator);
         operators[operator].slashed = true;
         LGRCommittee.remove(chainID, operator);

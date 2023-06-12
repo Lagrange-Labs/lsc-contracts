@@ -285,19 +285,23 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         initCommittee(chainID, epochPeriod, freezeDuration);
         for (uint256 i = 0; i < stakedAddrs.length; i++) {
             // TODO protect against redundancy
-            add(chainID, stakedAddrs[i]);
+            addAddr(chainID, stakedAddrs[i]);
         }
     }
     
-    function BLSAssoc(address addr, bytes memory blsPubKey) public {
-        addr2bls[addr] = blsPubKey;
+    function BLSAssoc(bytes memory blsPubKey) public {
+        addr2bls[msg.sender] = blsPubKey;
     }
     
-    function add(uint256 chainID, address addr) public {
+    function add(uint256 chainID) public {
+        addedAddrs[chainID].push(msg.sender);
+    }
+
+    function addAddr(uint256 chainID, address addr) public onlySequencer {
         addedAddrs[chainID].push(addr);
     }
 
-    function remove(uint256 chainID, address addr) external {
+    function remove(uint256 chainID, address addr) public onlySequencer {
         removedAddrs[chainID].push(addr);
     }
 
@@ -308,7 +312,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         require(block.number > epochEnd - freezeDuration, "Block number is prior to committee freeze window.");
         // TODO store updated_number
         for (uint256 i = 0; i < addedAddrs[chainID].length; i++) {
-            committeeAdd(chainID, addedAddrs[chainID][i], 0 /* TODO */, "" /* TODO */);
+            committeeAdd(chainID, addedAddrs[chainID][i], 0 /* TODO */, addr2bls[msg.sender]);
         }
         for (uint256 i = 0; i < removedAddrs[chainID].length; i++) {
             removeCommitteeAddr(chainID, removedAddrs[chainID][i]);
