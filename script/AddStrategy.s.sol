@@ -9,7 +9,6 @@ import {DelegationManager} from "eigenlayer-contracts/core/DelegationManager.sol
 
 contract AddStrategy is Script, Test {
     string public deployDataPath = string(bytes("lib/eigenlayer-contracts/script/output/M1_deployment_data.json"));
-    string public procDataPath = string(bytes("util/output/eigenlayer.json"));
     
     address WETHStractegyAddress;
 
@@ -17,9 +16,8 @@ contract AddStrategy is Script, Test {
         vm.startBroadcast(msg.sender);
 
         string memory deployData = vm.readFile(deployDataPath);
-        string memory procData = vm.readFile(procDataPath);
 
-        WETHStractegyAddress = stdJson.readAddress(procData, ".WETH");
+        WETHStractegyAddress = stdJson.readAddress(deployData, ".addresses.strategies.['Wrapped Ether']");
         StrategyManager strategyManager = StrategyManager(stdJson.readAddress(deployData, ".addresses.strategyManager"));
 
         IStrategy WETHStrategy = IStrategy(WETHStractegyAddress);

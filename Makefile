@@ -15,9 +15,6 @@ init-accounts:
 deploy-eigenlayer:
 	cd lib/eigenlayer-contracts && forge script script/M1_Deploy.s.sol:Deployer_M1 --rpc-url http://localhost:8545  --private-key $(PRIVATE_KEY) --broadcast -vvvv
 
-eigenlayer-addresses:
-	node util/extract_eigenlayer_addresses.js
-
 export-abi:
 	node util/export_abis.js
 
@@ -36,7 +33,7 @@ deploy-poseidon:
 deploy-lagrange:
 	forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
-.PHONY: deploy-weth9 deploy-eigenlayer eigenlayer-addresses add-strategy register-operator deploy-poseidon deploy-lagrange
+.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange
 
 # Build docker image
 

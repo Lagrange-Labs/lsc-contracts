@@ -29,12 +29,6 @@ contract Deploy is Script, Test {
                 "util/output/poseidonAddresses.json"
             )
         );
-    string public procDataPath =
-        string(
-            bytes(
-                "util/output/eigenlayer.json"
-            )
-        );
     string public serviceDataPath =
         string(
             bytes(
@@ -60,7 +54,6 @@ contract Deploy is Script, Test {
 
     function deployLagrangeService(LagrangeCommittee lagrangeCommittee) public {
         string memory deployData = vm.readFile(deployDataPath);
-        string memory procData = vm.readFile(procDataPath);
         string memory serviceData = vm.readFile(serviceDataPath);
 
 	address[] memory sequencerAddresses = stdJson.readAddressArray(serviceData, ".SequencerAddresses");
@@ -68,7 +61,7 @@ contract Deploy is Script, Test {
 	uint256 arbID = stdJson.readUint(serviceData, ".ChainIDs.arbitrum");
 	uint256 baseID = stdJson.readUint(serviceData, ".ChainIDs.base");
 	
-        address WETHStractegyAddress = stdJson.readAddress(procData, ".WETH");
+        address WETHStractegyAddress = stdJson.readAddress(deployData, ".addresses.strategies.['Wrapped Ether']");
         IStrategy WETHStrategy = IStrategy(WETHStractegyAddress);
 
         StrategyManager strategyManager = StrategyManager(stdJson.readAddress(deployData, ".addresses.strategyManager"));
