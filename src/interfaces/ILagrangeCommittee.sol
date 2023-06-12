@@ -13,14 +13,16 @@ interface ILagrangeCommittee {
     
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool);
 
-    function getCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32);
+    function getCommitteeRoot(uint256 chainID, uint256 _epoch) external returns (bytes32);
 
-    function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) external view returns (bytes32);
+    function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) external returns (bytes32);
 ////
     function add(uint256 chainID, address addr) external;
 
     function remove(uint256 chainID, address addr) external;
 
     function update(uint256 chainID) external;
+
+    function BLSAssoc(address addr, bytes memory blsPubKey) external;
 }
 

@@ -11,6 +11,17 @@ import "../interfaces/ILagrangeCommittee.sol";
 import "../protocol/LagrangeServiceManager.sol";
 
 contract LagrangeService is Ownable, Initializable {
+    mapping(address => bool) sequencers;
+    
+    function addSequencer(address seqAddr) public onlyOwner {
+        sequencers[seqAddr] = true;
+    }
+    
+    modifier onlySequencer() {
+        require(sequencers[msg.sender] == true, "Only sequencer nodes can call this function.");
+        _;
+    }
+
     IServiceManager public LGRServiceMgr;
     IStrategyManager public StrategyMgr;
     IStrategy public WETHStrategy;
@@ -103,13 +114,15 @@ contract LagrangeService is Ownable, Initializable {
             slashed: false //TODO block against slashed nodes re-registering
         });
 
-        LGRCommittee.committeeAdd(chainID, msg.sender, stake, _blsPubKey);
+	LGRCommittee.BLSAssoc(msg.sender, _blsPubKey);
+	LGRCommittee.add(chainID, msg.sender);
+        //LGRCommittee.committeeAdd(chainID, msg.sender, stake, _blsPubKey);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
 
     /// upload the evidence to punish the operator.
-    function uploadEvidence(Evidence calldata evidence) external /*onlySequencer TODO*/ {
+    function uploadEvidence(Evidence calldata evidence) external onlySequencer {
         // check the operator is registered or not
         require(
             operators[evidence.operator].serveUntilBlock > 0,
@@ -155,17 +168,17 @@ contract LagrangeService is Ownable, Initializable {
         );
     }
     
-    function _checkBlockHash(bytes32 correctBlockHash, bytes32 blockHash, uint256 blockNumber, bytes memory rawBlockHeader, uint256 chainID) internal view returns (bool) {
+    function _checkBlockHash(bytes32 correctBlockHash, bytes32 blockHash, uint256 blockNumber, bytes memory rawBlockHeader, uint256 chainID) internal returns (bool) {
         return LGRCommittee.verifyBlockNumber(blockNumber, rawBlockHeader, correctBlockHash, chainID) && blockHash == correctBlockHash;
     }
     
-    function _checkCurrentCommitteeRoot(bytes32 correctCurrentCommitteeRoot, bytes32 currentCommitteeRoot, uint256 epochNumber, uint256 chainID) internal view returns (bool) {
+    function _checkCurrentCommitteeRoot(bytes32 correctCurrentCommitteeRoot, bytes32 currentCommitteeRoot, uint256 epochNumber, uint256 chainID) internal returns (bool) {
         bytes32 realCurrentCommitteeRoot = LGRCommittee.getCommitteeRoot(chainID, epochNumber);
         require(correctCurrentCommitteeRoot == realCurrentCommitteeRoot, "Reference committee roots do not match.");
         return currentCommitteeRoot == realCurrentCommitteeRoot;
     }
 
-    function _checkNextCommitteeRoot(bytes32 correctNextCommitteeRoot, bytes32 nextCommitteeRoot, uint256 epochNumber, uint256 chainID) internal view returns (bool) {
+    function _checkNextCommitteeRoot(bytes32 correctNextCommitteeRoot, bytes32 nextCommitteeRoot, uint256 epochNumber, uint256 chainID) internal returns (bool) {
         bytes32 realNextCommitteeRoot = LGRCommittee.getNextCommitteeRoot(chainID, epochNumber + 1);
         require(correctNextCommitteeRoot == realNextCommitteeRoot, "Reference committee roots do not match.");
         return nextCommitteeRoot == realNextCommitteeRoot;

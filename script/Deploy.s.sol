@@ -35,6 +35,12 @@ contract Deploy is Script, Test {
                 "util/output/eigenlayer.json"
             )
         );
+    string public serviceDataPath =
+        string(
+            bytes(
+                "config/LagrangeService.json"
+            )
+        );
         
     address WETHStrategyAddress;
     address IServiceManagerAddress;
@@ -55,10 +61,14 @@ contract Deploy is Script, Test {
     function deployLagrangeService(LagrangeCommittee lagrangeCommittee) public {
         string memory deployData = vm.readFile(deployDataPath);
         string memory procData = vm.readFile(procDataPath);
-        address WETHStractegyAddress = stdJson.readAddress(
-            procData,
-            ".WETH"
-        );
+        string memory serviceData = vm.readFile(serviceDataPath);
+
+	address[] memory sequencerAddresses = stdJson.readAddressArray(serviceData, ".SequencerAddresses");
+	uint256 optID = stdJson.readUint(serviceData, ".ChainIDs.optimism");
+	uint256 arbID = stdJson.readUint(serviceData, ".ChainIDs.arbitrum");
+	uint256 baseID = stdJson.readUint(serviceData, ".ChainIDs.base");
+	
+        address WETHStractegyAddress = stdJson.readAddress(procData, ".WETH");
         IStrategy WETHStrategy = IStrategy(WETHStractegyAddress);
 
         StrategyManager strategyManager = StrategyManager(stdJson.readAddress(deployData, ".addresses.strategyManager"));
@@ -81,7 +91,14 @@ contract Deploy is Script, Test {
 //        slasher.optIntoSlashing(address(service));
 
         // register the service
-//        service.register(type(uint32).max);        
+	for(uint32 i = 0; i < sequencerAddresses.length; i++) {
+	    service.addSequencer(sequencerAddresses[i]);
+	    /*
+            service.register(optID, 1, "", 100800);
+            service.register(arbID, 1, "", 100800);
+            service.register(baseID, 1, "", 100800);
+	    */
+	}
     }
 
     function run() public {
