@@ -92,7 +92,13 @@ forge install
     make register-operator 
     ```
     
-3. Deploy the `Lagrange` smart contracts
+3. Deploy the `Poseidon` smart contracts
+
+    ```bash
+    make deploy-poseidon
+    ```
+
+4. Deploy the `Lagrange` smart contracts
 
     ```bash
     make deploy-lagrange
