@@ -10,7 +10,9 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../protocol/LagrangeServiceManager.sol";
 
-contract LagrangeService is Ownable, Initializable {
+import {EvidenceVerifier} from "./library/EvidenceVerifier.sol";
+
+contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
     mapping(address => bool) sequencers;
     
     function addSequencer(address seqAddr) public onlyOwner {
@@ -128,7 +130,10 @@ contract LagrangeService is Ownable, Initializable {
             "The operator is slashed"
         );
 
-        // require(_checkCommitSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.blockNumber, evidence.chainID, evidence.commitSignature), "The commit signature is not correct");
+        require(
+            checkCommitSignature(evidence),
+            "The commit signature is not correct"
+        );
 
         // if (!_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
         //     _freezeOperator(evidence.operator);
