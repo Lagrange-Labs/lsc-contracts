@@ -24,12 +24,18 @@ async function getProvider() {
     const currentProvider = new ethers.providers.JsonRpcProvider('http://0.0.0.0:8545');
     return currentProvider;
 }
-async function getLagrangeCommittee(lagrangeService) {
+async function getSigner() {
     const currentProvider = await getProvider();
-    const signerNode = await currentProvider.getSigner();
-    
     ecdsapk = "3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c";
     const wallet = new ethers.Wallet(ecdsapk, currentProvider);
+    return wallet;
+}
+
+async function getLagrangeCommittee(lagrangeService) {
+    const currentProvider = await getProvider();
+//    const signerNode = await currentProvider.getSigner();
+    
+    const signerNode = getSigner();
     
     const lgrcAddr = await lagrangeService.LGRCommittee();
     const lgrcABI = await fs.readFileSync(path.join(__dirname,"../out/LagrangeCommittee.sol/LagrangeCommittee.json"),"utf-8");
@@ -41,7 +47,7 @@ async function getLagrangeCommittee(lagrangeService) {
 
 async function getLagrangeService(redeploy) {
     const currentProvider = await getProvider();
-    const signerNode = await currentProvider.getSigner();
+    const signerNode = getSigner();
     
     if(redeploy) {
 	console.log("Redeploying...");
@@ -211,60 +217,8 @@ async function testVerifyStateRoot(nodeStaking) {
     return true;
 }
 
-async function testVerifyBlockNumber(LGRCommittee) {
-    // invalid block hash
-    try {
-        res = await LGRCommittee.verifyBlockNumber(33,"0xf9025fa01720898ba6aaccc2ed9780843286151172f10149ecad6b89407d23edcd6727ffa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0ad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3a0517785f3ba91b4a7fdee87ca2f6d3d2f153a179e45cd9db3eade3b611c8b22d8a0741e015c72ad7dc3caf0c5db58f17c6068dd5a002a7dd4e5f0a29a9acdb0f87bb901000000000000000000000000000000000040000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000200000100000000040000000000000000000000000002000000000000010000080000000080000000000000000000000040000000000000000000000000000000000000000000008000000000000080000000000000008000000000000000040000000000000000002000000000000000000000012000000020000000000004000000000000240000000000000000002000000000000000000001000000000000000000000000000000000000000000000002218401bb3d8f830d1eca84645ce923b861d883010b00846765746888676f312e31392e32856c696e7578000000000000008d10b98fd3dc1d3ba76285b0c9c9e6e9d4eb3105499c7f8e926a09d2e44a7cc94120c0e804711da820f4e88e15c69d6fc8b5ba4bbc3ae127d1d9826f82dce6f200a000000000000000000000000000000000000000000000000000000000000000008800000000000000008403945c3a","0xad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3",22062);
-        assert.fail();
-    } catch(error) {
-    }
-    // invalid block number
-    try {
-        res = await LGRCommittee.verifyBlockNumber(32,"0xf9025fa01720898ba6aaccc2ed9780843286151172f10149ecad6b89407d23edcd6727ffa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0ad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3a0517785f3ba91b4a7fdee87ca2f6d3d2f153a179e45cd9db3eade3b611c8b22d8a0741e015c72ad7dc3caf0c5db58f17c6068dd5a002a7dd4e5f0a29a9acdb0f87bb901000000000000000000000000000000000040000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000200000100000000040000000000000000000000000002000000000000010000080000000080000000000000000000000040000000000000000000000000000000000000000000008000000000000080000000000000008000000000000000040000000000000000002000000000000000000000012000000020000000000004000000000000240000000000000000002000000000000000000001000000000000000000000000000000000000000000000002218401bb3d8f830d1eca84645ce923b861d883010b00846765746888676f312e31392e32856c696e7578000000000000008d10b98fd3dc1d3ba76285b0c9c9e6e9d4eb3105499c7f8e926a09d2e44a7cc94120c0e804711da820f4e88e15c69d6fc8b5ba4bbc3ae127d1d9826f82dce6f200a000000000000000000000000000000000000000000000000000000000000000008800000000000000008403945c3a","0xecd60d0964cddddba478aa5d06d166d17417e16d9edb3c82bb5d343fde48c16f",22062);
-        assert.equal(res,false);
-    } catch(error) {
-    }
-    // valid block number
-    try {
-        res = await LGRCommittee.verifyBlockNumber(33,"0xf9025fa01720898ba6aaccc2ed9780843286151172f10149ecad6b89407d23edcd6727ffa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0ad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3a0517785f3ba91b4a7fdee87ca2f6d3d2f153a179e45cd9db3eade3b611c8b22d8a0741e015c72ad7dc3caf0c5db58f17c6068dd5a002a7dd4e5f0a29a9acdb0f87bb901000000000000000000000000000000000040000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000200000100000000040000000000000000000000000002000000000000010000080000000080000000000000000000000040000000000000000000000000000000000000000000008000000000000080000000000000008000000000000000040000000000000000002000000000000000000000012000000020000000000004000000000000240000000000000000002000000000000000000001000000000000000000000000000000000000000000000002218401bb3d8f830d1eca84645ce923b861d883010b00846765746888676f312e31392e32856c696e7578000000000000008d10b98fd3dc1d3ba76285b0c9c9e6e9d4eb3105499c7f8e926a09d2e44a7cc94120c0e804711da820f4e88e15c69d6fc8b5ba4bbc3ae127d1d9826f82dce6f200a000000000000000000000000000000000000000000000000000000000000000008800000000000000008403945c3a","0xecd60d0964cddddba478aa5d06d166d17417e16d9edb3c82bb5d343fde48c16f",22062);
-    } catch(error) {
-        assert.fail();
-    }
-    return true;
-}
-
 async function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-async function testInitCommittee(lgrc) {
-    const provider = await getProvider();
-
-    extChainID = await Math.ceil(Math.random() * 1000000);
-    extDuration = 5;
-    await lgrc.initCommittee(extChainID, extDuration);
-    await delay(3000);
-
-    cs = await lgrc.COMMITTEE_START(extChainID);
-    cd = await lgrc.COMMITTEE_DURATION(extChainID);
-    en = await lgrc.EpochNumber(extChainID);
-
-    //console.log(cs.toNumber(),cd.toNumber(),en.toNumber());
-
-    const blockNumber = await provider.getBlockNumber();
-    //console.log(blockNumber);
-
-    csEquiv = cs.toNumber() < blockNumber && cs.toNumber() > 0;
-    cdEquiv = cd.toNumber() == 5;
-    enEquiv = en.toNumber() == 0;
-    // TODO account for refactoring and related variable changes here and elsewhere
-    assert.ok(csEquiv);
-    assert.ok(cdEquiv);
-    assert.ok(enEquiv);
-    if(csEquiv && cdEquiv && enEquiv) {
-      return extChainID;
-    } else {
-      return false;
-    }
-}
 /*
 async function testRotateCommittee(lgrc) {
     console.log('testRotateCommittee');
@@ -353,60 +307,95 @@ async function testCommitteeRotate(lgrc,cChainID) {
     }
     return pass;
 }
-async function testOwner(lagrangeService) {
-    const owner = await lagrangeService.owner();
-    return owner == "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9";
-}
-async function testSmokeLagrangeService(lagrangeService) {
-    try {
-        lc = await lagrangeService.LGRCommittee();
-        lsm = await lagrangeService.LGRServiceMgr();
-    } catch (error) {
-        return false;
-    }
-    return true;
-}
-async function testSmokeLagrangeCommittee(lc) {
-    try {
-        hash = await lc.hash2Elements(1,2);
-        if (hash.toString() != "7853200120776062878684798364095072458815029376092732009249414926327459813530") {
-            return false;
-        }
-    } catch (error) {
-        return false;
-    }
-    return true;
-}
-async function main() {
-    describe('Tests', function() {
-        describe('#add()', function() {
-	    it('should add two numbers correctly', function() {
-	        const num1 = 5;
-	        const num2 = 3;
-	        const expectedSum = 8;
 
-	        assert.ok(num1+num2 == expectedSum);
-	    });
-        });
-    });
+
+describe('Lagrange Service Smoke Tests', async function() {
     const redeploy = process.argv.includes('--redeploy');
     const lagrangeService = await getLagrangeService(redeploy);
-    //console.log(assert);
-    assert.ok(await testSmokeLagrangeService(lagrangeService), "testSmokeLagrangeService");
+    const provider = await getProvider();
+    describe('Lagrange Service Contract', function() {
+        it('LGRCommittee address associated', async function() {
+            lc = await lagrangeService.LGRCommittee();
+            assert.ok(lc.length > 0);
+        });
+        it('LGRServiceManager address associated', async function() {
+            lsm = await lagrangeService.LGRServiceMgr();
+            assert.ok(lsm.length > 0);
+        });
+        it('Lagrange Service Owner', async function() {
+            const owner = await lagrangeService.owner();
+            assert.equal(owner, "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
+        });
+    });
     const lgrc = await getLagrangeCommittee(lagrangeService);
-    assert.ok(await testSmokeLagrangeCommittee(lgrc), "testSmokeLagrangeCommittee");
-    
-    assert.ok(await testOwner(lagrangeService), "testOwner(lagrangeService)");
-    assert.ok(await testOwner(lgrc), "testOwner(lgrc)");
+    describe('Lagrange Committee Smoke Tests', async function() {
+        it('Poseidon Hash Wrapper', async function() {
+            hash = await lgrc.hash2Elements(1,2);
+            assert.equal(hash.toString(),"7853200120776062878684798364095072458815029376092732009249414926327459813530");
+        });
+        it('Lagrange Committee Owner', async function() {
+            const owner = await lgrc.owner();
+            assert.equal(owner, "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
+        });
+    });
+
+    describe('Lagrange Committee Block Verification', async function() {
+        it('Verify Block Header (Invalid Block Hash)', async function() {
+          try {
+              await lgrc.verifyBlockNumber(33,"0xf9025fa01720898ba6aaccc2ed9780843286151172f10149ecad6b89407d23edcd6727ffa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0ad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3a0517785f3ba91b4a7fdee87ca2f6d3d2f153a179e45cd9db3eade3b611c8b22d8a0741e015c72ad7dc3caf0c5db58f17c6068dd5a002a7dd4e5f0a29a9acdb0f87bb901000000000000000000000000000000000040000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000200000100000000040000000000000000000000000002000000000000010000080000000080000000000000000000000040000000000000000000000000000000000000000000008000000000000080000000000000008000000000000000040000000000000000002000000000000000000000012000000020000000000004000000000000240000000000000000002000000000000000000001000000000000000000000000000000000000000000000002218401bb3d8f830d1eca84645ce923b861d883010b00846765746888676f312e31392e32856c696e7578000000000000008d10b98fd3dc1d3ba76285b0c9c9e6e9d4eb3105499c7f8e926a09d2e44a7cc94120c0e804711da820f4e88e15c69d6fc8b5ba4bbc3ae127d1d9826f82dce6f200a000000000000000000000000000000000000000000000000000000000000000008800000000000000008403945c3a","0xad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3",22062);
+              assert.fail();
+          } catch (error) {
+          }
+        });
+        it('Verify Block Header (Invalid Block Number)', async function() {
+          try {
+              res = await lgrc.verifyBlockNumber(32,"0xf9025fa01720898ba6aaccc2ed9780843286151172f10149ecad6b89407d23edcd6727ffa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0ad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3a0517785f3ba91b4a7fdee87ca2f6d3d2f153a179e45cd9db3eade3b611c8b22d8a0741e015c72ad7dc3caf0c5db58f17c6068dd5a002a7dd4e5f0a29a9acdb0f87bb901000000000000000000000000000000000040000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000200000100000000040000000000000000000000000002000000000000010000080000000080000000000000000000000040000000000000000000000000000000000000000000008000000000000080000000000000008000000000000000040000000000000000002000000000000000000000012000000020000000000004000000000000240000000000000000002000000000000000000001000000000000000000000000000000000000000000000002218401bb3d8f830d1eca84645ce923b861d883010b00846765746888676f312e31392e32856c696e7578000000000000008d10b98fd3dc1d3ba76285b0c9c9e6e9d4eb3105499c7f8e926a09d2e44a7cc94120c0e804711da820f4e88e15c69d6fc8b5ba4bbc3ae127d1d9826f82dce6f200a000000000000000000000000000000000000000000000000000000000000000008800000000000000008403945c3a","0xecd60d0964cddddba478aa5d06d166d17417e16d9edb3c82bb5d343fde48c16f",22062);
+              assert.equal(res,false);
+          } catch (error) {
+          }
+        });
+        it('Verify Block Header (Valid Block Number)', async function() {
+          try {
+              res = await lgrc.verifyBlockNumber(33,"0xf9025fa01720898ba6aaccc2ed9780843286151172f10149ecad6b89407d23edcd6727ffa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0ad683f1c4d79ea6298b09b31892b4de88416454013c54d405f2d9dcade2bf2a3a0517785f3ba91b4a7fdee87ca2f6d3d2f153a179e45cd9db3eade3b611c8b22d8a0741e015c72ad7dc3caf0c5db58f17c6068dd5a002a7dd4e5f0a29a9acdb0f87bb901000000000000000000000000000000000040000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000200000100000000040000000000000000000000000002000000000000010000080000000080000000000000000000000040000000000000000000000000000000000000000000008000000000000080000000000000008000000000000000040000000000000000002000000000000000000000012000000020000000000004000000000000240000000000000000002000000000000000000001000000000000000000000000000000000000000000000002218401bb3d8f830d1eca84645ce923b861d883010b00846765746888676f312e31392e32856c696e7578000000000000008d10b98fd3dc1d3ba76285b0c9c9e6e9d4eb3105499c7f8e926a09d2e44a7cc94120c0e804711da820f4e88e15c69d6fc8b5ba4bbc3ae127d1d9826f82dce6f200a000000000000000000000000000000000000000000000000000000000000000008800000000000000008403945c3a","0xecd60d0964cddddba478aa5d06d166d17417e16d9edb3c82bb5d343fde48c16f",22062);
+              assert.equal(res,true);
+          } catch (error) {
+              assert.fail();
+          }
+        });
+    });
+
+    const extChainID = await Math.ceil(Math.random() * 1000000);
+    const extDuration = 5;
+    const freezeDuration = 2048;
+    describe('Lagrange Committee', async function() {
+        it('Initialize Committee', async function() {
+            await lgrc.initCommittee(extChainID, extDuration, freezeDuration);
+            await delay(3000);
+            cs = await lgrc.COMMITTEE_START(extChainID);
+            cd = await lgrc.COMMITTEE_DURATION(extChainID);
+            en = await lgrc.EpochNumber(extChainID);
+            const blockNumber = await provider.getBlockNumber();
+            csEquiv = cs.toNumber() < blockNumber && cs.toNumber() > 0;
+            cdEquiv = cd.toNumber() == 5;
+            enEquiv = en.toNumber() == 0;
+            // TODO account for refactoring and related variable changes here and elsewhere
+            assert.ok(csEquiv);
+            assert.ok(cdEquiv);
+            assert.ok(enEquiv);
+        });
+    });
+});
+
+/*
+async function main() {
+
 //    console.log(await testVerifyStateRoot(lagrangeService));
-    assert.ok(await testVerifyBlockNumber(lgrc), "testVerifyBlockNumber");
-    cChainID = await testInitCommittee(lgrc);
-    assert.ok(cChainID != false);
 //    console.log("Committee Chain ID:",cChainID);
     assert.ok(await testCommitteeAdd(lgrc,cChainID), "testCommitteeAdd");
     assert.ok(await testCommitteeRotate(lgrc,cChainID), "testCommitteeRotate");
 //    console.log(await testDefaultFreeze(lagrangeService));
 //    console.log(await testAddStakeIdent(lagrangeService));
+}
 }
 
 main()
@@ -415,4 +404,5 @@ main()
         console.error(error);
         process.exit(1);
     });
+*/
 
