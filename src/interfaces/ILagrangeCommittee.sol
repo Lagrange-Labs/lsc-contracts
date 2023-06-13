@@ -16,7 +16,7 @@ interface ILagrangeCommittee {
     function getCommitteeRoot(uint256 chainID, uint256 _epoch) external returns (bytes32);
 
     function getNextCommitteeRoot(uint256 chainID, uint256 _epoch) external returns (bytes32);
-////
+
     function add(uint256 chainID) external;
     
     function addAddr(uint256 chainID, address addr) external;
@@ -26,5 +26,7 @@ interface ILagrangeCommittee {
     function update(uint256 chainID) external;
 
     function BLSAssoc(bytes memory blsPubKey) external;
+
+    function addSequencer(address seqAddr) external;
 }
 

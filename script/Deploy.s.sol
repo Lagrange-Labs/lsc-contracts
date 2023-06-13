@@ -86,6 +86,7 @@ contract Deploy is Script, Test {
         // register the service
 	for(uint32 i = 0; i < sequencerAddresses.length; i++) {
 	    service.addSequencer(sequencerAddresses[i]);
+            lagrangeCommittee.addSequencer(sequencerAddresses[i]);
 	    /*
             service.register(optID, 1, "", 100800);
             service.register(arbID, 1, "", 100800);
