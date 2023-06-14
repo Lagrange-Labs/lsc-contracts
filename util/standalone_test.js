@@ -43,6 +43,26 @@ async function getLagrangeCommittee(lagrangeService) {
     return lgrc;
 }
 
+async function getWETH9() {
+    const currentProvider = await getProvider();
+    const signerNode = await getSigner();
+	deployFile = await fs.readFileSync(path.join(__dirname,"../broadcast/DeployWETH9.s.sol/1337/run-latest.json"));
+	deployJson = await JSON.parse(deployFile);
+	deployTxns = deployJson.transactions;
+        w9Addr = null;
+	for(i = 0; i < deployTxns.length; i++) {
+	    if(deployTxns[i].contractName == "WETH9") {
+		w9Addr = deployTxns[i].contractAddress;
+	    }
+	}
+	const w9ABI = await fs.readFileSync(path.join(__dirname,"../out/WETH9.sol/WETH9.json"),"utf-8");
+	jsonABI = await JSON.parse(w9ABI);
+	sanitizedABI = await JSON.stringify(jsonABI.abi);
+        const w9Contract = new ethers.Contract(w9Addr,sanitizedABI,signerNode);
+	console.log("w9Addr",w9Addr);
+	return w9Contract;
+}
+
 async function getLagrangeService(redeploy) {
     const currentProvider = await getProvider();
     const signerNode = await getSigner();
@@ -83,16 +103,6 @@ async function getLagrangeService(redeploy) {
 		nsAddr = deployTxns[i].contractAddress;
 	    }
 	}
-	deployFile = await fs.readFileSync(path.join(__dirname,"../broadcast/DeployWETH9.s.sol/1337/run-latest.json"));
-	deployJson = await JSON.parse(deployFile);
-	deployTxns = deployJson.transactions;
-        w9Addr = null;
-	for(i = 0; i < deployTxns.length; i++) {
-	    if(deployTxns[i].contractName == "WETH9") {
-		w9Addr = deployTxns[i].contractAddress;
-	    }
-	}
-	console.log("w9Addr",w9Addr);
 	const nsABI = await fs.readFileSync(path.join(__dirname,"../out/LagrangeService.sol/LagrangeService.json"),"utf-8");
 	jsonABI = await JSON.parse(nsABI);
 	sanitizedABI = await JSON.stringify(jsonABI.abi);
@@ -100,53 +110,6 @@ async function getLagrangeService(redeploy) {
         const lagrangeService = new ethers.Contract(nsAddr,sanitizedABI,signerNode);
         console.log("LagrangeService loaded.");
         
-        /*
-        
-        smAddr = await lagrangeService.StrategyMgr();
-	const smABI = await fs.readFileSync(path.join(__dirname,"../out/IStrategyManager.sol/IStrategyManager.json"),"utf-8");
-	jsonABI = await JSON.parse(smABI);
-	sanitizedABI = await JSON.stringify(jsonABI.abi);
-        const smContract = new ethers.Contract(smAddr,sanitizedABI,signerNode);
-        
-//        smContract.deposit("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",32);
-
-
-        wsAddr = await lagrangeService.WETHStrategy();
-	const wsABI = await fs.readFileSync(path.join(__dirname,"../out/IStrategy.sol/IStrategy.json"),"utf-8");
-	jsonABI = await JSON.parse(wsABI);
-	sanitizedABI = await JSON.stringify(jsonABI.abi);
-        const wsContract = new ethers.Contract(wsAddr,sanitizedABI,signerNode);
-
-	const w9ABI = await fs.readFileSync(path.join(__dirname,"../out/WETH9.sol/WETH9.json"),"utf-8");
-	jsonABI = await JSON.parse(w9ABI);
-	sanitizedABI = await JSON.stringify(jsonABI.abi);
-        const w9Contract = new ethers.Contract(w9Addr,sanitizedABI,signerNode);
-        
-        let zerolimit = ethers.utils.parseUnits("0.0", 18);
-        let limit = ethers.utils.parseUnits("33000.0", 18);
-        let amount = ethers.utils.parseUnits("32", 18);
-        
-            const wallet = new ethers.Wallet("3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c", currentProvider);
-        
-        waddr = "0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82"; //wallet.address;
-        //await w9Contract.initialize();
-        tx = await w9Contract.deposit({value:amount});
-        w = await tx.wait();
-	tx = await w9Contract.approve(smAddr,limit);
-	w = await tx.wait();
-//	console.log([wsAddr,w9Addr,amount]); //term();
-	tx = await smContract.depositIntoStrategy(wsAddr,w9Addr,amount);
-        term();
-//	tx = await wsContract.deposit(w9Addr,amount);
-	w = await tx.wait();
-//	w = await tx.wait();
-	console.log(await smContract.getDeposits("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82"));
-	console.log(await smContract.getDeposits("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9"));
-//0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82
-//console.log(signerNode);
-//	console.log(smContract);
-        term();
-        */
 	return lagrangeService;
     }
 }
@@ -313,10 +276,72 @@ describe('debug', async function() {
  });
 });
 */
+async function getStrategyManager(lagrangeService) {
+    const currentProvider = await getProvider();
+    const signerNode = await getSigner();
+	smAddr = await lagrangeService.StrategyMgr();
+	const smABI = await fs.readFileSync(path.join(__dirname,"../out/IStrategyManager.sol/IStrategyManager.json"),"utf-8");
+	jsonABI = await JSON.parse(smABI);
+	sanitizedABI = await JSON.stringify(jsonABI.abi);
+	const smContract = new ethers.Contract(smAddr,sanitizedABI,signerNode);
+	return smContract;
+}
+async function getWETHStrategy(lagrangeService) {
+    const currentProvider = await getProvider();
+    const signerNode = await getSigner();
+        wsAddr = await lagrangeService.WETHStrategy();
+	const wsABI = await fs.readFileSync(path.join(__dirname,"../out/IStrategy.sol/IStrategy.json"),"utf-8");
+	jsonABI = await JSON.parse(wsABI);
+	sanitizedABI = await JSON.stringify(jsonABI.abi);
+        const wsContract = new ethers.Contract(wsAddr,sanitizedABI,signerNode);
+        return wsContract;
+}
 describe('Lagrange Service Smoke Tests', async function() {
     const redeploy = process.argv.includes('--redeploy');
     const lagrangeService = await getLagrangeService(redeploy);
     const provider = await getProvider();
+    describe('Diagnostics', async function() {
+        it('StrategyManager check', async function() {
+            smAddr = await lagrangeService.StrategyMgr();
+            assert.ok(smAddr.length == 42);
+        });
+        w9Contract = await getWETH9();
+        it('WETH9 mock contract check', function() {
+            assert.ok(w9Contract.address.length == 42);
+        });
+        it('WETH Strategy check', async function() {
+            wethStrategy = await getWETHStrategy(lagrangeService);
+            assert.ok(wethStrategy.address.length == 42);
+        });
+        let amount = ethers.utils.parseUnits("32", 18);
+        it('WETH9 Approval', async function() {
+        smContract = await getStrategyManager(lagrangeService);
+            this.timeout(30000);
+
+            let zerolimit = await ethers.utils.parseUnits("0.0", 18);
+            let limit = await ethers.utils.parseUnits("33000.0", 18);
+	    const signerNode = await getSigner();
+
+            tx = await w9Contract.deposit({value:amount});
+            w = await tx.wait();
+
+            tx = await w9Contract.approve(signerNode.address,limit);
+            w = await tx.wait();
+            tx = await w9Contract.approve(w9Contract.address,limit);
+            w = await tx.wait();
+            tx = await w9Contract.approve(smContract.address,limit);
+            w = await tx.wait();
+
+            let gasLimitValue = 30000000;
+            tx = await smContract.depositIntoStrategy(wethStrategy.address,w9Contract.address,amount,{gasLimit:gasLimitValue});
+            w = await tx.wait();
+        /*
+            console.log(await smContract.getDeposits("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82"));
+            console.log(await smContract.getDeposits("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9"));
+        */
+        });
+    });
+    term();
     describe('Lagrange Service Contract', function() {
         it('LGRCommittee address associated', async function() {
             lc = await lagrangeService.LGRCommittee();
@@ -329,6 +354,10 @@ describe('Lagrange Service Smoke Tests', async function() {
         it('Lagrange Service Owner', async function() {
             const owner = await lagrangeService.owner();
             assert.equal(owner, "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
+        });
+        it('Lagrange Service Strategy Manager', async function() {
+            const addr = await lagrangeService.StrategyMgr();
+            assert.ok(addr.length > 4);
         });
     });
     const lgrc = await getLagrangeCommittee(lagrangeService);
@@ -387,7 +416,16 @@ describe('Lagrange Service Smoke Tests', async function() {
             assert.ok(en.toNumber() == 0);
             // TODO account for refactoring and related variable changes here and elsewhere
         });
-        it('Register', function() {
+        it('Lagrange Service Operator Registration', async function() {
+            this.timeout(5000);
+            const blockNumber = await provider.getBlockNumber();
+            const amount = ethers.utils.parseUnits("1", 18);
+            blsKey = await genBLSKey();
+            priv = blsKey.serializeToHexStr();
+            pub = blsKey.getPublicKey();
+            tx = await lagrangeService.register(extChainID, amount, pub.serialize(), blockNumber + 10);
+            res = await tx.wait();
+            console.log(res);
         });
     });
 });
