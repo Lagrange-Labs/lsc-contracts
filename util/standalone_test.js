@@ -33,21 +33,19 @@ async function getSigner() {
 
 async function getLagrangeCommittee(lagrangeService) {
     const currentProvider = await getProvider();
-//    const signerNode = await currentProvider.getSigner();
-    
-    const signerNode = getSigner();
+    const signerNode = await getSigner();
     
     const lgrcAddr = await lagrangeService.LGRCommittee();
     const lgrcABI = await fs.readFileSync(path.join(__dirname,"../out/LagrangeCommittee.sol/LagrangeCommittee.json"),"utf-8");
     jsonABI = await JSON.parse(lgrcABI);
     sanitizedABI = await JSON.stringify(jsonABI);
-    const lgrc = new ethers.Contract(lgrcAddr,jsonABI.abi,wallet);
+    const lgrc = new ethers.Contract(lgrcAddr,jsonABI.abi,signerNode);
     return lgrc;
 }
 
 async function getLagrangeService(redeploy) {
     const currentProvider = await getProvider();
-    const signerNode = getSigner();
+    const signerNode = await getSigner();
     
     if(redeploy) {
 	console.log("Redeploying...");
@@ -308,7 +306,13 @@ async function testCommitteeRotate(lgrc,cChainID) {
     return pass;
 }
 
-
+/*
+describe('debug', async function() {
+ describe('t', async function() {
+   it('c', async function() {});
+ });
+});
+*/
 describe('Lagrange Service Smoke Tests', async function() {
     const redeploy = process.argv.includes('--redeploy');
     const lagrangeService = await getLagrangeService(redeploy);
@@ -328,6 +332,7 @@ describe('Lagrange Service Smoke Tests', async function() {
         });
     });
     const lgrc = await getLagrangeCommittee(lagrangeService);
+
     describe('Lagrange Committee Smoke Tests', async function() {
         it('Poseidon Hash Wrapper', async function() {
             hash = await lgrc.hash2Elements(1,2);
@@ -369,19 +374,20 @@ describe('Lagrange Service Smoke Tests', async function() {
     const freezeDuration = 2048;
     describe('Lagrange Committee', async function() {
         it('Initialize Committee', async function() {
-            await lgrc.initCommittee(extChainID, extDuration, freezeDuration);
-            await delay(3000);
-            cs = await lgrc.COMMITTEE_START(extChainID);
-            cd = await lgrc.COMMITTEE_DURATION(extChainID);
-            en = await lgrc.EpochNumber(extChainID);
+            this.timeout(5000);
+            tx = await lgrc.initCommittee(extChainID, extDuration, freezeDuration);
+            rec = await tx.wait();
+            cs = await lgrc.getCommitteeStart(extChainID);
+            cd = await lgrc.getCommitteeDuration(extChainID);
+            en = await lgrc.getCurrentEpoch(extChainID);
             const blockNumber = await provider.getBlockNumber();
-            csEquiv = cs.toNumber() < blockNumber && cs.toNumber() > 0;
-            cdEquiv = cd.toNumber() == 5;
-            enEquiv = en.toNumber() == 0;
+            assert.ok(cs.toNumber() <= blockNumber);
+            assert.ok(cs.toNumber() > 0);
+            assert.ok(cdEquiv = cd.toNumber() == 5);
+            assert.ok(en.toNumber() == 0);
             // TODO account for refactoring and related variable changes here and elsewhere
-            assert.ok(csEquiv);
-            assert.ok(cdEquiv);
-            assert.ok(enEquiv);
+        });
+        it('Register', function() {
         });
     });
 });
