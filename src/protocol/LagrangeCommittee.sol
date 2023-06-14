@@ -21,7 +21,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         require(sequencers[msg.sender] == true, "Only sequencer nodes can call this function.");
         _;
     }
-    
+
     function owner() public view override(OwnableUpgradeable) returns (address) {
     	return OwnableUpgradeable.owner();
     }
@@ -231,7 +231,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
     
     // Recalculates committee root (next_2)
-    function compCommitteeRoot(uint256 chainID) internal {
+    function compCommitteeRoot(uint256 chainID) internal /* TODO onlySequencer? */ {
         uint256 nextRoot = getNext1CommitteeRoot(chainID);
         uint256 epochNumber = getEpochNumber(chainID, block.number);
         
@@ -240,18 +240,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }    
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
+    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public view returns (bool) {
         return LibLagrangeCommittee.verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
     }
     
 /*
-    //IRollupCore	public ArbRollupCore;
+    IRollupCore	public ArbRollupCore;
     IOutbox	public ArbOutbox;
     
     function verifyArbBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
         RLPReader.RLPItem memory extraDataItem = decoded[BLOCK_HEADER_EXTRADATA_INDEX];
         RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
+        
         bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
         bytes32 l2Hash = ArbOutbox.roots[extraData];
         if (l2Hash == bytes32(0)) {
@@ -278,26 +279,29 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     function registerChain(
         uint256 chainID,
-        address[] memory /* TODO calldata? */ stakedAddrs,
+        address[] calldata stakedAddrs,
         uint256 epochPeriod,
         uint256 freezeDuration
-    ) public {
+    ) public onlyOwner {
         initCommittee(chainID, epochPeriod, freezeDuration);
         for (uint256 i = 0; i < stakedAddrs.length; i++) {
-            // TODO protect against redundancy
             addAddr(chainID, stakedAddrs[i]);
         }
     }
     
-    function BLSAssoc(bytes memory blsPubKey) public {
+    function BLSAssoc(bytes memory blsPubKey) public onlySequencer {
         addr2bls[msg.sender] = blsPubKey;
     }
     
-    function add(uint256 chainID) public {
+    function add(uint256 chainID) public onlySequencer {
         addedAddrs[chainID].push(msg.sender);
     }
 
     function addAddr(uint256 chainID, address addr) public onlySequencer {
+        // protect against redundancy
+        for (uint256 i = 0; i < addedAddrs[chainID].length; i++) {
+            if(addedAddrs[chainID][i] == addr) return;
+        }
         addedAddrs[chainID].push(addr);
     }
 
@@ -326,7 +330,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             bytes32(getNextCommitteeRoot(chainID,block.number))
         );
     }
-    
+
+    function getCurrentEpoch(uint256 chainID) public view returns (uint256) {
+        return getEpochNumber(chainID, block.number);
+    }
     function getEpochNumber(uint256 chainID, uint256 blockNumber) public view returns (uint256) {
         uint256 startBlockNumber = CommitteeParams[chainID].startBlock;
         uint256 epochPeriod = CommitteeParams[chainID].duration;
