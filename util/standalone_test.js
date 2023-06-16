@@ -313,10 +313,12 @@ describe('Lagrange Service Smoke Tests', async function() {
             wethStrategy = await lagrangeService.WETHStrategy();
             assert.ok(wethStrategy.length == 42);
         });
-        let amount = ethers.utils.parseUnits("32", 18);
         it('WETH9 Approval', async function() {
+            let amount = ethers.utils.parseUnits("32", 18);
             smContract = await getStrategyManager(lagrangeService);
+            assert.ok(smContract.address.length == 42);
             wsContract = await getWETHStrategy(lagrangeService);
+            assert.ok(wsContract.address.length == 42);
             this.timeout(30000);
 
             let zerolimit = await ethers.utils.parseUnits("0.0", 18);
@@ -325,7 +327,7 @@ describe('Lagrange Service Smoke Tests', async function() {
 
             tx = await w9Contract.deposit({value:amount});
             w = await tx.wait();
-            tx = await w9Contract.approve(await lagrangeService.WETHStrategy(),limit);
+            tx = await w9Contract.approve(wsContract.address,limit);
             w = await tx.wait();
             tx = await w9Contract.approve(signerNode.address,limit);
             w = await tx.wait();
@@ -335,6 +337,7 @@ describe('Lagrange Service Smoke Tests', async function() {
             w = await tx.wait();
 
             let gasLimitValue = 30000000;
+            //console.log([wsContract.address,w9Contract.address,amount,{gasLimit:gasLimitValue}]);
             tx = await smContract.depositIntoStrategy(wsContract.address,w9Contract.address,amount,{gasLimit:gasLimitValue});
             w = await tx.wait();
 /*
