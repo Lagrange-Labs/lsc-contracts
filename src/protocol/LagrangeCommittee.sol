@@ -8,22 +8,20 @@ import "../library/HermezHelpers.sol";
 
 import "../interfaces/ILagrangeCommittee.sol";
 
-import "../library/LibLagrangeCommittee.sol";
+import "../library/LibEvidenceVerifier.sol";
 
 contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, ILagrangeCommittee {
-    mapping(address => bool) sequencers;
-    
-    function addSequencer(address seqAddr) public onlyOwner {
-        sequencers[seqAddr] = true;
-    }
-    
-    modifier onlySequencer() {
-        require(sequencers[msg.sender] == true, "Only sequencer nodes can call this function.");
-        _;
+    struct OperatorStatus {
+        uint256 amount;
+        uint32 serveUntilBlock;
+        bool slashed;
     }
 
-    function owner() public view override(OwnableUpgradeable) returns (address) {
-    	return OwnableUpgradeable.owner();
+    /// Leaf in Lagrange State Committee Trie
+    struct CommitteeLeaf {
+        address	addr;
+        uint256	stake;
+        bytes blsPubKey;
     }
 
     struct CommitteeDef {
@@ -36,7 +34,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 root;
         uint256 height;
     }
- 
+
+    mapping(address => bool) sequencers;
+
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
     // Frozen Committee - Next "Current" Committee
@@ -66,6 +66,50 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // Address => BLSPubKey
     mapping(address => bytes) public addr2bls;
 
+    mapping(address => OperatorStatus) public operators;
+
+    // Event fired on initialization of a new committee
+    event InitCommittee(
+        uint256 chainID,
+        uint256 duration,
+        uint256 freezeDuration
+    );
+
+    // Fired on successful rotation of committee
+    event UpdateCommittee(
+        uint256 chainID,
+        bytes32 current
+    );
+     
+    function setOperatorStatus(uint256 stake, uint32 serveUntilBlock, bool slashed) public onlyOwner {
+        operators[msg.sender] = OperatorStatus(stake,serveUntilBlock,slashed);
+    }
+    
+    function getServeUntilBlock(address operator) public returns (uint32) {
+        return operators[operator].serveUntilBlock;
+    }
+
+    function setSlashed(address operator, bool slashed) public onlySequencer {
+        operators[operator].slashed = slashed;
+    }
+
+    function getSlashed(address operator) public returns (bool) {
+        return operators[operator].slashed;
+    }
+    
+    function addSequencer(address seqAddr) public onlyOwner {
+        sequencers[seqAddr] = true;
+    }
+    
+    modifier onlySequencer() {
+        require(sequencers[msg.sender] == true, "Only sequencer nodes can call this function.");
+        _;
+    }
+
+    function owner() public view override(OwnableUpgradeable) returns (address) {
+    	return OwnableUpgradeable.owner();
+    }
+
     // Wrapper function for committeeStartBlock - returns start block based on ChainID    
     function getCommitteeStart(uint256 chainID) public view returns (uint256) {
     	return CommitteeParams[chainID].startBlock;
@@ -89,14 +133,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         );
         __Ownable_init();
     }
-    
-    // Event fired on initialization of a new committee
-    event InitCommittee(
-        uint256 chainID,
-        uint256 duration,
-        uint256 freezeDuration
-    );
-    
+        
     // Initialize new committee.
     function initCommittee(uint256 chainID, uint256 _duration, uint256 freezeDuration) public onlySequencer {
         require(getCommitteeStart(chainID) == 0, "Committee has already been initialized.");
@@ -109,18 +146,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeLeaves[chainID] = new uint256[](0);
 
         emit InitCommittee(chainID, _duration, freezeDuration);
-    }
-
-    /// Leaf in Lagrange State Committee Trie
-    struct CommitteeLeaf {
-        address	addr;
-        uint256	stake;
-        bytes blsPubKey;
-    }
-    
-    // Constructs and returns new CommitteeLeaf instance
-    function newCommitteeLeaf(address addr, uint256 stake, bytes memory blsPubKey) internal returns (CommitteeLeaf memory) {
-        return CommitteeLeaf(addr,stake,blsPubKey);
     }
     
     // Remove address from committee map for chainID, update keys and length/height
@@ -138,7 +163,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 	    uint256 _if = CommitteeMapKeys[chainID][CommitteeMapKeys[chainID].length - 1];
 	    if (CommitteeMap[chainID][_i].addr == addr) {
 	        CommitteeMap[chainID][_i] = CommitteeMap[chainID][_if];
-	        CommitteeMap[chainID][_if] = newCommitteeLeaf(address(0),0,"");
+	        CommitteeMap[chainID][_if] = CommitteeLeaf(address(0),0,"");
 	        
 	        CommitteeMapKeys[chainID][i] = CommitteeMapKeys[chainID][CommitteeMapKeys[chainID].length - 1];
 	        CommitteeMapKeys[chainID].pop;
@@ -146,13 +171,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 	    }
 	}
     }
-    
-    // Fired on successful rotation of committee
-    event UpdateCommittee(
-        uint256 chainID,
-        bytes32 current
-    );
-    
+        
     // Wrapper functions for poseidon-hashing elements
     function hash2Elements(uint256 a, uint256 b) public view returns (uint256) {
         return _hash2Elements([a,b]);
@@ -160,20 +179,18 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     // Return Poseidon Hash of Committee Leaf
     function getLeafHash(CommitteeLeaf memory cleaf) public view returns (uint256) {
-        return hash2Elements(
+        return _hash3Elements([
             uint256(uint160(cleaf.addr)),
-            hash2Elements(
-                uint256(cleaf.stake),
-                uint256(keccak256(cleaf.blsPubKey))
-            )
-        );
+            uint256(cleaf.stake),
+            uint256(keccak256(cleaf.blsPubKey))
+        ]);
     }
     
     // Add address to committee (NEXT_2) trie
     function committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) public onlySequencer {
         require(getCommitteeStart(chainID) > 0, "A committee for this chain ID has not been initialized.");
                 
-        CommitteeLeaf memory cleaf = newCommitteeLeaf(addr,stake,_blsPubKey);
+        CommitteeLeaf memory cleaf = CommitteeLeaf(addr,stake,_blsPubKey);
         uint256 lhash = getLeafHash(cleaf);
         CommitteeMap[chainID][lhash] = cleaf;
         CommitteeMapKeys[chainID].push(lhash);
@@ -201,33 +218,23 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         } else if(CommitteeLeaves[chainID].length == 1) {
             return CommitteeLeaves[chainID][0];
         }
-        
-        // First pass: compute committee nodes in memory from leaves
-        uint256 _len = CommitteeLeaves[chainID].length;
-        uint256[] memory CommitteeNodes = new uint256[](_len/2);
-        uint256 _start = 0;
-	for(uint256 i = 0; i < _len - 1; i += 2) {
-	    CommitteeNodes[i/2] = hash2Elements(
-	        CommitteeLeaves[chainID][_start + i],
-	        CommitteeLeaves[chainID][_start + i + 1]
-	    );
+
+	// Calculate limit
+	uint256 _lim = 2;
+	while (_lim < CommitteeLeaves[chainID].length) {
+	    _lim *= 2;
 	}
-        
-        // Second pass: compute committee nodes in memory from nodes
-        _len = _len/2;
-        while(_len > 0) {
-            uint256[] memory NLCommitteeNodes = new uint256[](_len/2);
-	    for(uint256 i = 0; i < _len - 1; i += 2) {
-	        NLCommitteeNodes[i/2] = hash2Elements(
-	            CommitteeNodes[_start + i],
-	            CommitteeNodes[_start + i + 1]
-	        );
-	    }
-	    CommitteeNodes = NLCommitteeNodes;
-            _start = 0;
-            _len = _len / 2;
+        // Sequentially hash leaves to get result.
+        uint256 result = CommitteeLeaves[chainID][0];
+        for (uint256 i = 1; i < _lim; i++) {
+            if (i < CommitteeLeaves[chainID].length) {
+                result = hash2Elements(result,CommitteeLeaves[chainID][i]);
+            } else {
+                result = hash2Elements(result,0);
+            }
         }
-        return CommitteeNodes[CommitteeNodes.length - 1];
+        
+        return result;
     }
     
     // Recalculates committee root (next_2)
@@ -241,7 +248,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public view returns (bool) {
-        return LibLagrangeCommittee.verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
+        return LibEvidenceVerifier.verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
     }
     
 /*
@@ -334,6 +341,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     function getCurrentEpoch(uint256 chainID) public view returns (uint256) {
         return getEpochNumber(chainID, block.number);
     }
+    
     function getEpochNumber(uint256 chainID, uint256 blockNumber) public view returns (uint256) {
         uint256 startBlockNumber = CommitteeParams[chainID].startBlock;
         uint256 epochPeriod = CommitteeParams[chainID].duration;

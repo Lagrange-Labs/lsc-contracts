@@ -10,10 +10,35 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../protocol/LagrangeServiceManager.sol";
 
-import {EvidenceVerifier} from "./library/EvidenceVerifier.sol";
+import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
 contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
     mapping(address => bool) sequencers;
+    
+    IServiceManager public LGRServiceMgr;
+    IStrategyManager public StrategyMgr;
+    IStrategy public WETHStrategy;
+    
+    ILagrangeCommittee public LGRCommittee;
+    
+    uint32 public taskNumber = 0;
+    uint32 public latestServeUntilBlock = 0;
+
+    event OperatorRegistered(address operator, uint32 serveUntilBlock);
+    
+    event OperatorSlashed(address operator);
+
+    event UploadEvidence(
+        address operator,
+        bytes32 blockHash,
+        bytes32 currentCommitteeRoot,
+        bytes32 nextCommitteeRoot,
+        uint256 blockNumber,
+        uint256 epochNumber,
+        bytes blockSignature,
+        bytes commitSignature,
+        uint32 chainID
+    );
     
     function addSequencer(address seqAddr) public onlyOwner {
         sequencers[seqAddr] = true;
@@ -28,69 +53,7 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
         _;
     }
 
-    IServiceManager public LGRServiceMgr;
-    IStrategyManager public StrategyMgr;
-    IStrategy public WETHStrategy;
-    
-    ILagrangeCommittee public LGRCommittee;
-    
-/*
-    function initialize(
-      ILagrangeCommittee _lgrCommittee//,
-      //IStrategy _WETHStrategy
-    ) initializer public {
-        LGRCommittee = _lgrCommittee;
-//        WETHStrategy = _WETHStrategy;
-        //__Ownable_init();
-    }    
-*/
-
-    // End NodeStaking Imports
-
-    struct Evidence {
-        address operator;
-        bytes32 blockHash;
-        bytes32 correctBlockHash;
-        bytes32 currentCommitteeRoot;
-        bytes32 correctCurrentCommitteeRoot;
-        bytes32 nextCommitteeRoot;
-        bytes32 correctNextCommitteeRoot;
-        uint256 blockNumber;
-        uint256 epochNumber;
-        bytes blockSignature; // 96-byte
-        bytes commitSignature; // 96-byte
-        uint32 chainID;
-        bytes rawBlockHeader;
-    }
-
-    struct OperatorStatus {
-        uint256 amount;
-        uint32 serveUntilBlock;
-        bool slashed;
-    }
-
-    mapping(address => OperatorStatus) public operators;
-
-    uint32 public taskNumber = 0;
-    uint32 public latestServeUntilBlock = 0;
-
-    event OperatorRegistered(address operator, uint32 serveUntilBlock);
-    
-    event UploadEvidence(
-        address operator,
-        bytes32 blockHash,
-        bytes32 currentCommitteeRoot,
-        bytes32 nextCommitteeRoot,
-        uint256 blockNumber,
-        uint256 epochNumber,
-        bytes blockSignature,
-        bytes commitSignature,
-        uint32 chainID
-    );
-    
-    event OperatorSlashed(address operator);
-
-    constructor(IServiceManager _LGRServiceMgr, ILagrangeCommittee _LGRCommittee, IStrategyManager _StrategyMgr, IStrategy _WETHStrategy) {
+    constructor(IServiceManager _LGRServiceMgr, ILagrangeCommittee _LGRCommittee, IStrategyManager _StrategyMgr, IStrategy _WETHStrategy) initializer {
         LGRServiceMgr = _LGRServiceMgr;
         LGRCommittee = _LGRCommittee;
         StrategyMgr = _StrategyMgr;
@@ -104,11 +67,7 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
 //        ([]IStrategy memory strats, uint256[] shares) = ELServiceMgr.depositor(msg.sender);
 //        uint256 amount = strats[WETHStrategy];
         
-        operators[msg.sender] = OperatorStatus({
-            amount: stake,//amount,
-            serveUntilBlock: serveUntilBlock,
-            slashed: false
-        });
+        LGRCommittee.setOperatorStatus(stake,serveUntilBlock,false);
 
 	LGRCommittee.BLSAssoc(_blsPubKey);
 	LGRCommittee.add(chainID);
@@ -120,13 +79,13 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
     function uploadEvidence(Evidence calldata evidence) external onlySequencer {
         // check the operator is registered or not
         require(
-            operators[evidence.operator].serveUntilBlock > 0,
+            LGRCommittee.getServeUntilBlock(evidence.operator) > 0,
             "The operator is not registered"
         );
 
         // check the operator is slashed or not
         require(
-            !operators[evidence.operator].slashed,
+            !LGRCommittee.getSlashed(evidence.operator),
             "The operator is slashed"
         );
 
@@ -185,7 +144,7 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
     /// slash the given operator
     function _freezeOperator(address operator, uint256 chainID) internal onlySequencer {
         LGRServiceMgr.freezeOperator(operator);
-        operators[operator].slashed = true;
+        LGRCommittee.setSlashed(operator,true);
         LGRCommittee.remove(chainID, operator);
 
         emit OperatorSlashed(operator);
