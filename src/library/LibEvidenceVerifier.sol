@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import "solidity-rlp/contracts/Helper.sol";
 
-library LibLagrangeCommittee {
+library LibEvidenceVerifier {
 
     uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
     uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
