@@ -5,8 +5,16 @@ interface ILagrangeCommittee {
 
     function committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) external;
     
+    function setOperatorStatus(uint256 stake, uint32 serveUntilBlock, bool slashed) external;
+
+    function getServeUntilBlock(address operator) external returns (uint32);
+
+    function setSlashed(address operator, bool slashed) external;
+
+    function getSlashed(address operator) external returns (bool);
+        
     //function removeCommitteeAddr(uint256 chainID) external;
-    
+
     function getCommitteeStart(uint256 chainID) external returns (uint256);
 
     function getCommitteeDuration(uint256 chainID) external returns (uint256);
