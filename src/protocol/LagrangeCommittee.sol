@@ -251,39 +251,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return LibEvidenceVerifier.verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
     }
     
-/*
-    IRollupCore	public ArbRollupCore;
-    IOutbox	public ArbOutbox;
-    
-    function verifyArbBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
-        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
-        RLPReader.RLPItem memory extraDataItem = decoded[BLOCK_HEADER_EXTRADATA_INDEX];
-        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
-        
-        bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
-        bytes32 l2Hash = ArbOutbox.roots[extraData];
-        if (l2Hash == bytes32(0)) {
-            // No such confirmed node... TODO determine how these should be handled
-            return false;
-        }
-        uint number = blockNumberItem.toUint();
-        
-        bool hashCheck = l2hash == comparisonBlockHash;
-        bool numberCheck = number == comparisonNumber;
-        bool res = hashCheck && numberCheck;
-        return res;
-    }
-    
-    IICanonicalTransactionChain public Optimism;
-    
-    function verifyOptBlockNumber(uint comparisonNumber, bytes32 comparisonBatchRoot, uint256 chainID) external view returns (bool) {
-        // BlockHash does not seem to be available, but root and number can be verified onchain.
-//        uint number = 
-        bool res = false;
-        return res;
-    }
-*/
-
     function registerChain(
         uint256 chainID,
         address[] calldata stakedAddrs,
