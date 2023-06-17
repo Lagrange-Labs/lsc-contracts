@@ -67,10 +67,7 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
 //        ([]IStrategy memory strats, uint256[] shares) = ELServiceMgr.depositor(msg.sender);
 //        uint256 amount = strats[WETHStrategy];
         
-        LGRCommittee.setOperatorStatus(stake,serveUntilBlock,false);
-
-	LGRCommittee.BLSAssoc(_blsPubKey);
-	LGRCommittee.add(chainID);
+	LGRCommittee.add(chainID, _blsPubKey, stake, serveUntilBlock);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
@@ -130,13 +127,13 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
     }
     
     function _checkCurrentCommitteeRoot(bytes32 correctCurrentCommitteeRoot, bytes32 currentCommitteeRoot, uint256 epochNumber, uint256 chainID) internal returns (bool) {
-        bytes32 realCurrentCommitteeRoot = LGRCommittee.getCommitteeRoot(chainID, epochNumber);
+        bytes32 realCurrentCommitteeRoot = bytes32(LGRCommittee.getCommittee(chainID, epochNumber));
         require(correctCurrentCommitteeRoot == realCurrentCommitteeRoot, "Reference committee roots do not match.");
         return currentCommitteeRoot == realCurrentCommitteeRoot;
     }
 
     function _checkNextCommitteeRoot(bytes32 correctNextCommitteeRoot, bytes32 nextCommitteeRoot, uint256 epochNumber, uint256 chainID) internal returns (bool) {
-        bytes32 realNextCommitteeRoot = LGRCommittee.getNextCommitteeRoot(chainID, epochNumber + 1);
+        bytes32 realNextCommitteeRoot = bytes32(LGRCommittee.getCommittee(chainID, epochNumber+1));
         require(correctNextCommitteeRoot == realNextCommitteeRoot, "Reference committee roots do not match.");
         return nextCommitteeRoot == realNextCommitteeRoot;
     }
