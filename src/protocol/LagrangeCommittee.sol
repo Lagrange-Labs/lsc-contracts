@@ -28,6 +28,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     struct CommitteeData {
         uint256 root;
         uint256 height;
+        uint256 totalVotingPower;
     }
 
     mapping(address => bool) sequencers;
@@ -120,7 +121,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         require(CommitteeParams[chainID].startBlock == 0, "Committee has already been initialized.");
 
         CommitteeParams[chainID] = CommitteeDef(block.number, _duration, freezeDuration);
-        Committees[chainID][0] = CommitteeData(0,0);
+        Committees[chainID][0] = CommitteeData(0,0,0);
 
         CommitteeMapKeys[chainID] = new uint256[](0);
         CommitteeMapLength[chainID] = 0;
@@ -179,10 +180,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         CommitteeLeaves[chainID].push(lhash);
     }
 
+    // Returns chain's committee root at a given block.
     function getCommittee(uint256 chainID, uint256 epochNumber) public returns (uint256) {
         return Committees[chainID][epochNumber].root;
     }
     
+    // Computes and returns "next" committee root.
     function getNext1CommitteeRoot(uint256 chainID) public view returns (uint256) {
         if(CommitteeLeaves[chainID].length == 0) {
             return hash2Elements(uint256(0),uint256(0));
@@ -214,7 +217,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 epochNumber = getEpochNumber(chainID, block.number);
         
         // Update roots
+        Committees[chainID][epochNumber + COMMITTEE_NEXT_1].height = CommitteeMapLength[chainID];
         Committees[chainID][epochNumber + COMMITTEE_NEXT_1].root = nextRoot;
+        Committees[chainID][epochNumber + COMMITTEE_NEXT_1].totalVotingPower = _getTotalVotingPower(chainID);
     }    
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
@@ -222,6 +227,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
     }
     
+    // Initializes a new committee, and optionally associates addresses with it.
     function registerChain(
         uint256 chainID,
         address[] calldata stakedAddrs,
@@ -232,14 +238,17 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         for (uint256 i = 0; i < stakedAddrs.length; i++) {
             _addAddr(chainID, stakedAddrs[i]);
         }
+        _compCommitteeRoot(chainID);
     }
-    
+
+    // Adds address stake data and flags it for committee addition
     function add(uint256 chainID, bytes memory blsPubKey, uint256 stake, uint32 serveUntilBlock) public onlySequencer {
         addedAddrs[chainID].push(msg.sender);
         addr2bls[msg.sender] = blsPubKey;
         operators[msg.sender] = OperatorStatus(stake,serveUntilBlock,false);
     }
 
+    // Internal.  "Flags" address to be added to a chain's committee.
     function _addAddr(uint256 chainID, address addr) internal onlySequencer {
         // protect against redundancy
         for (uint256 i = 0; i < addedAddrs[chainID].length; i++) {
@@ -248,10 +257,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         addedAddrs[chainID].push(addr);
     }
 
+    // "Flags" address to be removed from chain's committee.
     function remove(uint256 chainID, address addr) public onlySequencer {
         removedAddrs[chainID].push(addr);
     }
 
+    // If applicable, updates committee based on staking, unstaking, and slashing.
     function update(uint256 chainID) public onlySequencer {
         uint256 epochNumber = getEpochNumber(chainID, block.number);
         uint256 epochEnd = epochNumber + CommitteeParams[chainID].duration;
@@ -274,10 +285,20 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         );
     }
 
+    // Computes epoch number for a chain's committee at a given block
     function getEpochNumber(uint256 chainID, uint256 blockNumber) public view returns (uint256) {
         uint256 startBlockNumber = CommitteeParams[chainID].startBlock;
         uint256 epochPeriod = CommitteeParams[chainID].duration;
         uint256 epochNumber = (blockNumber - startBlockNumber) / epochPeriod;
         return epochNumber;
+    }
+
+    // Returns cumulative strategy shares for opted in addresses
+    function _getTotalVotingPower(uint256 chainID) internal view returns (uint256) {
+        uint256 total = 0;
+        for (uint256 i = 0; i < CommitteeMapLength[chainID]; i++) {
+            total += CommitteeMap[chainID][CommitteeMapKeys[chainID][i]].stake;
+        }
+        return total;
     }
 }
