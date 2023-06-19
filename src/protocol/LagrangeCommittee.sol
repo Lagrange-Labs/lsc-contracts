@@ -104,11 +104,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     // Constructor: Accepts poseidon contracts for 2, 3, and 4 elements
     constructor(
+      address _poseidon1Elements,
       address _poseidon2Elements,
       address _poseidon3Elements,
       address _poseidon4Elements
     ) initializer {
         _initializeHelpers(
+            _poseidon1Elements,
             _poseidon2Elements,
             _poseidon3Elements,
             _poseidon4Elements
@@ -155,8 +157,17 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
         
     // Wrapper functions for poseidon-hashing elements
+    function hash1Elements(uint256 a) public view returns (uint256) {
+        return _hash1Elements([a]);
+    }
     function hash2Elements(uint256 a, uint256 b) public view returns (uint256) {
         return _hash2Elements([a,b]);
+    }
+    function hash3Elements(uint256 a, uint256 b, uint256 c) public view returns (uint256) {
+        return _hash3Elements([a,b,c]);
+    }
+    function hash4Elements(uint256 a, uint256 b, uint256 c, uint256 d) public view returns (uint256) {
+        return _hash4Elements([a,b,c,d]);
     }
 
     // Return Poseidon Hash of Committee Leaf

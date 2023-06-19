@@ -42,11 +42,12 @@ contract Deploy is Script, Test {
     function deployLagrangeCommittee() public returns (LagrangeCommittee) {
         string memory poseidonData = vm.readFile(poseidonDataPath);
         // Load Poseidon contract addresses
+        address poseidon1 = stdJson.readAddress(poseidonData, ".1");
         address poseidon2 = stdJson.readAddress(poseidonData, ".2");
         address poseidon3 = stdJson.readAddress(poseidonData, ".3");
         address poseidon4 = stdJson.readAddress(poseidonData, ".4");
         // Initialize and deploy LagrangeCommittee
-        LagrangeCommittee lagrangeCommittee = new LagrangeCommittee(poseidon2,poseidon3,poseidon4);
+        LagrangeCommittee lagrangeCommittee = new LagrangeCommittee(poseidon1,poseidon2,poseidon3,poseidon4);
         console.log("LagrangeCommittee deployed at: ", address(lagrangeCommittee));
         
         return lagrangeCommittee;
@@ -80,8 +81,8 @@ contract Deploy is Script, Test {
         console.log("LagrangeService deployed at: ", address(service));
 
         // call optIntoSlashing on slasher
-//        slasher.unpause(0);
-//        slasher.optIntoSlashing(address(service));
+        //slasher.unpause(0);
+        //slasher.optIntoSlashing(address(service));
 
         // register the service
 	for(uint32 i = 0; i < sequencerAddresses.length; i++) {

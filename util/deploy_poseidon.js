@@ -12,7 +12,7 @@ async function deployPoseidon() {
     const currentProvider = new ethers.providers.JsonRpcProvider('http://0.0.0.0:8545');
     const signerNode = await currentProvider.getSigner();
     poseidonAddrs = {};
-    for (i = 2; i<= 4; i++) {
+    for (i = 1; i<= 4; i++) {
 	cf = new ethers.ContractFactory(
 	    poseidonUnit.generateABI(i),
 	    poseidonUnit.createCode(i),

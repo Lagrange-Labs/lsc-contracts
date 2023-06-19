@@ -300,6 +300,7 @@ describe('Lagrange Service Smoke Tests', async function() {
     const redeploy = process.argv.includes('--redeploy');
     const lagrangeService = await getLagrangeService(redeploy);
     const provider = await getProvider();
+/*
     describe('Diagnostics', async function() {
         it('StrategyManager check', async function() {
             smAddr = await lagrangeService.StrategyMgr();
@@ -340,15 +341,11 @@ describe('Lagrange Service Smoke Tests', async function() {
             //console.log([wsContract.address,w9Contract.address,amount,{gasLimit:gasLimitValue}]);
             tx = await smContract.depositIntoStrategy(wsContract.address,w9Contract.address,amount,{gasLimit:gasLimitValue});
             w = await tx.wait();
-/*
-*/
-        /*
-            console.log(await smContract.getDeposits("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82"));
-            console.log(await smContract.getDeposits("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9"));
-        */
+//            console.log(await smContract.getDeposits("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82"));
+  //          console.log(await smContract.getDeposits("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9"));
         });
     });
-    term();
+*/
     describe('Lagrange Service Contract', function() {
         it('LGRCommittee address associated', async function() {
             lc = await lagrangeService.LGRCommittee();
@@ -368,6 +365,18 @@ describe('Lagrange Service Smoke Tests', async function() {
         });
     });
     const lgrc = await getLagrangeCommittee(lagrangeService);
+    
+    describe('Lagrange Committee Smoke Tests', async function() {
+            it('Poseidon Profile Tests', async function() {
+              h0 = await lgrc.hash1Elements(0);
+              console.log(h0.toString());
+              h1 = await lgrc.hash1Elements(1);
+              console.log(h1.toString());
+              hh0 = await lgrc.hash1Elements(h0);
+              console.log(hh0.toString());
+            });
+    });
+term();
 
     describe('Lagrange Committee Smoke Tests', async function() {
         it('Poseidon Hash Wrapper', async function() {
