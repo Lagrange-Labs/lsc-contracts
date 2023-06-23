@@ -13,16 +13,16 @@ init-accounts:
 # Deploy contracts
 
 deploy-eigenlayer:
-	cd lib/eigenlayer-contracts && forge script script/M1_Deploy.s.sol:Deployer_M1 --rpc-url http://localhost:8545  --private-key $(PRIVATE_KEY) --broadcast -vvvv
+	forge script script/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url http://localhost:8545  --private-key $(PRIVATE_KEY) --broadcast -vvvv
 
 export-abi:
 	node util/export_abis.js
 
 deploy-weth9:
-	forge script script/DeployWETH9.s.sol:DeployWETH9 --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/localnet/DeployWETH9.s.sol:DeployWETH9 --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
 add-strategy:
-	forge script script/AddStrategy.s.sol:AddStrategy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/localnet/AddStrategy.s.sol:AddStrategy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
 register-operator:
 	cd docker && npm run register-operator
@@ -31,7 +31,7 @@ deploy-poseidon:
 	node util/deploy_poseidon.js
 
 deploy-lagrange:
-	forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
 .PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange
 
