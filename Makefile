@@ -27,13 +27,22 @@ add-strategy:
 register-operator:
 	cd docker && npm run register-operator
 
+register-lagrange:
+	cd docker && npm run register-lagrange
+
 deploy-poseidon:
 	node util/deploy_poseidon.js
 
 deploy-lagrange:
 	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
 
-.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange
+add-quorum:
+	forge script script/Add_Quorum.s.sol:AddQuorum --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+
+init-committee:
+	forge script script/Init_Committee.s.sol:InitCommittee --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+
+.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator register-lagrange deploy-poseidon deploy-lagrange add-quorum init-committee
 
 # Build docker image
 

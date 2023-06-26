@@ -21,6 +21,13 @@ contract LagrangeServiceManager is
 
     constructor(ISlasher _slasher) {
         slasher = _slasher;
+        _disableInitializers();
+    }
+
+    function initialize(
+        address initialOwner
+    ) external initializer {
+        _transferOwnership(initialOwner);
     }
 
     // slash the given operator

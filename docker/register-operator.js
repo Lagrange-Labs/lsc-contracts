@@ -1,9 +1,9 @@
 const { exec } = require('child_process');
 const fs = require('fs');
 
-const filePath = './accounts.json';
+const accountsPath = './accounts.json';
 
-fs.readFile(filePath, 'utf8', (err, data) => {
+fs.readFile(accountsPath, 'utf8', (err, data) => {
   if (err) {
     console.error('Error reading file:', err);
     return;
@@ -31,4 +31,3 @@ fs.readFile(filePath, 'utf8', (err, data) => {
     console.error('Error parsing JSON string:', err);
   }
 });
-

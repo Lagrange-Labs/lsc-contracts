@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
 import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
+
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../interfaces/ILagrangeCommittee.sol";
@@ -17,9 +18,7 @@ contract LagrangeService is
     EvidenceVerifier,
     VoteWeigherBase
 {
-    mapping(address => bool) public sequencers;
-
-    ILagrangeCommittee public committee;
+    ILagrangeCommittee public immutable committee;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
 
@@ -37,28 +36,19 @@ contract LagrangeService is
         uint32 chainID
     );
 
-    modifier onlySequencer() {
-        require(
-            sequencers[msg.sender] == true,
-            "Only sequencer nodes can call this function."
-        );
-        _;
-    }
-
     constructor(
         IServiceManager _serviceManager,
         ILagrangeCommittee _committee,
         IStrategyManager _strategyManager
     ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
         committee = _committee;
+        _disableInitializers();
     }
 
-    function addSequencer(address seqAddr) public onlyOwner {
-        sequencers[seqAddr] = true;
-    }
-
-    function removeSequencer(address seqAddr) public onlyOwner {
-        sequencers[seqAddr] = false;
+    function initialize(
+        address initialOwner
+    ) external initializer {
+        _transferOwnership(initialOwner);
     }
 
     /// Add the operator to the service.
@@ -84,7 +74,7 @@ contract LagrangeService is
     }
 
     /// upload the evidence to punish the operator.
-    function uploadEvidence(Evidence calldata evidence) external onlySequencer {
+    function uploadEvidence(Evidence calldata evidence) external {
         // check the operator is registered or not
         require(
             committee.getServeUntilBlock(evidence.operator) > 0,
@@ -210,7 +200,7 @@ contract LagrangeService is
     function _freezeOperator(
         address operator,
         uint256 chainID
-    ) internal onlySequencer {
+    ) internal {
         serviceManager.freezeOperator(operator);
         committee.setSlashed(operator, chainID, true);
 

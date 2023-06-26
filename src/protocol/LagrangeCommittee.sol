@@ -15,7 +15,7 @@ contract LagrangeCommittee is
     HermezHelpers,
     ILagrangeCommittee
 {
-    ILagrangeService public service;
+    ILagrangeService public immutable service;
 
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
@@ -64,24 +64,29 @@ contract LagrangeCommittee is
     modifier onlyService() {
         require(
             msg.sender == address(service),
-            "Only sequencer nodes can call this function."
+            "Only service can call this function."
         );
         _;
     }
 
-    // Constructor: Accepts poseidon contracts for 2, 3, and 4 elements
-    constructor(
+    constructor(ILagrangeService _service) {
+        service = _service;
+        _disableInitializers();
+    }
+
+    // Initializer: Accepts poseidon contracts for 2, 3, and 4 elements
+    function initialize(
+        address initialOwner,
         address _poseidon2Elements,
         address _poseidon3Elements,
-        address _poseidon4Elements,
-        ILagrangeService _service
-    ) initializer {
+        address _poseidon4Elements
+    ) external initializer {
         _initializeHelpers(
             _poseidon2Elements,
             _poseidon3Elements,
             _poseidon4Elements
         );
-        service = _service;
+        _transferOwnership(initialOwner);
     }
 
     // Initialize new committee.

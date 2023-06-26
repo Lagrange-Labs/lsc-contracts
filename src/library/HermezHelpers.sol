@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.12;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-
 /**
  * @dev Interface poseidon hash function 2 elements
  */
@@ -28,7 +26,7 @@ contract PoseidonUnit4 {
 /**
  * @dev Rollup helper functions
  */
-contract HermezHelpers is Initializable {
+contract HermezHelpers {
     PoseidonUnit2 _insPoseidonUnit2;
     PoseidonUnit3 _insPoseidonUnit3;
     PoseidonUnit4 _insPoseidonUnit4;
@@ -68,7 +66,7 @@ contract HermezHelpers is Initializable {
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _poseidon4Elements
-    ) internal initializer {
+    ) internal {
         _insPoseidonUnit2 = PoseidonUnit2(_poseidon2Elements);
         _insPoseidonUnit3 = PoseidonUnit3(_poseidon3Elements);
         _insPoseidonUnit4 = PoseidonUnit4(_poseidon4Elements);
