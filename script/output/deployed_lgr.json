@@ -1,0 +1,11 @@
+{
+  "addresses": {
+    "lagrangeCommittee": "0x181e2559779316009409f9C9F6d47C323B5720F0",
+    "lagrangeCommitteeImp": "0x98f07aB2d35638B79582b250C01444cEce0E517A",
+    "lagrangeService": "0x75B96311d8040c0F0d543ED5dc57b8Aa8492ffEF",
+    "lagrangeServiceImp": "0x880359D8789590cA07bBAb78c0AcCfD3b0a77E49",
+    "lagrangeServiceManager": "0xBbE77E34F41aBf10bc3B408D975c38F15592AF2d",
+    "lagrangeServiceManagerImp": "0x928BD9d79f8f15af7E955b8cE174996c231D17C1",
+    "proxyAdmin": "0x923d8ADAAa6e52c485293cD48EE56F7BFAD85cd4"
+  }
+}

@@ -68,7 +68,7 @@ forge install
             Account 19: 0x3cDE5DD353Bf3c8C0D3D7d905436D7A7c3C369a2
             Private key: 0xa9f8fe458bddbb32c12e6bfbef75f313efff844565ba38b3098d6f88b88c7075
         ```
-    - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `eigenlayer-contracts/script/M1_deploy.config.json` with the deployed address
+    - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `localnet/script/M1_deploy.config.json` with the deployed address
 
         ```bash
         make deploy-weth9
@@ -85,17 +85,23 @@ forge install
     ```bash
     make add-strategy
     ```
-
-2. Register the `Operator`
+    
+3. Deploy the `Poseidon` smart contracts
 
     ```bash
-    make register-operator 
+    make deploy-poseidon
     ```
-    
-3. Deploy the `Lagrange` smart contracts
+
+4. Deploy the `Lagrange` smart contracts
 
     ```bash
     make deploy-lagrange
+    ```
+
+5. Register the `Operator`
+
+    ```bash
+    make register-operator 
     ```
 
 ## Build the docker image
@@ -104,5 +110,6 @@ forge install
 make docker-build
 
 # WETH: 0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956
-# Lagrange Service: 0x98f07aB2d35638B79582b250C01444cEce0E517A
+# LagrangeCommittee: 0xF824C350EA9501234a731B01B8EC6E660e069c7F
+# Lagrange Service: 0x75B96311d8040c0F0d543ED5dc57b8Aa8492ffEF
 ```
