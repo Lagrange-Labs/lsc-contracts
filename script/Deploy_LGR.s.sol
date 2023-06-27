@@ -35,15 +35,12 @@ contract Deploy is Script, Test {
     LagrangeService public lagrangeServiceImp;
     LagrangeServiceManager public lagrangeServiceManager;
     LagrangeServiceManager public lagrangeServiceManagerImp;
-    
+
     EmptyContract public emptyContract;
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
-        slasherAddress = stdJson.readAddress(
-            deployData,
-            ".addresses.slasher"
-        );
+        slasherAddress = stdJson.readAddress(deployData, ".addresses.slasher");
         strategyManagerAddress = stdJson.readAddress(
             deployData,
             ".addresses.strategyManager"
@@ -86,12 +83,7 @@ contract Deploy is Script, Test {
 
         // deploy implementation contracts
         string memory poseidonData = vm.readFile(poseidonDataPath);
-        lagrangeCommitteeImp = new LagrangeCommittee(
-            stdJson.readAddress(poseidonData, ".2"),
-            stdJson.readAddress(poseidonData, ".3"),
-            stdJson.readAddress(poseidonData, ".4"),
-            lagrangeService
-        );
+        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService);
         lagrangeServiceManagerImp = new LagrangeServiceManager(
             ISlasher(slasherAddress)
         );
@@ -102,23 +94,86 @@ contract Deploy is Script, Test {
         );
 
         // upgrade proxy contracts
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp));
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeServiceManager))), address(lagrangeServiceManagerImp));
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeService))), address(lagrangeServiceImp));
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
+            address(lagrangeCommitteeImp),
+            abi.encodeWithSelector(
+                LagrangeCommittee.initialize.selector,
+                msg.sender,
+                stdJson.readAddress(poseidonData, ".2"),
+                stdJson.readAddress(poseidonData, ".3"),
+                stdJson.readAddress(poseidonData, ".4")
+            )
+        );
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(
+                payable(address(lagrangeServiceManager))
+            ),
+            address(lagrangeServiceManagerImp),
+            abi.encodeWithSelector(
+                LagrangeServiceManager.initialize.selector,
+                msg.sender
+            )
+        );
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(lagrangeService))),
+            address(lagrangeServiceImp),
+            abi.encodeWithSelector(
+                LagrangeService.initialize.selector,
+                msg.sender
+            )
+        );
+
+        // opt into the lagrange service manager
+        ISlasher(slasherAddress).optIntoSlashing(
+            address(lagrangeServiceManager)
+        );
 
         vm.stopBroadcast();
 
         // write deployment data to file
         string memory parent_object = "parent object";
         string memory deployed_addresses = "addresses";
-        vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
-        vm.serializeAddress(deployed_addresses, "lagrangeCommitteeImp", address(lagrangeCommitteeImp));
-        vm.serializeAddress(deployed_addresses, "lagrangeCommittee", address(lagrangeCommittee));
-        vm.serializeAddress(deployed_addresses, "lagrangeServiceImp", address(lagrangeServiceImp));
-        vm.serializeAddress(deployed_addresses, "lagrangeService", address(lagrangeService));
-        vm.serializeAddress(deployed_addresses, "lagrangeServiceManagerImp", address(lagrangeServiceManagerImp));
-        string memory deployed_output = vm.serializeAddress(deployed_addresses, "lagrangeServiceManager", address(lagrangeServiceManager));
-        string memory finalJson = vm.serializeString(parent_object, deployed_addresses, deployed_output);
+        vm.serializeAddress(
+            deployed_addresses,
+            "proxyAdmin",
+            address(proxyAdmin)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "lagrangeCommitteeImp",
+            address(lagrangeCommitteeImp)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "lagrangeCommittee",
+            address(lagrangeCommittee)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "lagrangeServiceImp",
+            address(lagrangeServiceImp)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "lagrangeService",
+            address(lagrangeService)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "lagrangeServiceManagerImp",
+            address(lagrangeServiceManagerImp)
+        );
+        string memory deployed_output = vm.serializeAddress(
+            deployed_addresses,
+            "lagrangeServiceManager",
+            address(lagrangeServiceManager)
+        );
+        string memory finalJson = vm.serializeString(
+            parent_object,
+            deployed_addresses,
+            deployed_output
+        );
         vm.writeJson(finalJson, "script/output/deployed_lgr.json");
     }
 }

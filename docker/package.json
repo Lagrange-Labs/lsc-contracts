@@ -5,7 +5,8 @@
   "main": "init-accounts.js",
   "scripts": {
     "init-accounts" : "node init-accounts.js",
-    "register-operator" : "node register-operator.js"
+    "register-operator" : "node register-operator.js",
+    "register-lagrange" : "node register-lagrange.js"
   },
   "author": "",
   "license": "ISC",

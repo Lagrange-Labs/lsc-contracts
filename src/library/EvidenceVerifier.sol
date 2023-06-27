@@ -15,7 +15,7 @@ contract EvidenceVerifier {
         bytes32 nextCommitteeRoot;
         bytes32 correctNextCommitteeRoot;
         uint256 blockNumber;
-        uint256 epochNumber;
+        uint256 epochBlockNumber;
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
@@ -82,7 +82,7 @@ contract EvidenceVerifier {
                     evidence.currentCommitteeRoot,
                     evidence.nextCommitteeRoot,
                     evidence.blockNumber,
-                    evidence.epochNumber,
+                    evidence.epochBlockNumber,
                     evidence.blockSignature,
                     evidence.chainID
                 )

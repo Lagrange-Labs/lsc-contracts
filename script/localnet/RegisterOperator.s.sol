@@ -58,17 +58,6 @@ contract RegisterOperator is Script, Test {
         );
         delegation.registerAsOperator(IDelegationTerms(msg.sender));
 
-        // call optIntoSlashing on slasher
-        ISlasher slasher = ISlasher(
-            stdJson.readAddress(deployData, ".addresses.slasher")
-        );
-        slasher.optIntoSlashing(
-            stdJson.readAddress(
-                vm.readFile(deployLGRPath),
-                ".addresses.lagrangeService"
-            )
-        );
-
         vm.stopBroadcast();
     }
 }

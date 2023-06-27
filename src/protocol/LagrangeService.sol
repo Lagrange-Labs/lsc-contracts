@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
 import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
+
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../interfaces/ILagrangeCommittee.sol";
@@ -17,9 +18,7 @@ contract LagrangeService is
     EvidenceVerifier,
     VoteWeigherBase
 {
-    mapping(address => bool) public sequencers;
-
-    ILagrangeCommittee public committee;
+    ILagrangeCommittee public immutable committee;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
 
@@ -37,28 +36,19 @@ contract LagrangeService is
         uint32 chainID
     );
 
-    modifier onlySequencer() {
-        require(
-            sequencers[msg.sender] == true,
-            "Only sequencer nodes can call this function."
-        );
-        _;
-    }
-
     constructor(
         IServiceManager _serviceManager,
         ILagrangeCommittee _committee,
         IStrategyManager _strategyManager
     ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
         committee = _committee;
+        _disableInitializers();
     }
 
-    function addSequencer(address seqAddr) public onlyOwner {
-        sequencers[seqAddr] = true;
-    }
-
-    function removeSequencer(address seqAddr) public onlyOwner {
-        sequencers[seqAddr] = false;
+    function initialize(
+        address initialOwner
+    ) external initializer {
+        _transferOwnership(initialOwner);
     }
 
     /// Add the operator to the service.
@@ -74,6 +64,7 @@ contract LagrangeService is
 
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         committee.addOperator(
+            msg.sender,
             chainID,
             _blsPubKey,
             stakeAmount,
@@ -84,7 +75,7 @@ contract LagrangeService is
     }
 
     /// upload the evidence to punish the operator.
-    function uploadEvidence(Evidence calldata evidence) external onlySequencer {
+    function uploadEvidence(Evidence calldata evidence) external {
         // check the operator is registered or not
         require(
             committee.getServeUntilBlock(evidence.operator) > 0,
@@ -119,21 +110,12 @@ contract LagrangeService is
         }
 
         if (
-            !_checkCurrentCommitteeRoot(
+            !_checkCommitteeRoots(
                 evidence.correctCurrentCommitteeRoot,
                 evidence.currentCommitteeRoot,
-                evidence.epochNumber,
-                evidence.chainID
-            )
-        ) {
-            _freezeOperator(evidence.operator, evidence.chainID);
-        }
-
-        if (
-            !_checkNextCommitteeRoot(
                 evidence.correctNextCommitteeRoot,
                 evidence.nextCommitteeRoot,
-                evidence.epochNumber,
+                evidence.epochBlockNumber,
                 evidence.chainID
             )
         ) {
@@ -148,7 +130,7 @@ contract LagrangeService is
             evidence.currentCommitteeRoot,
             evidence.nextCommitteeRoot,
             evidence.blockNumber,
-            evidence.epochNumber,
+            evidence.epochBlockNumber,
             evidence.blockSignature,
             evidence.commitSignature,
             evidence.chainID
@@ -173,44 +155,32 @@ contract LagrangeService is
     }
 
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
-    function _checkCurrentCommitteeRoot(
+    function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,
         bytes32 currentCommitteeRoot,
-        uint256 epochNumber,
-        uint256 chainID
-    ) internal returns (bool) {
-        bytes32 realCurrentCommitteeRoot = bytes32(
-            committee.getCommittee(chainID, epochNumber)
-        );
-        require(
-            correctCurrentCommitteeRoot == realCurrentCommitteeRoot,
-            "Reference committee roots do not match."
-        );
-        return currentCommitteeRoot == realCurrentCommitteeRoot;
-    }
-
-    // Slashing condition.  Returns veriifcation of chain's next committee root at a given block.
-    function _checkNextCommitteeRoot(
         bytes32 correctNextCommitteeRoot,
         bytes32 nextCommitteeRoot,
-        uint256 epochNumber,
+        uint256 blockNumber,
         uint256 chainID
     ) internal returns (bool) {
-        bytes32 realNextCommitteeRoot = bytes32(
-            committee.getCommittee(chainID, epochNumber + 1)
+        (uint256 currentRoot, uint256 nextRoot) = committee.getCommittee(chainID, blockNumber);
+        require(
+            correctCurrentCommitteeRoot == bytes32(currentRoot),
+            "Reference current committee roots do not match."
         );
         require(
-            correctNextCommitteeRoot == realNextCommitteeRoot,
-            "Reference committee roots do not match."
+            correctNextCommitteeRoot == bytes32(nextRoot),
+            "Reference next committee roots do not match."
         );
-        return nextCommitteeRoot == realNextCommitteeRoot;
+        
+        return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
     }
 
     /// Slash the given operator
     function _freezeOperator(
         address operator,
         uint256 chainID
-    ) internal onlySequencer {
+    ) internal {
         serviceManager.freezeOperator(operator);
         committee.setSlashed(operator, chainID, true);
 
