@@ -11,9 +11,9 @@ fs.readFile(filePath, 'utf8', (err, data) => {
 
   try {
     const accounts = JSON.parse(data);
-    Object.keys(accounts).splice(0, 10).forEach((address) => {
+    Object.keys(accounts).splice(0, 20).forEach((address) => {
       console.log("Starting to register operator for address: ", address);
-      const command = `cd .. && forge script script/RegisterOperator.s.sol:RegisterOperator --rpc-url http://localhost:8545 --private-key ${accounts[address]} --broadcast -vvvvv`
+      const command = `cd .. && forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url http://localhost:8545 --private-key ${accounts[address]} --broadcast -vvvvv`
       exec(command, (error, stdout, stderr) => {
         console.log(`Command output: ${stdout}`);
         if (error) {

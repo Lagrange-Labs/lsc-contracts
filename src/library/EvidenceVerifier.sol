@@ -50,7 +50,7 @@ contract EvidenceVerifier {
     }
     */
 
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external pure returns (bool) {
+    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public pure returns (bool) {
     /*
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
             // 

@@ -17,3 +17,6 @@ docs/
 ganache-db
 geth_db/
 node_modules/
+
+# vscode
+.vscode
