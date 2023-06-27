@@ -107,13 +107,17 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
       address _poseidon1Elements,
       address _poseidon2Elements,
       address _poseidon3Elements,
-      address _poseidon4Elements
+      address _poseidon4Elements,
+      address _poseidon5Elements,
+      address _poseidon6Elements
     ) initializer {
         _initializeHelpers(
             _poseidon1Elements,
             _poseidon2Elements,
             _poseidon3Elements,
-            _poseidon4Elements
+            _poseidon4Elements,
+            _poseidon5Elements,
+            _poseidon6Elements
         );
         __Ownable_init();
     }
@@ -169,8 +173,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     function hash4Elements(uint256 a, uint256 b, uint256 c, uint256 d) public view returns (uint256) {
         return _hash4Elements([a,b,c,d]);
     }
+    function hash5Elements(uint256[5] memory e) public view returns (uint256) {
+        return _hash5Elements(e);
+    }
+    function hash6Elements(uint256[6] memory e) public view returns (uint256) {
+        return _hash6Elements(e);
+    }
 
     // Return Poseidon Hash of Committee Leaf
+    /*
     function getLeafHash(CommitteeLeaf memory cleaf) public view returns (uint256) {
         return _hash3Elements([
             uint256(uint160(cleaf.addr)),
@@ -178,7 +189,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             uint256(keccak256(cleaf.blsPubKey))
         ]);
     }
-    
+    */
     // Add address to committee (NEXT_2) trie
     function _committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) internal onlySequencer {
         require(CommitteeParams[chainID].startBlock > 0, "A committee for this chain ID has not been initialized.");
@@ -209,17 +220,39 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 	while (_lim < CommitteeLeaves[chainID].length) {
 	    _lim *= 2;
 	}
-        // Sequentially hash leaves to get result.
-        uint256 result = CommitteeLeaves[chainID][0];
-        for (uint256 i = 1; i < _lim; i++) {
-            if (i < CommitteeLeaves[chainID].length) {
-                result = hash2Elements(result,CommitteeLeaves[chainID][i]);
-            } else {
-                result = hash2Elements(result,0);
-            }
-        }
+
+        // First pass: compute committee nodes in memory from leaves
+        uint256[] memory CommitteeNodes = new uint256[](_lim/2);
+        uint256 left = 0;
+        uint256 right = 0;
+	for(uint256 i = 0; i < _lim; i += 2) {
+	    if(i < CommitteeLeaves[chainID].length) {
+	        left = CommitteeLeaves[chainID][i];
+	    } else {
+	        left = 0;
+	    }
+	    if(i + 1 < CommitteeLeaves[chainID].length) {
+	        right = CommitteeLeaves[chainID][i];
+	    } else {
+	        right = 0;
+	    }
+	    CommitteeNodes[i/2] = hash2Elements(left, right);
+	}
         
-        return result;
+        // Second pass: compute committee nodes in memory from nodes
+        _lim = _lim/2;
+        while(_lim > 0) {
+            uint256[] memory NLCommitteeNodes = new uint256[](_lim/2);
+	    for(uint256 i = 0; i < _lim; i += 2) {
+	        NLCommitteeNodes[i/2] = hash2Elements(
+	            CommitteeNodes[i],
+	            CommitteeNodes[i + 1]
+	        );
+	    }
+	    CommitteeNodes = NLCommitteeNodes;
+            _lim = _lim / 2;
+        }
+        return CommitteeNodes[0];
     }
     
     // Recalculates committee root (next_2)
@@ -232,11 +265,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         Committees[chainID][epochNumber + COMMITTEE_NEXT_1].root = nextRoot;
         Committees[chainID][epochNumber + COMMITTEE_NEXT_1].totalVotingPower = _getTotalVotingPower(chainID);
     }    
-
-    // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public view returns (bool) {
-        return verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
-    }
     
     // Initializes a new committee, and optionally associates addresses with it.
     function registerChain(
@@ -311,5 +339,104 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             total += CommitteeMap[chainID][CommitteeMapKeys[chainID][i]].stake;
         }
         return total;
+    }
+///////////    
+    struct InputsA {
+        uint256[6] bk_parts;
+    }
+
+    struct InputsB {
+        uint256[3] addr_stake_parts;
+    }
+//    mapping(uint256 => mapping(uint256 => CommitteeLeaf)) public CommitteeMap;
+/*
+    function getLeafHash(CommitteeLeaf memory cleaf) public view returns (uint256) {
+        return _hash3Elements([
+            uint256(uint160(cleaf.addr)),
+            uint256(cleaf.stake),
+            uint256(keccak256(cleaf.blsPubKey))
+        ]);
+    }
+*/
+
+    function getBLSSlices96(CommitteeLeaf memory cleaf) public view returns (uint96[8] memory) {
+        bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
+        uint96[8] memory bls_slices;
+        
+        for (uint i = 0; i < 8; i++) {
+            bytes memory bls = new bytes(12);
+            for (uint j = 0; j < 12; j++) {
+                bls[j] = bls_bytes[(i*12)+j];
+            }
+            bytes12 bls_chunk = bytes12(bls);
+            bls_slices[i] = uint96(bls_chunk);
+        }
+        return bls_slices;
+    }
+
+    function getAddrStakeSlices96(CommitteeLeaf memory cleaf) public view returns (uint96[3] memory) {
+        bytes memory addr_stake_bytes = abi.encodePacked(cleaf.addr, uint128(cleaf.stake));
+        uint96[3] memory addr_stake_slices;
+        
+        for (uint i = 0; i < 3; i++) {
+            bytes memory addr_stake = new bytes(12);
+            for (uint j = 0; j < 12; j++) {
+                addr_stake[j] = addr_stake_bytes[(i*12)+j];
+            }
+            bytes12 addr_stake_chunk = bytes12(addr_stake);
+            addr_stake_slices[i] = uint96(addr_stake_chunk);
+        }
+        return addr_stake_slices;
+    }
+
+
+    function getBLSSlices(CommitteeLeaf memory cleaf) public view returns (uint256[8] memory) {
+        bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
+        uint256[8] memory bls_slices;
+        
+        for (uint i = 0; i < 8; i++) {
+            bytes memory bls = new bytes(12);
+            for (uint j = 0; j < 12; j++) {
+                bls[j] = bls_bytes[(i*12)+j];
+            }
+            bytes12 bls_chunk = bytes12(bls);
+            bls_slices[i] = uint256(bytes32(bls_chunk));
+        }
+        return bls_slices;
+    }
+
+    function getAddrStakeSlices(CommitteeLeaf memory cleaf) public view returns (uint256[3] memory) {
+        bytes memory addr_stake_bytes = abi.encodePacked(cleaf.addr, uint128(cleaf.stake));
+        uint256[3] memory addr_stake_slices;
+        
+        for (uint i = 0; i < 3; i++) {
+            bytes memory addr_stake = new bytes(12);
+            for (uint j = 0; j < 12; j++) {
+                addr_stake[j] = addr_stake_bytes[(i*12)+j];
+            }
+            bytes12 addr_stake_chunk = bytes12(addr_stake);
+            addr_stake_slices[i] = uint256(bytes32(addr_stake_chunk));
+        }
+        return addr_stake_slices;
+    }
+
+    function getLeafHash(CommitteeLeaf memory cleaf /*uint256 chainID, bytes[96] memory bk, bytes[36] memory addr_stake*/) public view returns (uint256) {
+        uint256[8] memory bls_slices = getBLSSlices(cleaf);
+        uint256[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
+        
+        return hash2Elements(hash6Elements([
+            bls_slices[0],
+            bls_slices[1],
+            bls_slices[2],
+            bls_slices[3],
+            bls_slices[4],
+            bls_slices[5]
+        ]), hash5Elements([
+            bls_slices[6],
+            bls_slices[7],
+            addr_stake_slices[0],
+            addr_stake_slices[1],
+            addr_stake_slices[2]
+        ]));
     }
 }

@@ -46,8 +46,10 @@ contract Deploy is Script, Test {
         address poseidon2 = stdJson.readAddress(poseidonData, ".2");
         address poseidon3 = stdJson.readAddress(poseidonData, ".3");
         address poseidon4 = stdJson.readAddress(poseidonData, ".4");
+        address poseidon5 = stdJson.readAddress(poseidonData, ".5");
+        address poseidon6 = stdJson.readAddress(poseidonData, ".6");
         // Initialize and deploy LagrangeCommittee
-        LagrangeCommittee lagrangeCommittee = new LagrangeCommittee(poseidon1,poseidon2,poseidon3,poseidon4);
+        LagrangeCommittee lagrangeCommittee = new LagrangeCommittee(poseidon1,poseidon2,poseidon3,poseidon4,poseidon5,poseidon6);
         console.log("LagrangeCommittee deployed at: ", address(lagrangeCommittee));
         
         return lagrangeCommittee;
@@ -81,17 +83,17 @@ contract Deploy is Script, Test {
         console.log("LagrangeService deployed at: ", address(service));
 
         // call optIntoSlashing on slasher
-        //slasher.unpause(0);
-        //slasher.optIntoSlashing(address(service));
+//        slasher.unpause(0);
+  //      slasher.optIntoSlashing(address(service));
 
         // register the service
 	for(uint32 i = 0; i < sequencerAddresses.length; i++) {
 	    service.addSequencer(sequencerAddresses[i]);
             lagrangeCommittee.addSequencer(sequencerAddresses[i]);
+            //service.register(optID, "", 100800);
+            //service.register(arbID, "", 100800);
 	    /*
-            service.register(optID, 1, "", 100800);
-            service.register(arbID, 1, "", 100800);
-            service.register(baseID, 1, "", 100800);
+            service.register(baseID, "", 100800);
 	    */
 	}
     }

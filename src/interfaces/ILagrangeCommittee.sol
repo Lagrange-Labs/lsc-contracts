@@ -16,8 +16,6 @@ interface ILagrangeCommittee {
     
     //function removeCommitteeAddr(uint256 chainID) external;
 
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool);
-
     function getCommittee(uint256 chainID, uint256 epochNumber) external returns (uint256);
 
     function add(uint256 chainID, bytes memory blsPubKey, uint256 stake, uint32 serveUntilBlock) external;

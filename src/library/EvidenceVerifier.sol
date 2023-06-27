@@ -19,7 +19,6 @@ contract EvidenceVerifier {
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
-        bytes rawBlockHeader;
     }
 
     uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
@@ -44,6 +43,12 @@ contract EvidenceVerifier {
         RLPReader.RLPItem[] memory decoded = rlpData.toRlpItem().toList();
 	return decoded;
     }
+    /*
+    // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
+    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public view returns (bool) {
+        return verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
+    }
+    */
 
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external pure returns (bool) {
     /*

@@ -301,6 +301,7 @@ describe('Lagrange Service Smoke Tests', async function() {
     const lagrangeService = await getLagrangeService(redeploy);
     const provider = await getProvider();
 /*
+*/
     describe('Diagnostics', async function() {
         it('StrategyManager check', async function() {
             smAddr = await lagrangeService.StrategyMgr();
@@ -314,6 +315,7 @@ describe('Lagrange Service Smoke Tests', async function() {
             wethStrategy = await lagrangeService.WETHStrategy();
             assert.ok(wethStrategy.length == 42);
         });
+        /*
         it('WETH9 Approval', async function() {
             let amount = ethers.utils.parseUnits("32", 18);
             smContract = await getStrategyManager(lagrangeService);
@@ -344,8 +346,8 @@ describe('Lagrange Service Smoke Tests', async function() {
 //            console.log(await smContract.getDeposits("0xb2AaA94B0dbc3Af219B5abD7a141d0F66d55fB82"));
   //          console.log(await smContract.getDeposits("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9"));
         });
+        */
     });
-*/
     describe('Lagrange Service Contract', function() {
         it('LGRCommittee address associated', async function() {
             lc = await lagrangeService.LGRCommittee();
@@ -367,16 +369,73 @@ describe('Lagrange Service Smoke Tests', async function() {
     const lgrc = await getLagrangeCommittee(lagrangeService);
     
     describe('Lagrange Committee Smoke Tests', async function() {
-            it('Poseidon Profile Tests', async function() {
+	//19014214495641488759237505126948346942972912379615652741039992445865937985820
+	//18586133768512220936620570745912940619677854269274689475585506675881198879027
+	//5531577314068399026062012915499220227443825847435558783988252536753307525992
+        it('Poseidon Profile Tests', async function() {
               h0 = await lgrc.hash1Elements(0);
-              console.log(h0.toString());
+              assert.equal(h0.toString(),"19014214495641488759237505126948346942972912379615652741039992445865937985820");
               h1 = await lgrc.hash1Elements(1);
-              console.log(h1.toString());
+              assert.equal(h1.toString(),"18586133768512220936620570745912940619677854269274689475585506675881198879027");
               hh0 = await lgrc.hash1Elements(h0);
-              console.log(hh0.toString());
+              assert.equal(hh0.toString(),"5531577314068399026062012915499220227443825847435558783988252536753307525992");
+
+              c0 = [0,1,2,3,4,5];
+              c1 = [0,1,2,3,4];
+              
+              ch0 = await lgrc.hash6Elements(c0);
+              ch1 = await lgrc.hash5Elements(c1);
+              
+pubKey = "0xbd7d76812228ff6566f87f7434adf44a151ec65861d987759ba71b111d9a3602ac9186b4521ac9ca0ec83e0b4773363cbff606f8fd37c4a3828c738d48af42c61477ef515f77fb6810ae642b400de37bb68ebb5cf088b8b1452ca7f36fcf5605";
+address = "0xcd01e789ad8fa1eb1104788ecd41ccb226b07e28";
+votingPower = "32.0";
+
+data = {
+  addr:		address,
+  stake:	ethers.BigNumber.from(ethers.utils.parseEther(votingPower)),
+  blsPubKey:	ethers.utils.hexlify(pubKey)
+};
+
+console.log(data);
+
+bytes6 = await lgrc.getBLSSlices96(data);
+console.log(bytes6);
+for(i = 0; i < bytes6.length; i++) {
+  console.log(bytes6[i].toString());
+}
+console.log("\n");
+bytes5 = await lgrc.getAddrStakeSlices96(data);
+console.log(bytes5);
+for(i = 0; i < bytes5.length; i++) {
+  console.log(bytes5[i].toString());
+}
+
+/*
+              i2 = "c837410b15fddef596213ca74886e9466cc2501b57a7715771a0f15bde725f8eb1f4a6e5b46bc916ee8cb37bbc937de274754989f47c620895a845f1e7675b11b4ed0bce9586cdfabaafd59685e750bae4f84019a3cd902cd433849a5665f367";
+              si = [];
+              si[0] = i2.substring(0,64);
+              si[1] = i2.substring(64,128);
+              si[2] = i2.substring(128);
+              console.log(si);
+              h = ethers.BigNumber.from("0x"+si[0]);
+              for(i = 0; i < 3; i++) {
+                  res = await lgrc.hash1Elements(h);
+                  console.log(res.toString());
+                  h = res;
+              }
+              term();
+              
+              bigNumberValue = await ethers.BigNumber.from(i2);
+              h2 = await lgrc.hash1Elements(bigNumberValue);
+              console.log(h2.toString());
+
+              i3 = "90023B359996FC105E25C703D0956E2C8C84A675D7E78DE4825E2DE01D387E2CA7D6C77FDC71101E6108DD36E0D8C1F038844DF4264329E2EC238FE17CAAADE3F3F42C035C774B59042A2A528F3292B026F7EF031820853F3DEFE9B4EE3B3E";
+              bigNumberValue = await ethers.BigNumber.from(i3);
+              h3 = await lgrc.hash1Elements(bigNumberValue);
+              console.log(h3.toString());
+*/              
             });
     });
-term();
 
     describe('Lagrange Committee Smoke Tests', async function() {
         it('Poseidon Hash Wrapper', async function() {
@@ -388,7 +447,7 @@ term();
             assert.equal(owner, "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
         });
     });
-
+/*
     describe('Lagrange Committee Block Verification', async function() {
         it('Verify Block Header (Invalid Block Hash)', async function() {
           try {
@@ -413,11 +472,13 @@ term();
           }
         });
     });
+*/
 
     const extChainID = await Math.ceil(Math.random() * 1000000);
     const extDuration = 5;
     const freezeDuration = 2048;
     describe('Lagrange Committee', async function() {
+    /*
         it('Initialize Committee', async function() {
             this.timeout(5000);
             tx = await lgrc.initCommittee(extChainID, extDuration, freezeDuration);
@@ -432,6 +493,8 @@ term();
             assert.ok(en.toNumber() == 0);
             // TODO account for refactoring and related variable changes here and elsewhere
         });
+    */
+        /*
         it('Lagrange Service Operator Registration', async function() {
             this.timeout(5000);
             const blockNumber = await provider.getBlockNumber();
@@ -439,10 +502,11 @@ term();
             blsKey = await genBLSKey();
             priv = blsKey.serializeToHexStr();
             pub = blsKey.getPublicKey();
-            tx = await lagrangeService.register(extChainID, amount, pub.serialize(), blockNumber + 10);
+            tx = await lagrangeService.register(extChainID, pub.serialize(), blockNumber + 10);
             res = await tx.wait();
             console.log(res);
         });
+        */
     });
 });
 

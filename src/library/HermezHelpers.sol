@@ -28,6 +28,13 @@ contract PoseidonUnit4 {
     function poseidon(uint256[4] memory) public pure returns (uint256) {}
 }
 
+contract PoseidonUnit5 {
+    function poseidon(uint256[5] memory) public pure returns (uint256) {}
+}
+
+contract PoseidonUnit6 {
+    function poseidon(uint256[6] memory) public pure returns (uint256) {}
+}
 /**
  * @dev Rollup helper functions
  */
@@ -36,6 +43,8 @@ contract HermezHelpers is Initializable {
     PoseidonUnit2 _insPoseidonUnit2;
     PoseidonUnit3 _insPoseidonUnit3;
     PoseidonUnit4 _insPoseidonUnit4;
+    PoseidonUnit5 _insPoseidonUnit5;
+    PoseidonUnit6 _insPoseidonUnit6;
 
     uint256 private constant _WORD_SIZE = 32;
 
@@ -72,12 +81,16 @@ contract HermezHelpers is Initializable {
         address _poseidon1Elements,
         address _poseidon2Elements,
         address _poseidon3Elements,
-        address _poseidon4Elements
+        address _poseidon4Elements,
+        address _poseidon5Elements,
+        address _poseidon6Elements
     ) internal initializer {
         _insPoseidonUnit1 = PoseidonUnit1(_poseidon1Elements);
         _insPoseidonUnit2 = PoseidonUnit2(_poseidon2Elements);
         _insPoseidonUnit3 = PoseidonUnit3(_poseidon3Elements);
         _insPoseidonUnit4 = PoseidonUnit4(_poseidon4Elements);
+        _insPoseidonUnit5 = PoseidonUnit5(_poseidon5Elements);
+        _insPoseidonUnit6 = PoseidonUnit6(_poseidon6Elements);
     }
 
     function _hash1Elements(uint256[1] memory inputs)
@@ -126,6 +139,21 @@ contract HermezHelpers is Initializable {
         return _insPoseidonUnit4.poseidon(inputs);
     }
 
+    function _hash5Elements(uint256[5] memory inputs)
+        internal
+        view
+        returns (uint256)
+    {
+        return _insPoseidonUnit5.poseidon(inputs);
+    }
+
+    function _hash6Elements(uint256[6] memory inputs)
+        internal
+        view
+        returns (uint256)
+    {
+        return _insPoseidonUnit6.poseidon(inputs);
+    }
     /**
      * @dev Hash poseidon for sparse merkle tree nodes
      * @param left Input element array

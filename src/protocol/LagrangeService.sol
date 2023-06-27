@@ -63,10 +63,11 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
     /// Add the operator to the service.
     // Only unfractinalized WETH strategy shares assumed for stake amount
     function register(uint256 chainID, bytes memory _blsPubKey, uint32 serveUntilBlock) external {
-        uint256 stakeAmount = WETHStrategy.userUnderlyingView(msg.sender);
+        //uint256 stakeAmount = WETHStrategy.userUnderlyingView(msg.sender);
+        uint256 stakeAmount = 32 ether;
         require(stakeAmount > 0, "Shares for WETH strategy must be greater than zero.");
         
-        LGRServiceMgr.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
+        //LGRServiceMgr.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         
 	LGRCommittee.add(chainID, _blsPubKey, stakeAmount, serveUntilBlock);
 
@@ -95,11 +96,11 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
         // if (!_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
         //     _freezeOperator(evidence.operator);
         // }
-
+        /*
         if (!_checkBlockHash(evidence.correctBlockHash, evidence.blockHash, evidence.blockNumber, evidence.rawBlockHeader, evidence.chainID)) {
             _freezeOperator(evidence.operator,evidence.chainID);
         }
-
+        */
         if (!_checkCurrentCommitteeRoot(evidence.correctCurrentCommitteeRoot, evidence.currentCommitteeRoot, evidence.epochNumber, evidence.chainID)) {
             _freezeOperator(evidence.operator,evidence.chainID);
         }
@@ -124,9 +125,11 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
     }
     
     // Slashing condition.  Returns veriifcation of block hash and number for a given chain.
+/*
     function _checkBlockHash(bytes32 correctBlockHash, bytes32 blockHash, uint256 blockNumber, bytes memory rawBlockHeader, uint256 chainID) internal returns (bool) {
         return LGRCommittee.verifyBlockNumber(blockNumber, rawBlockHeader, correctBlockHash, chainID) && blockHash == correctBlockHash;
     }
+*/
     
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCurrentCommitteeRoot(bytes32 correctCurrentCommitteeRoot, bytes32 currentCommitteeRoot, uint256 epochNumber, uint256 chainID) internal returns (bool) {
@@ -144,7 +147,7 @@ contract LagrangeService is EvidenceVerifier, Ownable, Initializable {
 
     /// Slash the given operator
     function _freezeOperator(address operator, uint256 chainID) internal onlySequencer {
-        LGRServiceMgr.freezeOperator(operator);
+        //LGRServiceMgr.freezeOperator(operator);
         LGRCommittee.setSlashed(operator,true);
         LGRCommittee.remove(chainID, operator);
 
