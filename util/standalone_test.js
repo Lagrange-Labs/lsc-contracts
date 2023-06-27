@@ -398,18 +398,48 @@ data = {
 
 console.log(data);
 
-bytes6 = await lgrc.getBLSSlices96(data);
+bytes6 = await lgrc.getBLSSlices(data);
 console.log(bytes6);
 for(i = 0; i < bytes6.length; i++) {
   console.log(bytes6[i].toString());
 }
 console.log("\n");
-bytes5 = await lgrc.getAddrStakeSlices96(data);
+bytes5 = await lgrc.getAddrStakeSlices(data);
 console.log(bytes5);
 for(i = 0; i < bytes5.length; i++) {
   console.log(bytes5[i].toString());
 }
 
+console.log("\n");
+
+p6 = await lgrc.hash6Elements([
+bytes6[0],
+bytes6[1],
+bytes6[2],
+bytes6[3],
+bytes6[4],
+bytes6[5]
+]);
+
+console.log(p6.toString());
+
+p5 = await lgrc.hash5Elements([
+bytes6[6],
+bytes6[7],
+bytes5[0],
+bytes5[1],
+bytes5[2],
+]);
+
+console.log(p5.toString());
+
+lh = await lgrc.hash2Elements(p6,p5);
+
+console.log(lh.toString());
+
+lhr = await lgrc.getLeafHash(data);
+
+console.log(lhr.toString());
 /*
               i2 = "c837410b15fddef596213ca74886e9466cc2501b57a7715771a0f15bde725f8eb1f4a6e5b46bc916ee8cb37bbc937de274754989f47c620895a845f1e7675b11b4ed0bce9586cdfabaafd59685e750bae4f84019a3cd902cd433849a5665f367";
               si = [];
