@@ -19,6 +19,51 @@ contract EvidenceVerifier {
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
+        bytes rawBlockHeader;
+    }
+
+    uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
+    uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
+
+    uint public constant CHAIN_ID_MAINNET = 1;
+    uint public constant CHAIN_ID_OPTIMISM = 10;
+    uint public constant CHAIN_ID_BASE = 84531;
+    uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
+
+    using RLPReader for RLPReader.RLPItem;
+    using RLPReader for RLPReader.Iterator;
+    using RLPReader for bytes;
+
+    function calculateBlockHash(bytes memory rlpData) public pure returns (bytes32) {
+        return keccak256(rlpData);
+    }
+    
+    function checkAndDecodeRLP(bytes memory rlpData, bytes32 comparisonBlockHash) public pure returns (RLPReader.RLPItem[] memory) {
+        bytes32 blockHash = keccak256(rlpData);
+        require(blockHash == comparisonBlockHash, "Hash of RLP data diverges from comparison block hash");
+        RLPReader.RLPItem[] memory decoded = rlpData.toRlpItem().toList();
+	return decoded;
+    }
+
+    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public pure returns (bool) {
+    /*
+        if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
+            // 
+        }
+    */
+        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
+        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
+        uint number = blockNumberItem.toUint();
+        bool res = number == comparisonNumber;
+        return res;
+    }
+
+    function toUint(bytes memory src) internal pure returns (uint) {
+        uint value;
+        for (uint i = 0; i < src.length; i++) {
+            value = value * 256 + uint(uint8(src[i]));
+        }
+        return value;
     }
 
     uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
