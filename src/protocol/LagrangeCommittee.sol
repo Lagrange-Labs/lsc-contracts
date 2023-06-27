@@ -266,7 +266,7 @@ contract LagrangeCommittee is
 	    } else {
 	        right = 0;
 	    }
-	    CommitteeNodes[i/2] = hash2Elements(left, right);
+	    CommitteeNodes[i/2] = _hash2Elements([left, right]);
 	}
         
         // Second pass: compute committee nodes in memory from nodes
@@ -274,10 +274,10 @@ contract LagrangeCommittee is
         while(_lim > 0) {
             uint256[] memory NLCommitteeNodes = new uint256[](_lim/2);
 	    for(uint256 i = 0; i < _lim; i += 2) {
-	        NLCommitteeNodes[i/2] = hash2Elements(
+	        NLCommitteeNodes[i/2] = _hash2Elements([
 	            CommitteeNodes[i],
 	            CommitteeNodes[i + 1]
-	        );
+	        ]);
 	    }
 	    CommitteeNodes = NLCommitteeNodes;
             _lim = _lim / 2;
