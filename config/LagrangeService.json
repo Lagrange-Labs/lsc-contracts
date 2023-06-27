@@ -1,0 +1,23 @@
+{
+	"strategies": [
+		{
+			"strategy_address": "0xf32358f5C8FFfCF1a7bDb58b270a082abb7Ba1A6",
+			"strategy_name": "Wrapped Ether",
+			"multiplier": 1000000000
+		}
+	],
+	"chains": [
+		{
+			"chain_name": "optimism",
+			"chain_id": 10,
+			"epoch_period": 43200,
+			"freeze_duration": 6000
+		},
+		{
+			"chain_name": "arbitrum",
+			"chain_id": 42161,
+			"epoch_period": 43200,
+			"freeze_duration": 6000
+		}
+	]
+}
