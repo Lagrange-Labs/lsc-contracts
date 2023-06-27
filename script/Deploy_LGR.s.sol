@@ -87,9 +87,12 @@ contract Deploy is Script, Test {
         // deploy implementation contracts
         string memory poseidonData = vm.readFile(poseidonDataPath);
         lagrangeCommitteeImp = new LagrangeCommittee(
+            stdJson.readAddress(poseidonData, ".1"),
             stdJson.readAddress(poseidonData, ".2"),
             stdJson.readAddress(poseidonData, ".3"),
             stdJson.readAddress(poseidonData, ".4"),
+            stdJson.readAddress(poseidonData, ".5"),
+            stdJson.readAddress(poseidonData, ".6"),
             lagrangeService
         );
         lagrangeServiceManagerImp = new LagrangeServiceManager(
