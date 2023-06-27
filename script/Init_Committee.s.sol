@@ -12,41 +12,44 @@ import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 
 contract InitCommittee is Script, Test {
-    string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
-    string public deployedEIGPath = string(bytes("script/output/M1_deployment_data.json"));
+    string public deployedLGRPath =
+        string(bytes("script/output/deployed_lgr.json"));
     string public configPath = string(bytes("config/LagrangeService.json"));
+
+    struct InitialChains {
+        uint256 chainId;
+        string chainName;
+        uint256 epochPeriod;
+        uint256 freezeDuration;
+    }
 
     function run() public {
         vm.startBroadcast(msg.sender);
 
         string memory deployLGRData = vm.readFile(deployedLGRPath);
-        string memory deployEIGData = vm.readFile(deployedEIGPath);
         string memory configData = vm.readFile(configPath);
 
         LagrangeCommittee lagrangeCommittee = LagrangeCommittee(
             stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee")
         );
-        LagrangeService lagrangeService = LagrangeService(
-            stdJson.readAddress(deployLGRData, ".addresses.lagrangeService")
+    
+        // initialize the lagrange committee
+        bytes memory initChains = stdJson.parseRaw(
+            configData,
+            ".chains"
         );
-        LagrangeServiceManager lagrangeServiceManager = LagrangeServiceManager(
-            stdJson.readAddress(deployLGRData, ".addresses.lagrangeServiceManager")
+        InitialChains[] memory initialChains = abi.decode(
+            initChains,
+            (InitialChains[])
         );
 
-        // TODO - determine strategy addresses
-        address wethStrategy = stdJson.readAddress(deployEIGData, ".addresses.strategies.['Wrapped Ether']");
-        VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory newStrategiesConsideredAndMultipliers = new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
-        newStrategiesConsideredAndMultipliers[0] = VoteWeigherBaseStorage.StrategyAndWeightingMultiplier({
-            strategy: IStrategy(wethStrategy),
-            multiplier: 1
-        });
-
-        // add strategy multipliers to lagrange service
-        lagrangeService.addStrategiesConsideredAndMultipliers(1, newStrategiesConsideredAndMultipliers);
-
-        // opt into the lagrange service
-        address slasherAddress = stdJson.readAddress(deployEIGData, ".addresses.slasher");
-        ISlasher(slasherAddress).optIntoSlashing(address(lagrangeServiceManager));
+        for (uint256 i = 0; i < initialChains.length; i++) {
+            lagrangeCommittee.registerChain(
+                initialChains[i].chainId,
+                initialChains[i].epochPeriod,
+                initialChains[i].freezeDuration
+            );               
+        }
 
         vm.stopBroadcast();
     }

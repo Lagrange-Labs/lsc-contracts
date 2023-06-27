@@ -1,33 +1,23 @@
 {
-	"strategies" : [
-
+	"strategies": [
+		{
+			"strategy_address": "0xf32358f5C8FFfCF1a7bDb58b270a082abb7Ba1A6",
+			"strategy_name": "Wrapped Ether",
+			"multiplier": 1000000000
+		}
 	],
-	"optimism" : {
-		"operators" : [
-			"0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
-			"0x516D6C27C23CEd21BF7930E2a01F0BcA9A141a0d",
-			"0x4d694DE17246086d6451D732Ea8EA2a9a76dC997",
-			"0x5d51B4c1fb0c67d0e1274EC96c1B895F45505a3D",
-			"0x13cF11F76a08214A826355a1C8d661E41EA7Bf97",
-			"0xBD2369a9535751004617bC47cB0BF8Ea5c35Ed7C",
-			"0x83070c799c0d41526D4c71e462557CdbB2C750AC",
-			"0x7365666466f97E8aBBEE8900925521e0469A1f25",
-			"0xaa58F0fC9eddeFBef9E4C1c3e81f8cA5f22b9B8e"
-		],
-		"chainID" : 10
-	},
-	"arbitrum": {
-		"operators" : [
-			"0x40e1201138f0519877e3704F253153C92f5cfD2a",
-			"0xF4F16235e0591BD0BD21772718288126388C52c7",
-			"0x3928b81f4f36913055B9D127F6F4f4EBc47B03bd",
-			"0xb6e28D040F412054e769d8Fa01964fD30fe585a5",
-			"0x9fBDa3FC11494bF357FD2041631836795322Dd33",
-			"0xf431E2fd356150677831Be391b2a73D37EDeeA60",
-			"0xD1b53572F9d2F186dE2B6319DAF70dD724888b79",
-			"0xeEB0A6E0dD3C77113D7A1d876e6Fbb06f8e8F465",
-			"0xDAD2031D449F8C61A852f3d5b3c3f1e9425FA4f9"
-		],
-		"chainID" : 42161
-	}
+	"chains": [
+		{
+			"chain_name": "optimism",
+			"chain_id": 10,
+			"epoch_period": 43200,
+			"freeze_duration": 6000
+		},
+		{
+			"chain_name": "arbitrum",
+			"chain_id": 42161,
+			"epoch_period": 43200,
+			"freeze_duration": 6000
+		}
+	]
 }

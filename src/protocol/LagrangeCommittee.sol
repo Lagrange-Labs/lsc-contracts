@@ -15,14 +15,12 @@ contract LagrangeCommittee is
     HermezHelpers,
     ILagrangeCommittee
 {
-    ILagrangeService public service;
+    ILagrangeService public immutable service;
 
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
     // Frozen Committee - Next "Current" Committee
     uint256 public constant COMMITTEE_NEXT_1 = 1;
-    // Flux Committee - Changes dynamically prior to freeze as "Next" committee
-    uint256 public constant COMMITTEE_NEXT_2 = 2;
 
     // ChainID => Address
     mapping(uint256 => address[]) public addedAddrs;
@@ -43,9 +41,6 @@ contract LagrangeCommittee is
     // ChainID => Merkle Nodes
     mapping(uint256 => uint256[]) public CommitteeLeaves;
 
-    // Address => BLSPubKey
-    mapping(address => bytes) public addr2bls;
-
     mapping(address => OperatorStatus) public operators;
 
     // ChainID => Epoch check if committee tree has been updated
@@ -64,21 +59,26 @@ contract LagrangeCommittee is
     modifier onlyService() {
         require(
             msg.sender == address(service),
-            "Only sequencer nodes can call this function."
+            "Only service can call this function."
         );
         _;
     }
 
-    // Constructor: Accepts poseidon contracts for 2, 3, and 4 elements
-    constructor(
-      address _poseidon1Elements,
-      address _poseidon2Elements,
-      address _poseidon3Elements,
-      address _poseidon4Elements,
-      address _poseidon5Elements,
-      address _poseidon6Elements,
-      ILagrangeService _service
-    ) initializer {
+    constructor(ILagrangeService _service) {
+        service = _service;
+        _disableInitializers();
+    }
+
+    // Initializer: Accepts poseidon contracts for 2, 3, and 4 elements
+    function initialize(
+        address initialOwner,
+        address _poseidon1Elements,
+        address _poseidon2Elements,
+        address _poseidon3Elements,
+        address _poseidon4Elements,
+        address _poseidon5Elements,
+        address _poseidon6Elements
+    ) external initializer {
         _initializeHelpers(
             _poseidon1Elements,
             _poseidon2Elements,
@@ -87,7 +87,7 @@ contract LagrangeCommittee is
             _poseidon5Elements,
             _poseidon6Elements
         );
-        service = _service;
+        _transferOwnership(initialOwner);
     }
 
     // Initialize new committee.
@@ -134,14 +134,6 @@ contract LagrangeCommittee is
 
     // Remove address from committee map for chainID, update keys and length/height
     function _removeCommitteeAddr(uint256 chainID, address addr) internal {
-        /*
-        address addr = msg.sender;
-        */
-        /*
-        if(addr != msg.sender) {
-            require(addr == owner(),"Only the contract owner can remove other addresses from committee.");
-        }
-        */
         for (uint256 i = 0; i < CommitteeMapKeys[chainID].length; i++) {
             uint256 _i = CommitteeMapKeys[chainID][i];
             uint256 _if = CommitteeMapKeys[chainID][
@@ -158,26 +150,6 @@ contract LagrangeCommittee is
                 CommitteeMapLength[chainID]--;
             }
         }
-    }
-
-    // Wrapper functions for poseidon-hashing elements
-    function hash1Elements(uint256 a) public view returns (uint256) {
-        return _hash1Elements([a]);
-    }
-    function hash2Elements(uint256 a, uint256 b) public view returns (uint256) {
-        return _hash2Elements([a, b]);
-    }
-    function hash3Elements(uint256 a, uint256 b, uint256 c) public view returns (uint256) {
-        return _hash3Elements([a,b,c]);
-    }
-    function hash4Elements(uint256 a, uint256 b, uint256 c, uint256 d) public view returns (uint256) {
-        return _hash4Elements([a,b,c,d]);
-    }
-    function hash5Elements(uint256[5] memory e) public view returns (uint256) {
-        return _hash5Elements(e);
-    }
-    function hash6Elements(uint256[6] memory e) public view returns (uint256) {
-        return _hash6Elements(e);
     }
 
     function getBLSSlices(CommitteeLeaf memory cleaf) public view returns (uint96[8] memory) {
@@ -209,7 +181,7 @@ contract LagrangeCommittee is
         }
         return addr_stake_slices;
     }
-
+    
     // Return Poseidon Hash of Committee Leaf
     function getLeafHash(
         CommitteeLeaf memory cleaf
@@ -217,20 +189,20 @@ contract LagrangeCommittee is
         uint96[8] memory bls_slices = getBLSSlices(cleaf);
         uint96[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
         
-        return hash2Elements(hash6Elements([
+        return _hash2Elements([_hash6Elements([
             uint256(bls_slices[0]),
             uint256(bls_slices[1]),
             uint256(bls_slices[2]),
             uint256(bls_slices[3]),
             uint256(bls_slices[4]),
             uint256(bls_slices[5])
-        ]), hash5Elements([
+        ]), _hash5Elements([
             uint256(bls_slices[6]),
             uint256(bls_slices[7]),
             uint256(addr_stake_slices[0]),
             uint256(addr_stake_slices[1]),
             uint256(addr_stake_slices[2])
-        ]));
+        ])]);
     }
     
     // Add address to committee (NEXT_2) trie
@@ -253,12 +225,14 @@ contract LagrangeCommittee is
         CommitteeLeaves[chainID].push(lhash);
     }
 
-    // Returns chain's committee root at a given block.
+    // Returns chain's committee current and next roots at a given block.
     function getCommittee(
-        uint256 chainID,
-        uint256 epochNumber
-    ) public view returns (uint256) {
-        return Committees[chainID][epochNumber].root;
+        uint256 chainID, 
+        uint256 blockNumber
+    ) public view returns (uint256, uint256) {
+        uint256 epochNumber = getEpochNumber(chainID, blockNumber);
+        uint256 nextEpoch = getEpochNumber(chainID, blockNumber + 1);
+        return (Committees[chainID][epochNumber].root, Committees[chainID][nextEpoch].root);
     }
 
     // Computes and returns "next" committee root.
@@ -266,7 +240,7 @@ contract LagrangeCommittee is
         uint256 chainID
     ) public view returns (uint256) {
         if (CommitteeLeaves[chainID].length == 0) {
-            return hash2Elements(uint256(0), uint256(0));
+            return _hash2Elements([uint256(0), uint256(0)]);
         } else if (CommitteeLeaves[chainID].length == 1) {
             return CommitteeLeaves[chainID][0];
         }
@@ -311,15 +285,16 @@ contract LagrangeCommittee is
         return CommitteeNodes[0];
     }
 
-    // Recalculates committee root (next_2)
+    // Recalculates committee root (next_1)
     function _compCommitteeRoot(uint256 chainID, uint256 epochNumber) internal {
         uint256 nextRoot = getNext1CommitteeRoot(chainID);
 
         // Update roots
-        Committees[chainID][epochNumber + COMMITTEE_NEXT_1]
+        uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
+        Committees[chainID][nextEpoch]
             .height = CommitteeMapLength[chainID];
-        Committees[chainID][epochNumber + COMMITTEE_NEXT_1].root = nextRoot;
-        Committees[chainID][epochNumber + COMMITTEE_NEXT_1]
+        Committees[chainID][nextEpoch].root = nextRoot;
+        Committees[chainID][nextEpoch]
             .totalVotingPower = _getTotalVotingPower(chainID);
     }    
     
@@ -330,19 +305,19 @@ contract LagrangeCommittee is
         uint256 freezeDuration
     ) public onlyOwner {
         _initCommittee(chainID, epochPeriod, freezeDuration);
-        _compCommitteeRoot(chainID, 0);
+        _update(chainID, 0);
     }
 
     // Adds address stake data and flags it for committee addition
     function addOperator(
+        address operator,
         uint256 chainID,
         bytes memory blsPubKey,
         uint256 stake,
         uint32 serveUntilBlock
     ) public onlyService {
-        addedAddrs[chainID].push(msg.sender);
-        addr2bls[msg.sender] = blsPubKey;
-        operators[msg.sender] = OperatorStatus(stake, serveUntilBlock, false);
+        addedAddrs[chainID].push(operator);
+        operators[operator] = OperatorStatus(stake, blsPubKey, serveUntilBlock, false);
     }
 
     function isUpdatable(
@@ -365,12 +340,18 @@ contract LagrangeCommittee is
 
         require(updatedEpoch[chainID] < epochNumber, "Already updated.");
 
+        _update(chainID, epochNumber);
+    }
+
+    function _update(uint256 chainID, uint256 epochNumber) internal {
         for (uint256 i = 0; i < addedAddrs[chainID].length; i++) {
+            address addedAddr = addedAddrs[chainID][i];
+            OperatorStatus memory op = operators[addedAddr];
             _committeeAdd(
                 chainID,
-                addedAddrs[chainID][i],
-                operators[addedAddrs[chainID][i]].amount,
-                addr2bls[msg.sender]
+                addedAddr,
+                op.amount,
+                op.blsPubKey
             );
         }
         for (uint256 i = 0; i < removedAddrs[chainID].length; i++) {
@@ -397,8 +378,7 @@ contract LagrangeCommittee is
     ) public view returns (uint256) {
         uint256 startBlockNumber = CommitteeParams[chainID].startBlock;
         uint256 epochPeriod = CommitteeParams[chainID].duration;
-        uint256 epochNumber = (blockNumber - startBlockNumber) / epochPeriod;
-        return epochNumber;
+        return (blockNumber - startBlockNumber) / epochPeriod + 1;
     }
 
     // Returns cumulative strategy shares for opted in addresses
