@@ -64,6 +64,7 @@ contract LagrangeService is
 
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         committee.addOperator(
+            msg.sender,
             chainID,
             _blsPubKey,
             stakeAmount,
@@ -109,21 +110,12 @@ contract LagrangeService is
         }
 
         if (
-            !_checkCurrentCommitteeRoot(
+            !_checkCommitteeRoots(
                 evidence.correctCurrentCommitteeRoot,
                 evidence.currentCommitteeRoot,
-                evidence.epochNumber,
-                evidence.chainID
-            )
-        ) {
-            _freezeOperator(evidence.operator, evidence.chainID);
-        }
-
-        if (
-            !_checkNextCommitteeRoot(
                 evidence.correctNextCommitteeRoot,
                 evidence.nextCommitteeRoot,
-                evidence.epochNumber,
+                evidence.epochBlockNumber,
                 evidence.chainID
             )
         ) {
@@ -138,7 +130,7 @@ contract LagrangeService is
             evidence.currentCommitteeRoot,
             evidence.nextCommitteeRoot,
             evidence.blockNumber,
-            evidence.epochNumber,
+            evidence.epochBlockNumber,
             evidence.blockSignature,
             evidence.commitSignature,
             evidence.chainID
@@ -163,37 +155,25 @@ contract LagrangeService is
     }
 
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
-    function _checkCurrentCommitteeRoot(
+    function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,
         bytes32 currentCommitteeRoot,
-        uint256 epochNumber,
-        uint256 chainID
-    ) internal returns (bool) {
-        bytes32 realCurrentCommitteeRoot = bytes32(
-            committee.getCommittee(chainID, epochNumber)
-        );
-        require(
-            correctCurrentCommitteeRoot == realCurrentCommitteeRoot,
-            "Reference committee roots do not match."
-        );
-        return currentCommitteeRoot == realCurrentCommitteeRoot;
-    }
-
-    // Slashing condition.  Returns veriifcation of chain's next committee root at a given block.
-    function _checkNextCommitteeRoot(
         bytes32 correctNextCommitteeRoot,
         bytes32 nextCommitteeRoot,
-        uint256 epochNumber,
+        uint256 blockNumber,
         uint256 chainID
     ) internal returns (bool) {
-        bytes32 realNextCommitteeRoot = bytes32(
-            committee.getCommittee(chainID, epochNumber + 1)
+        (uint256 currentRoot, uint256 nextRoot) = committee.getCommittee(chainID, blockNumber);
+        require(
+            correctCurrentCommitteeRoot == bytes32(currentRoot),
+            "Reference current committee roots do not match."
         );
         require(
-            correctNextCommitteeRoot == realNextCommitteeRoot,
-            "Reference committee roots do not match."
+            correctNextCommitteeRoot == bytes32(nextRoot),
+            "Reference next committee roots do not match."
         );
-        return nextCommitteeRoot == realNextCommitteeRoot;
+        
+        return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
     }
 
     /// Slash the given operator

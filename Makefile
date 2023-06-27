@@ -62,3 +62,8 @@ test:
 	docker ps -q --filter ancestor="lagrange/contracts" | xargs -r docker rm -f
 .PHONY: test
 
+clean: stop
+	sudo rm -rf docker/geth_db
+
+all: run-geth init-accounts deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange add-quorum register-lagrange init-committee
+.PHONY: all clean
