@@ -388,8 +388,8 @@ describe('Lagrange Service Smoke Tests', async function() {
               ch0 = await lgrc.hash6Elements(c0);
               ch1 = await lgrc.hash5Elements(c1);
               
-pubKey = "0xbd7d76812228ff6566f87f7434adf44a151ec65861d987759ba71b111d9a3602ac9186b4521ac9ca0ec83e0b4773363cbff606f8fd37c4a3828c738d48af42c61477ef515f77fb6810ae642b400de37bb68ebb5cf088b8b1452ca7f36fcf5605";
-address = "0xcd01e789ad8fa1eb1104788ecd41ccb226b07e28";
+pubKey = "0xa936a5541b90dc5d48f7c9bea8979a8af4fc9ce7bc104932684084f6a7da3d5ace59afbdf0be4f3678171b2b3e70e0ce";
+address = "0xD8C140CFB669080FAA3CBE4724E4C20AA33082C0";
 votingPower = "32.0";
 
 data = {
@@ -414,34 +414,30 @@ for(i = 0; i < bytes5.length; i++) {
 
 console.log("\n");
 
-p6 = await lgrc.hash6Elements([
+p6 = await lgrc.hash4Elements(
 bytes6[0],
 bytes6[1],
 bytes6[2],
-bytes6[3],
-bytes6[4],
-bytes6[5]
-]);
+bytes6[3]
+);
 
-console.log(p6.toString());
+	    console.log("hash4:"+p6.toString());
 
-p5 = await lgrc.hash5Elements([
-bytes6[6],
-bytes6[7],
+p5 = await lgrc.hash3Elements(
 bytes5[0],
 bytes5[1],
 bytes5[2],
-]);
+);
 
-console.log(p5.toString());
+	    console.log("hash3:"+p5.toString());
 
 lh = await lgrc.hash2Elements(p6,p5);
 
-console.log(lh.toString());
+	    console.log("hash2:"+lh.toString());
 
 lhr = await lgrc.getLeafHash(data);
 
-	    console.log(lhr.toString());
+	    console.log("onchain:"+lhr.toString());
 	/////////
 	bs = 0;
 	as = 0;

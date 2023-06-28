@@ -255,11 +255,10 @@ contract LagrangeCommittee is
         uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
         Committees[chainID][nextEpoch].height = CommitteeMapLength[chainID];
         Committees[chainID][nextEpoch].root = nextRoot;
-        Committees[chainID][nextEpoch].totalVotingPower = _getTotalVotingPower(
-            chainID
-        );
-    }
-
+        Committees[chainID][nextEpoch]
+            .totalVotingPower = _getTotalVotingPower(chainID);
+    }    
+    
     // Initializes a new committee, and optionally associates addresses with it.
     function registerChain(
         uint256 chainID,
@@ -356,14 +355,14 @@ contract LagrangeCommittee is
 
     function getBLSSlices(
         CommitteeLeaf memory cleaf
-    ) public pure returns (uint96[8] memory) {
+    ) public view returns (uint96[4] memory) {
         bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
-        uint96[8] memory bls_slices;
-
-        for (uint i = 0; i < 8; i++) {
+        uint96[4] memory bls_slices;
+        
+        for (uint i = 0; i < 4; i++) {
             bytes memory bls = new bytes(12);
             for (uint j = 0; j < 12; j++) {
-                bls[j] = bls_bytes[(i * 12) + j];
+                bls[j] = bls_bytes[(i*12)+j];
             }
             bytes12 bls_chunk = bytes12(bls);
             bls_slices[i] = uint96(bls_chunk);
@@ -394,32 +393,18 @@ contract LagrangeCommittee is
     function getLeafHash(
         CommitteeLeaf memory cleaf
     ) public view returns (uint256) {
-        uint96[8] memory bls_slices = getBLSSlices(cleaf);
+        uint96[4] memory bls_slices = getBLSSlices(cleaf);
         uint96[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
-
-        return
-            _hash2Elements(
-                [
-                    _hash6Elements(
-                        [
-                            uint256(bls_slices[0]),
-                            uint256(bls_slices[1]),
-                            uint256(bls_slices[2]),
-                            uint256(bls_slices[3]),
-                            uint256(bls_slices[4]),
-                            uint256(bls_slices[5])
-                        ]
-                    ),
-                    _hash5Elements(
-                        [
-                            uint256(bls_slices[6]),
-                            uint256(bls_slices[7]),
-                            uint256(addr_stake_slices[0]),
-                            uint256(addr_stake_slices[1]),
-                            uint256(addr_stake_slices[2])
-                        ]
-                    )
-                ]
-            );
+        
+        return _hash2Elements([_hash4Elements([
+            uint256(bls_slices[0]),
+            uint256(bls_slices[1]),
+            uint256(bls_slices[2]),
+            uint256(bls_slices[3])
+        ]), _hash3Elements([
+            uint256(addr_stake_slices[0]),
+            uint256(addr_stake_slices[1]),
+            uint256(addr_stake_slices[2])
+        ])]);
     }
 }

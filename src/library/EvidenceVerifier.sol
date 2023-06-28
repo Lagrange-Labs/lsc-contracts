@@ -45,6 +45,7 @@ contract EvidenceVerifier {
 	return decoded;
     }
 
+    // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public pure returns (bool) {
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
             return true; // TODO: add the logic
