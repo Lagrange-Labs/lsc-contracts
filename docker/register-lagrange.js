@@ -22,7 +22,7 @@ fs.readFile(operatorsPath, 'utf8', (err, data) => {
         chains.forEach((chain) => {
             chain.operators.forEach((address, index) => {
                 const privKey = accounts[address];
-                const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+                const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
                 const wallet = new ethers.Wallet(privKey, provider);
                 const contract = new ethers.Contract(deployedAddresses.addresses.lagrangeService, abi, wallet);
 
