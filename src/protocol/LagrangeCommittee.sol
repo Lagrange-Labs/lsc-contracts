@@ -232,7 +232,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 	        left = 0;
 	    }
 	    if(i + 1 < CommitteeLeaves[chainID].length) {
-	        right = CommitteeLeaves[chainID][i];
+	        right = CommitteeLeaves[chainID][i + 1];
 	    } else {
 	        right = 0;
 	    }
@@ -241,7 +241,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         
         // Second pass: compute committee nodes in memory from nodes
         _lim = _lim/2;
-        while(_lim > 0) {
+        while(_lim > 1) {
             uint256[] memory NLCommitteeNodes = new uint256[](_lim/2);
 	    for(uint256 i = 0; i < _lim; i += 2) {
 	        NLCommitteeNodes[i/2] = hash2Elements(
@@ -407,5 +407,14 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             uint256(addr_stake_slices[1]),
             uint256(addr_stake_slices[2])
         ]));
+    }
+//    function _committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) internal onlySequencer {
+    function forceSetLeaves(uint256 chainID, CommitteeLeaf[] memory leaves) public {
+        for(uint256 i = 0; i < leaves.length; i++) {
+	    _committeeAdd(chainID, leaves[i].addr, leaves[i].stake, leaves[i].blsPubKey);
+	}
+    }
+    function getCommiteeMapLength(uint256 chainID) public view returns (uint256) {
+        return CommitteeMapLength[chainID];
     }
 }
