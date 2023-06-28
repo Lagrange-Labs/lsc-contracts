@@ -1,24 +1,34 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
-//import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
-//import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
 
 //import "../interfaces/ILagrangeCommittee.sol";
 
-contract LagrangeServiceManager is Ownable, Initializable, IServiceManager {
+contract LagrangeServiceManager is
+    Initializable,
+    OwnableUpgradeable,
+    IServiceManager
+{
     ISlasher public immutable slasher;
+
+    uint32 public taskNumber = 0;
+    uint32 public latestServeUntilBlock = 0;
 
     constructor(ISlasher _slasher) {
         slasher = _slasher;
+        _disableInitializers();
     }
-    
-    uint32 public taskNumber = 0;
+
+    function initialize(
+        address initialOwner
+    ) external initializer {
+        _transferOwnership(initialOwner);
+    }
 
     // slash the given operator
     function freezeOperator(address operator) external {
@@ -56,9 +66,7 @@ contract LagrangeServiceManager is Ownable, Initializable, IServiceManager {
         );
     }
 
-    uint32 public latestServeUntilBlock = 0;
-
-    function owner() public view override(Ownable, IServiceManager) returns (address) {
-        return Ownable.owner();
+    function owner() public view override(OwnableUpgradeable, IServiceManager) returns (address) {
+        return OwnableUpgradeable.owner();
     }
 }
