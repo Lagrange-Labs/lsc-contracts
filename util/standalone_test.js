@@ -300,8 +300,6 @@ describe('Lagrange Service Smoke Tests', async function() {
     const redeploy = process.argv.includes('--redeploy');
     const lagrangeService = await getLagrangeService(redeploy);
     const provider = await getProvider();
-/*
-*/
     describe('Diagnostics', async function() {
         it('StrategyManager check', async function() {
             smAddr = await lagrangeService.StrategyMgr();
@@ -440,7 +438,6 @@ lh = await lgrc.hash2Elements(p6,p5);
 lhr = await lgrc.getLeafHash(data);
 
 	    console.log("onchain:"+lhr.toString());
-	    term();
 	/////////
 	bs = 0;
 	as = 0;
