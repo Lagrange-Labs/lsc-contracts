@@ -340,24 +340,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         }
         return total;
     }
-///////////    
-    struct InputsA {
-        uint256[6] bk_parts;
-    }
-
-    struct InputsB {
-        uint256[3] addr_stake_parts;
-    }
-//    mapping(uint256 => mapping(uint256 => CommitteeLeaf)) public CommitteeMap;
-/*
-    function getLeafHash(CommitteeLeaf memory cleaf) public view returns (uint256) {
-        return _hash3Elements([
-            uint256(uint160(cleaf.addr)),
-            uint256(cleaf.stake),
-            uint256(keccak256(cleaf.blsPubKey))
-        ]);
-    }
-*/
 
     function getBLSSlices(CommitteeLeaf memory cleaf) public view returns (uint96[8] memory) {
         bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
@@ -389,7 +371,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return addr_stake_slices;
     }
 
-    function getLeafHash(CommitteeLeaf memory cleaf /*uint256 chainID, bytes[96] memory bk, bytes[36] memory addr_stake*/) public view returns (uint256) {
+    function getLeafHash(CommitteeLeaf memory cleaf) public view returns (uint256) {
         uint96[8] memory bls_slices = getBLSSlices(cleaf);
         uint96[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
         
@@ -407,14 +389,5 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             uint256(addr_stake_slices[1]),
             uint256(addr_stake_slices[2])
         ]));
-    }
-//    function _committeeAdd(uint256 chainID, address addr, uint256 stake, bytes memory _blsPubKey) internal onlySequencer {
-    function forceSetLeaves(uint256 chainID, CommitteeLeaf[] memory leaves) public {
-        for(uint256 i = 0; i < leaves.length; i++) {
-	    _committeeAdd(chainID, leaves[i].addr, leaves[i].stake, leaves[i].blsPubKey);
-	}
-    }
-    function getCommiteeMapLength(uint256 chainID) public view returns (uint256) {
-        return CommitteeMapLength[chainID];
     }
 }
