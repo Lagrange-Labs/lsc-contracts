@@ -1,8 +1,10 @@
 const fs = require('fs')
 const path = require('path');
 const exec = require('child_process');
-const poseidonUnit = require("circomlib/src/poseidon_gencontract.js");
+const poseidonUnit = require("circomlibjs").poseidonContract;
 const ethers = require("ethers");
+
+sponge = 0;
 
 async function deployPoseidon() {
 
@@ -12,10 +14,27 @@ async function deployPoseidon() {
     const currentProvider = new ethers.providers.JsonRpcProvider('http://0.0.0.0:8545');
     const signerNode = await currentProvider.getSigner();
     poseidonAddrs = {};
-    for (i = 2; i<= 4; i++) {
+    hashNums = [1,2,3,4,5,6];
+    for (it = 0; it <= hashNums.length; it++) {
+        i = hashNums[it];
+        console.log(i);
+        poseidonCode = null;
+        poseidonABI = null;
+        try {
+            if(sponge) {
+            poseidonCode = await poseidonUnit.createCode("mimcsponge",220);
+            poseidonABI = await poseidonUnit.abi;
+            } else {
+            poseidonCode = await poseidonUnit.createCode(i);
+            poseidonABI = await poseidonUnit.generateABI(i);
+            }
+        } catch(err) {
+            console.log(err);
+        }
+
 	cf = new ethers.ContractFactory(
-	    poseidonUnit.generateABI(i),
-	    poseidonUnit.createCode(i),
+	    poseidonABI,
+	    poseidonCode,
 	    signerNode
 	);
 	cd = await cf.deploy();

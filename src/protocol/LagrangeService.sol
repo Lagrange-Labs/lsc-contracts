@@ -59,7 +59,6 @@ contract LagrangeService is
         uint32 serveUntilBlock
     ) external {
         uint96 stakeAmount = weightOfOperator(msg.sender, 1);
-
         require(stakeAmount > 0, "The stake amount is zero");
 
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
