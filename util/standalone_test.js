@@ -369,10 +369,14 @@ describe('Lagrange Service Smoke Tests', async function() {
     const lgrc = await getLagrangeCommittee(lagrangeService);
     
     describe('Lagrange Committee Smoke Tests', async function() {
+            this.timeout(90000);
 	//19014214495641488759237505126948346942972912379615652741039992445865937985820
 	//18586133768512220936620570745912940619677854269274689475585506675881198879027
 	//5531577314068399026062012915499220227443825847435558783988252536753307525992
         it('Poseidon Profile Tests', async function() {
+	/*
+*/
+	    
               h0 = await lgrc.hash1Elements(0);
               assert.equal(h0.toString(),"19014214495641488759237505126948346942972912379615652741039992445865937985820");
               h1 = await lgrc.hash1Elements(1);
@@ -439,7 +443,34 @@ console.log(lh.toString());
 
 lhr = await lgrc.getLeafHash(data);
 
-console.log(lhr.toString());
+	    console.log(lhr.toString());
+	/////////
+	bs = 0;
+	as = 0;
+	    nodes = [];
+	    
+
+	    chainID = await Math.ceil(Math.random() * 1000000);
+	    await lgrc.registerChain(chainID,[],128,64);
+	    
+	for(i = 0; i < 10; i++) {
+	    blsKey = "0x";
+	    addr = "0x";
+	    for(j = 0; j < 40; j++) {
+		addr += ((i+j)%16).toString(16);
+	    }
+	    for(j = 0; j < 384; j++) {
+		blsKey += ((i+j)%16).toString(16);
+	    }
+	    nodes[i] = {addr:addr,stake:32,blsPubKey:blsKey};
+	    console.log(nodes[i]);
+	    await lgrc.forceSetLeaves(chainID,[nodes[i]]);
+	    await delay(1000);
+	    len = await lgrc.CommitteeMapLength(chainID);
+	    root = await lgrc.getNext1CommitteeRoot(chainID);
+	    console.log(root+":"+len);
+	}
+	    term();
 /*
               i2 = "c837410b15fddef596213ca74886e9466cc2501b57a7715771a0f15bde725f8eb1f4a6e5b46bc916ee8cb37bbc937de274754989f47c620895a845f1e7675b11b4ed0bce9586cdfabaafd59685e750bae4f84019a3cd902cd433849a5665f367";
               si = [];
