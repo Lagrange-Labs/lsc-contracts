@@ -25,7 +25,7 @@
   },
   "chainInfo": {
     "chainId": 1337,
-    "deploymentBlock": 15
+    "deploymentBlock": 14
   },
   "parameters": {
     "executorMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",

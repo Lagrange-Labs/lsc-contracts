@@ -152,59 +152,6 @@ contract LagrangeCommittee is
         }
     }
 
-    function getBLSSlices(CommitteeLeaf memory cleaf) public view returns (uint96[8] memory) {
-        bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
-        uint96[8] memory bls_slices;
-        
-        for (uint i = 0; i < 8; i++) {
-            bytes memory bls = new bytes(12);
-            for (uint j = 0; j < 12; j++) {
-                bls[j] = bls_bytes[(i*12)+j];
-            }
-            bytes12 bls_chunk = bytes12(bls);
-            bls_slices[i] = uint96(bls_chunk);
-        }
-        return bls_slices;
-    }
-
-    function getAddrStakeSlices(CommitteeLeaf memory cleaf) public view returns (uint96[3] memory) {
-        bytes memory addr_stake_bytes = abi.encodePacked(cleaf.addr, uint128(cleaf.stake));
-        uint96[3] memory addr_stake_slices;
-        
-        for (uint i = 0; i < 3; i++) {
-            bytes memory addr_stake = new bytes(12);
-            for (uint j = 0; j < 12; j++) {
-                addr_stake[j] = addr_stake_bytes[(i*12)+j];
-            }
-            bytes12 addr_stake_chunk = bytes12(addr_stake);
-            addr_stake_slices[i] = uint96(addr_stake_chunk);
-        }
-        return addr_stake_slices;
-    }
-    
-    // Return Poseidon Hash of Committee Leaf
-    function getLeafHash(
-        CommitteeLeaf memory cleaf
-    ) public view returns (uint256) {
-        uint96[8] memory bls_slices = getBLSSlices(cleaf);
-        uint96[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
-        
-        return _hash2Elements([_hash6Elements([
-            uint256(bls_slices[0]),
-            uint256(bls_slices[1]),
-            uint256(bls_slices[2]),
-            uint256(bls_slices[3]),
-            uint256(bls_slices[4]),
-            uint256(bls_slices[5])
-        ]), _hash5Elements([
-            uint256(bls_slices[6]),
-            uint256(bls_slices[7]),
-            uint256(addr_stake_slices[0]),
-            uint256(addr_stake_slices[1]),
-            uint256(addr_stake_slices[2])
-        ])]);
-    }
-    
     // Add address to committee (NEXT_2) trie
     function _committeeAdd(
         uint256 chainID,
@@ -227,12 +174,17 @@ contract LagrangeCommittee is
 
     // Returns chain's committee current and next roots at a given block.
     function getCommittee(
-        uint256 chainID, 
+        uint256 chainID,
         uint256 blockNumber
-    ) public view returns (uint256, uint256) {
+    )
+        public
+        view
+        returns (CommitteeData memory currentCommittee, uint256 nextRoot)
+    {
         uint256 epochNumber = getEpochNumber(chainID, blockNumber);
         uint256 nextEpoch = getEpochNumber(chainID, blockNumber + 1);
-        return (Committees[chainID][epochNumber].root, Committees[chainID][nextEpoch].root);
+        currentCommittee = Committees[chainID][epochNumber];
+        nextRoot = Committees[chainID][nextEpoch].root;
     }
 
     // Computes and returns "next" committee root.
@@ -245,44 +197,54 @@ contract LagrangeCommittee is
             return CommitteeLeaves[chainID][0];
         }
 
-	// Calculate limit
-	uint256 _lim = 2;
-	while (_lim < CommitteeLeaves[chainID].length) {
-	    _lim *= 2;
-	}
-
-        // First pass: compute committee nodes in memory from leaves
-        uint256[] memory CommitteeNodes = new uint256[](_lim/2);
-        uint256 left = 0;
-        uint256 right = 0;
-	for(uint256 i = 0; i < _lim; i += 2) {
-	    if(i < CommitteeLeaves[chainID].length) {
-	        left = CommitteeLeaves[chainID][i];
-	    } else {
-	        left = 0;
-	    }
-	    if(i + 1 < CommitteeLeaves[chainID].length) {
-	        right = CommitteeLeaves[chainID][i + 1];
-	    } else {
-	        right = 0;
-	    }
-	    CommitteeNodes[i/2] = _hash2Elements([left, right]);
-	}
-        
-        // Second pass: compute committee nodes in memory from nodes
-        _lim = _lim/2;
-        while(_lim > 1) {
-            uint256[] memory NLCommitteeNodes = new uint256[](_lim/2);
-	    for(uint256 i = 0; i < _lim; i += 2) {
-	        NLCommitteeNodes[i/2] = _hash2Elements([
-	            CommitteeNodes[i],
-	            CommitteeNodes[i + 1]
-	        ]);
-	    }
-	    CommitteeNodes = NLCommitteeNodes;
-            _lim = _lim / 2;
+        // Calculate limit
+        uint256 _lim = 2;
+        uint256 height = 1;
+        uint256 dataLength = CommitteeLeaves[chainID].length;
+        while (_lim < dataLength) {
+            _lim *= 2;
+            ++height;
         }
-        return CommitteeNodes[0];
+
+        uint256[] memory branches = new uint256[](height + 1);
+        uint256 right;
+        uint256 _h;
+        uint256 i = 1;
+        for (; i < dataLength; i += 2) {
+            _h = 0;
+            right = CommitteeLeaves[chainID][i];
+            branches[0] = CommitteeLeaves[chainID][i - 1];
+            while ((i >> _h) & 1 == 1) {
+                right = _hash2Elements([branches[_h], right]);
+                _h++;
+            }
+            branches[_h] = right;
+        }
+
+        if (i == dataLength) {
+            branches[0] = CommitteeLeaves[chainID][i - 1];
+            _h = 0;
+            right = 0;
+            while ((i >> _h) & 1 == 1) {
+                right = _hash2Elements([branches[_h], right]);
+                _h++;
+            }
+            branches[_h] = right;
+            i += 2;
+        }
+
+        branches[0] = 0;
+        for (; i < _lim; i += 2) {
+            _h = 0;
+            right = 0;
+            while ((i >> _h) & 1 == 1) {
+                right = _hash2Elements([branches[_h], right]);
+                _h++;
+            }
+            branches[_h] = right;
+        }
+
+        return branches[height];
     }
 
     // Recalculates committee root (next_1)
@@ -291,8 +253,7 @@ contract LagrangeCommittee is
 
         // Update roots
         uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
-        Committees[chainID][nextEpoch]
-            .height = CommitteeMapLength[chainID];
+        Committees[chainID][nextEpoch].height = CommitteeMapLength[chainID];
         Committees[chainID][nextEpoch].root = nextRoot;
         Committees[chainID][nextEpoch]
             .totalVotingPower = _getTotalVotingPower(chainID);
@@ -317,7 +278,12 @@ contract LagrangeCommittee is
         uint32 serveUntilBlock
     ) public onlyService {
         addedAddrs[chainID].push(operator);
-        operators[operator] = OperatorStatus(stake, blsPubKey, serveUntilBlock, false);
+        operators[operator] = OperatorStatus(
+            stake,
+            blsPubKey,
+            serveUntilBlock,
+            false
+        );
     }
 
     function isUpdatable(
@@ -347,12 +313,7 @@ contract LagrangeCommittee is
         for (uint256 i = 0; i < addedAddrs[chainID].length; i++) {
             address addedAddr = addedAddrs[chainID][i];
             OperatorStatus memory op = operators[addedAddr];
-            _committeeAdd(
-                chainID,
-                addedAddr,
-                op.amount,
-                op.blsPubKey
-            );
+            _committeeAdd(chainID, addedAddr, op.amount, op.blsPubKey);
         }
         for (uint256 i = 0; i < removedAddrs[chainID].length; i++) {
             _removeCommitteeAddr(chainID, removedAddrs[chainID][i]);
@@ -407,14 +368,19 @@ contract LagrangeCommittee is
         return bls_slices;
     }
 
-    function getAddrStakeSlices(CommitteeLeaf memory cleaf) public view returns (uint96[3] memory) {
-        bytes memory addr_stake_bytes = abi.encodePacked(cleaf.addr, uint128(cleaf.stake));
+    function getAddrStakeSlices(
+        CommitteeLeaf memory cleaf
+    ) public pure returns (uint96[3] memory) {
+        bytes memory addr_stake_bytes = abi.encodePacked(
+            cleaf.addr,
+            uint128(cleaf.stake)
+        );
         uint96[3] memory addr_stake_slices;
-        
+
         for (uint i = 0; i < 3; i++) {
             bytes memory addr_stake = new bytes(12);
             for (uint j = 0; j < 12; j++) {
-                addr_stake[j] = addr_stake_bytes[(i*12)+j];
+                addr_stake[j] = addr_stake_bytes[(i * 12) + j];
             }
             bytes12 addr_stake_chunk = bytes12(addr_stake);
             addr_stake_slices[i] = uint96(addr_stake_chunk);

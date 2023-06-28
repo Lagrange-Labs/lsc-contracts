@@ -162,9 +162,9 @@ contract LagrangeService is
         uint256 blockNumber,
         uint256 chainID
     ) internal returns (bool) {
-        (uint256 currentRoot, uint256 nextRoot) = committee.getCommittee(chainID, blockNumber);
+        (ILagrangeCommittee.CommitteeData memory currentCommittee, uint256 nextRoot) = committee.getCommittee(chainID, blockNumber);
         require(
-            correctCurrentCommitteeRoot == bytes32(currentRoot),
+            correctCurrentCommitteeRoot == bytes32(currentCommittee.root),
             "Reference current committee roots do not match."
         );
         require(

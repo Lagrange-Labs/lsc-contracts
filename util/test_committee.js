@@ -12,7 +12,7 @@ const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
 const wallet = new ethers.Wallet(privKey, provider);
 const contract = new ethers.Contract(deployedAddresses.addresses.lagrangeCommittee, abi, wallet);
 
-const arbChainID = 42161;
+const arbChainID = 1337;
 const optChainID = 10;
 
 contract.getCommittee(optChainID, 10000).then((current) => {
@@ -26,3 +26,6 @@ contract.getCommittee(arbChainID, 10000).then((current) => {
     console.log("Next committee: ", current[1]);
 });
 
+contract.operators("0x13cF11F76a08214A826355a1C8d661E41EA7Bf97").then((op) => {
+    console.log(op);
+})
