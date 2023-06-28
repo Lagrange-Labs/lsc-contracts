@@ -15,7 +15,7 @@
 		},
 		{
 			"chain_name": "arbitrum",
-			"chain_id": 42161,
+			"chain_id": 1337,
 			"epoch_period": 43200,
 			"freeze_duration": 6000
 		}
