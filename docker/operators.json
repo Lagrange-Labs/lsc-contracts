@@ -23,7 +23,7 @@
             "0xb004ff3a1e4aa11af5d951d7aedc33ecca16a6bb7e639e81650659c6f896cddcaa82bd8e33c0b991776140731129b1e5",
             "0x969d9fc322c302e418d6e73367bfb001d5a62008095126e10672f355918398fc3a70b0a96ec262693e9c6de301cd10fe"
         ],
-        "chain_id": 42161
+        "chain_id": 1337
     },
     {
         "chain_name": "optimism",

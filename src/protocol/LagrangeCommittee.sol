@@ -184,10 +184,11 @@ contract LagrangeCommittee is
     function getCommittee(
         uint256 chainID, 
         uint256 blockNumber
-    ) public view returns (uint256, uint256) {
+    ) public view returns (CommitteeData memory currentCommittee, uint256 nextRoot) {
         uint256 epochNumber = getEpochNumber(chainID, blockNumber);
         uint256 nextEpoch = getEpochNumber(chainID, blockNumber + 1);
-        return (Committees[chainID][epochNumber].root, Committees[chainID][nextEpoch].root);
+        currentCommittee = Committees[chainID][epochNumber];
+        nextRoot = Committees[chainID][nextEpoch].root;
     }
 
     // Computes and returns "next" committee root.
