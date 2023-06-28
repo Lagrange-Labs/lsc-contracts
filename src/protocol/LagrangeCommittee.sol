@@ -353,7 +353,9 @@ contract LagrangeCommittee is
         return total;
     }
 
-    function getBLSSlices(CommitteeLeaf memory cleaf) public view returns (uint96[4] memory) {
+    function getBLSSlices(
+        CommitteeLeaf memory cleaf
+    ) public view returns (uint96[4] memory) {
         bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
         uint96[4] memory bls_slices;
         
@@ -388,7 +390,9 @@ contract LagrangeCommittee is
         return addr_stake_slices;
     }
 
-    function getLeafHash(CommitteeLeaf memory cleaf) public view returns (uint256) {
+    function getLeafHash(
+        CommitteeLeaf memory cleaf
+    ) public view returns (uint256) {
         uint96[4] memory bls_slices = getBLSSlices(cleaf);
         uint96[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
         
