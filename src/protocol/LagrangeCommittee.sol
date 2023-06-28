@@ -341,11 +341,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return total;
     }
 
-    function getBLSSlices(CommitteeLeaf memory cleaf) public view returns (uint96[8] memory) {
+    function getBLSSlices(CommitteeLeaf memory cleaf) public view returns (uint96[4] memory) {
         bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
-        uint96[8] memory bls_slices;
+        uint96[4] memory bls_slices;
         
-        for (uint i = 0; i < 8; i++) {
+        for (uint i = 0; i < 4; i++) {
             bytes memory bls = new bytes(12);
             for (uint j = 0; j < 12; j++) {
                 bls[j] = bls_bytes[(i*12)+j];
@@ -372,22 +372,18 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
 
     function getLeafHash(CommitteeLeaf memory cleaf) public view returns (uint256) {
-        uint96[8] memory bls_slices = getBLSSlices(cleaf);
+        uint96[4] memory bls_slices = getBLSSlices(cleaf);
         uint96[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
         
-        return hash2Elements(hash6Elements([
+        return _hash2Elements([_hash4Elements([
             uint256(bls_slices[0]),
             uint256(bls_slices[1]),
             uint256(bls_slices[2]),
-            uint256(bls_slices[3]),
-            uint256(bls_slices[4]),
-            uint256(bls_slices[5])
-        ]), hash5Elements([
-            uint256(bls_slices[6]),
-            uint256(bls_slices[7]),
+            uint256(bls_slices[3])
+        ]), _hash3Elements([
             uint256(addr_stake_slices[0]),
             uint256(addr_stake_slices[1]),
             uint256(addr_stake_slices[2])
-        ]));
+        ])]);
     }
 }
