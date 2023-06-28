@@ -46,11 +46,10 @@ contract EvidenceVerifier {
     }
 
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public pure returns (bool) {
-    /*
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-            // 
+            return true; // TODO: add the logic
         }
-    */
+    
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
         RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
         uint number = blockNumberItem.toUint();

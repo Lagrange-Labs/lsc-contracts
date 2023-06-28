@@ -33,7 +33,7 @@ interface ILagrangeCommittee {
     function setSlashed(address operator, uint256 chainID, bool slashed) external;
     function getSlashed(address operator) external returns (bool);
     
-    function getCommittee(uint256 chainID, uint256 blockNumber) external returns (uint256, uint256);
+    function getCommittee(uint256 chainID, uint256 blockNumber) external returns (CommitteeData memory, uint256);
 
     function addOperator(address operator, uint256 chainID, bytes memory blsPubKey, uint256 stake, uint32 serveUntilBlock) external;
 

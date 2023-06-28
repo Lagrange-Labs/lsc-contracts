@@ -29,11 +29,6 @@ contract AddStrategy is Script, Test {
         strategies[0] = WETHStrategy;
         strategyManager.addStrategiesToDepositWhitelist(strategies);
 
-        // unpause the delegation manager
-        DelegationManager delegation = DelegationManager(
-            stdJson.readAddress(deployData, ".addresses.delegation")
-        );
-
         vm.stopBroadcast();
     }
 }

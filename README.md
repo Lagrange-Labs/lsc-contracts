@@ -84,7 +84,6 @@ forge install
 ```bash
 make docker-build
 
-# WETH: 0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956
-# LagrangeCommittee: 0xF824C350EA9501234a731B01B8EC6E660e069c7F
-# Lagrange Service: 0x75B96311d8040c0F0d543ED5dc57b8Aa8492ffEF
+docker tag lagrange/contracts:latest lagrangelabs/lagrange-contracts:latest
+docker push lagrangelabs/lagrange-contracts:latest
 ```
