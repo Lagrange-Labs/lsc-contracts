@@ -44,6 +44,14 @@ init-committee:
 
 .PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator register-lagrange deploy-poseidon deploy-lagrange add-quorum init-committee
 
+deploy-register:
+	cd docker && npm run deploy-register
+
+deploy-mock:
+	forge script script/Deploy_Mock.s.sol:DeployMock --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+
+.PHONY: deploy-mock deploy-register
+
 # Build docker image
 
 stop:
@@ -66,4 +74,7 @@ clean: stop
 	sudo rm -rf docker/geth_db
 
 all: run-geth init-accounts deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange add-quorum register-lagrange init-committee
-.PHONY: all clean
+
+all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange add-quorum deploy-register init-committee	
+
+.PHONY: all clean all-mock

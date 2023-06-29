@@ -18,7 +18,8 @@ import "forge-std/Test.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath =
-        string(bytes("script/output/M1_deployment_data.json"));
+        string(bytes("script/output/deployed_mock.json"));
+        // string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
         string(bytes("util/output/poseidonAddresses.json"));
     string public serviceDataPath =

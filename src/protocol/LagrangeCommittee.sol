@@ -353,58 +353,44 @@ contract LagrangeCommittee is
         return total;
     }
 
-    function getBLSSlices(
-        CommitteeLeaf memory cleaf
-    ) public view returns (uint96[4] memory) {
-        bytes memory bls_bytes = abi.encodePacked(cleaf.blsPubKey); // TODO update committeeleaf and related variables involving bls to enforce this length.  this variable is optional.
-        uint96[4] memory bls_slices;
-        
-        for (uint i = 0; i < 4; i++) {
-            bytes memory bls = new bytes(12);
+    function getLeafSlices(CommitteeLeaf memory leaf) public pure returns (uint96[11] memory slices) {
+        for (uint i = 0; i < 8; i++) {
+            bytes memory addr = new bytes(12);
             for (uint j = 0; j < 12; j++) {
-                bls[j] = bls_bytes[(i*12)+j];
+                addr[j] = leaf.blsPubKey[(i*12)+j];
             }
-            bytes12 bls_chunk = bytes12(bls);
-            bls_slices[i] = uint96(bls_chunk);
+            bytes12 addr_chunk = bytes12(addr);
+            slices[i] = uint96(addr_chunk);
         }
-        return bls_slices;
-    }
-
-    function getAddrStakeSlices(
-        CommitteeLeaf memory cleaf
-    ) public pure returns (uint96[3] memory) {
-        bytes memory addr_stake_bytes = abi.encodePacked(
-            cleaf.addr,
-            uint128(cleaf.stake)
-        );
-        uint96[3] memory addr_stake_slices;
-
+        bytes memory addr_bytes = abi.encodePacked(leaf.addr, uint128(leaf.stake));
         for (uint i = 0; i < 3; i++) {
-            bytes memory addr_stake = new bytes(12);
+            bytes memory addr = new bytes(12);
             for (uint j = 0; j < 12; j++) {
-                addr_stake[j] = addr_stake_bytes[(i * 12) + j];
+                addr[j] = addr_bytes[(i*12)+j];
             }
-            bytes12 addr_stake_chunk = bytes12(addr_stake);
-            addr_stake_slices[i] = uint96(addr_stake_chunk);
+            bytes12 addr_chunk = bytes12(addr);
+            slices[i+8] = uint96(addr_chunk);
         }
-        return addr_stake_slices;
     }
 
     function getLeafHash(
         CommitteeLeaf memory cleaf
     ) public view returns (uint256) {
-        uint96[4] memory bls_slices = getBLSSlices(cleaf);
-        uint96[3] memory addr_stake_slices = getAddrStakeSlices(cleaf);
+        uint96[11] memory leaf_slices = getLeafSlices(cleaf);
         
-        return _hash2Elements([_hash4Elements([
-            uint256(bls_slices[0]),
-            uint256(bls_slices[1]),
-            uint256(bls_slices[2]),
-            uint256(bls_slices[3])
-        ]), _hash3Elements([
-            uint256(addr_stake_slices[0]),
-            uint256(addr_stake_slices[1]),
-            uint256(addr_stake_slices[2])
+        return _hash2Elements([_hash6Elements([
+            uint256(leaf_slices[0]),
+            uint256(leaf_slices[1]),
+            uint256(leaf_slices[2]),
+            uint256(leaf_slices[3]),
+            uint256(leaf_slices[4]),
+            uint256(leaf_slices[5])
+        ]), _hash5Elements([
+            uint256(leaf_slices[6]),
+            uint256(leaf_slices[7]),
+            uint256(leaf_slices[8]),
+            uint256(leaf_slices[9]),
+            uint256(leaf_slices[10])
         ])]);
     }
 }

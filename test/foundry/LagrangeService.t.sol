@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
-import "../src/protocol/LagrangeService.sol";
+import "../../src/protocol/LagrangeService.sol";
 
 // TODO: add unit tests for LagrangeService, now this implementation is a kind of e2e test
 contract LagrangeServiceTest is Test {

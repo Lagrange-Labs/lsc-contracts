@@ -1,7 +1,9 @@
 @openzeppelin-upgrades/=lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable/
 @openzeppelin/=lib/eigenlayer-contracts/lib/openzeppelin-contracts/
-ds-test/=lib/eigenlayer-contracts/lib/ds-test/src/
+ds-test/=lib/forge-std/lib/ds-test/src/
 eigenlayer-contracts/=lib/eigenlayer-contracts/src/contracts/
 eigenlayer-contracts-test/=lib/eigenlayer-contracts/src/test/
 forge-std/=lib/forge-std/src/
 solidity-rlp/=node_modules/solidity-rlp/
+openzeppelin-contracts-upgradeable/=lib/eigenlayer-contracts/lib/openzeppelin-contracts-upgradeable/
+openzeppelin-contracts/=lib/eigenlayer-contracts/lib/openzeppelin-contracts/

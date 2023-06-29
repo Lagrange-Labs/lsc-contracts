@@ -1,7 +1,7 @@
 {
 	"strategies": [
 		{
-			"strategy_address": "0xf32358f5C8FFfCF1a7bDb58b270a082abb7Ba1A6",
+			"strategy_address": "0x91E333A3d61862B1FE976351cf0F3b30aff1D202",
 			"strategy_name": "Wrapped Ether",
 			"multiplier": 1000000000
 		}
