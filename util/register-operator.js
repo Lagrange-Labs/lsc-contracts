@@ -1,7 +1,7 @@
 const { exec } = require('child_process');
 const fs = require('fs');
 
-const accountsPath = './accounts.json';
+const accountsPath = './config/accounts.json';
 
 fs.readFile(accountsPath, 'utf8', (err, data) => {
   if (err) {
@@ -13,7 +13,7 @@ fs.readFile(accountsPath, 'utf8', (err, data) => {
     const accounts = JSON.parse(data);
     Object.keys(accounts).splice(0, 20).forEach((address) => {
       console.log("Starting to register operator for address: ", address);
-      const command = `cd .. && forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url http://localhost:8545 --private-key ${accounts[address]} --broadcast -vvvvv`
+      const command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url http://localhost:8545 --private-key ${accounts[address]} --broadcast -vvvvv`
       exec(command, (error, stdout, stderr) => {
         console.log(`Command output: ${stdout}`);
         if (error) {

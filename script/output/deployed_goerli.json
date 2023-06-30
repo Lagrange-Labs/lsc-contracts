@@ -1,0 +1,30 @@
+{
+    "lagrange": {
+        "addresses": {
+            "lagrangeCommittee": "0xA36De7F7795B8e80262A0CA34101441696258d86",
+            "lagrangeCommitteeImp": "0xeD02234E2b85E3AE1107E0d27168BFAA40c40760",
+            "lagrangeService": "0xE1FA07d66DAAA1d562982a6c31dFC7AAf77fE9Cb",
+            "lagrangeServiceImp": "0x9a94bA4e5c031A638311749696c75b1078EEBc2D",
+            "lagrangeServiceManager": "0x97478CA8BbAeA0FcAA893F0Fdf2494A558D000a8",
+            "lagrangeServiceManagerImp": "0xcf05B442e0aCF712E36ac4E321292D0Ed926646E",
+            "proxyAdmin": "0x87a13F0698a6C28fB4869019bC0FbDfE1DF0C95b"
+        }
+    },
+    "poseidon": {
+        "1": "0x7bA48aE8d4bE7284c7042Ec3da12CD6a30cf6B09",
+        "2": "0x8cbFb6310b10CD0510cDA02c7419fc7d8F162b48",
+        "3": "0x3A41C5D278cfcddF4AF12e3937B23f5eB1d8a2D1",
+        "4": "0x288AbC1D82aF13d0CEBE4d3582fD31662A8Cb2AC",
+        "5": "0x5C2E5b6d53660D6428dB802021d419B01fCf4a31",
+        "6": "0xC4020c3803a425370ca930306A1C4B6faB19ED07",
+        "undefined": "0x8E5F62D34d1Fe90452BEb80d2b67aD8b148Db5f1"
+    },
+    "mock": {
+        "addresses": {
+            "delegationManager": "0x74fF0333bbAA66D2c735C403A45DB483fFEDBfFa",
+            "slasher": "0xADBEa07bdbee311B060dF8083E8ab49C793B7170",
+            "strategy": "0x027D7dC2737068A9308AF32B8Fdb2F2d51A7155C",
+            "strategyManager": "0x2C6720773341a41cEf42171835e8C06B99724a96"
+        }
+    }
+}

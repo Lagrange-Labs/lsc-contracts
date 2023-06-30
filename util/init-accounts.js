@@ -2,12 +2,13 @@
 
 const ethers = require('ethers');
 const fs = require('fs');
+require('dotenv').config();
 
 const DEFAULT_MNEMONIC = 'exchange holiday girl alone head gift unfair resist void voice people tobacco';
 const DEFAULT_NUM_ACCOUNTS = 20;
 
 async function main() {
-    const currentProvider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
+    const currentProvider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
     const signerNode = await currentProvider.getSigner();
 
     const accounts = {};
@@ -28,8 +29,8 @@ async function main() {
     }
 
     try {
-        await fs.promises.writeFile('./accounts.json', JSON.stringify(accounts, null, 2));
-        console.log(`Accounts saved to ./accounts.json\n${JSON.stringify(accounts, null, 2)}`);
+        await fs.promises.writeFile('./config/accounts.json', JSON.stringify(accounts, null, 2));
+        console.log(`Accounts saved to ./config/accounts.json\n${JSON.stringify(accounts, null, 2)}`);
     }
     catch (err) {
         console.error('Error writing to file:', err);

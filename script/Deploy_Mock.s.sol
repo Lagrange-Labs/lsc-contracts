@@ -11,11 +11,6 @@ import {Slasher} from "src/mock/SlasherMock.sol";
 import {Strategy} from "src/mock/STMock.sol";
 
 contract DeployMock is Script {
-    struct InitialChain {
-        bytes blsPubKey;
-        uint256 chainId;
-        address operator;
-    }
 
     string public configPath = string(bytes("config/operators.json"));
 
@@ -30,20 +25,18 @@ contract DeployMock is Script {
         Strategy st = new Strategy();
 
         // register initial operators
-        InitialChain[] memory arbitrum = abi.decode(
-            stdJson.parseRaw(configData, ".arbitrum"),
-            (InitialChain[])
-        );
-        for (uint256 i = 0; i < arbitrum.length; i++) {
-            dm.registerAsOperator(IDelegationTerms(arbitrum[i].operator));
-        }
-        InitialChain[] memory optimism = abi.decode(
-            stdJson.parseRaw(configData, ".optimism"),
-            (InitialChain[])
-        );
+        bytes memory arbitrumRaw = stdJson.parseRaw(configData, ".[0].operators");
+        address[] memory arbOperators = abi.decode(arbitrumRaw, (address[]));
 
-        for (uint256 i = 0; i < optimism.length; i++) {
-            dm.registerAsOperator(IDelegationTerms(optimism[i].operator));
+        for (uint256 i = 0; i < arbOperators.length; i++) {
+            dm.registerAsOperator(IDelegationTerms(arbOperators[i]));
+        }
+
+        bytes memory optimismRaw = stdJson.parseRaw(configData, ".[1].operators");
+        address[] memory optOperators = abi.decode(optimismRaw, (address[]));
+
+        for (uint256 i = 0; i < optOperators.length; i++) {
+            dm.registerAsOperator(IDelegationTerms(optOperators[i]));
         }
 
         vm.stopBroadcast();

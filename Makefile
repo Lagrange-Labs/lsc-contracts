@@ -1,56 +1,56 @@
-PRIVATE_KEY=0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c
+PRIVATE_KEY?=0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c
+RPC_URL?=http://127.0.0.1:8545
 
 # Run ethereum nodes
 run-geth:
 	cd docker && DEV_PERIOD=1 docker-compose up -d geth
 
 init-accounts:
-	cd docker && npm run init-accounts
+	node util/init-accounts.js
 
-#.PHONY: run-geth init-accounts
-#.PHONY: init-accounts
+.PHONY: run-geth init-accounts
 
 # Deploy contracts
 
 deploy-eigenlayer:
-	forge script script/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url http://localhost:8545  --private-key $(PRIVATE_KEY) --broadcast -vvvv
-
-export-abi:
-	node util/export_abis.js
+	forge script script/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url ${RPC_URL}  --private-key ${PRIVATE_KEY} --broadcast -vvvv
 
 deploy-weth9:
-	forge script script/localnet/DeployWETH9.s.sol:DeployWETH9 --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/localnet/DeployWETH9.s.sol:DeployWETH9 --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
 add-strategy:
-	forge script script/localnet/AddStrategy.s.sol:AddStrategy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/localnet/AddStrategy.s.sol:AddStrategy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
 register-operator:
-	cd docker && npm run register-operator
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/register-operator.js
 
 register-lagrange:
-	cd docker && npm run register-lagrange
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/register-lagrange.js
 
 deploy-poseidon:
-	node util/deploy_poseidon.js
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deploy_poseidon.js
 
 deploy-lagrange:
-	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
 add-quorum:
-	forge script script/Add_Quorum.s.sol:AddQuorum --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/Add_Quorum.s.sol:AddQuorum --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
 init-committee:
-	forge script script/Init_Committee.s.sol:InitCommittee --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/Init_Committee.s.sol:InitCommittee --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
 .PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator register-lagrange deploy-poseidon deploy-lagrange add-quorum init-committee
 
 deploy-register:
-	cd docker && npm run deploy-register
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deploy-register.js
 
 deploy-mock:
-	forge script script/Deploy_Mock.s.sol:DeployMock --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast -vvvvv
+	forge script script/Deploy_Mock.s.sol:DeployMock --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
-.PHONY: deploy-mock deploy-register
+update-config:
+	node util/update-config.js
+
+.PHONY: deploy-mock deploy-register update-config
 
 # Build docker image
 
@@ -64,10 +64,8 @@ docker-build: stop
 
 # Test
 test:
-	docker run -p 8545:8545 -d lagrange/contracts
-	sleep 3
-	forge test --rpc-url http://localhost:8545  -vvvvv
-	docker ps -q --filter ancestor="lagrange/contracts" | xargs -r docker rm -f
+	forge test  -vvvvv
+	npx hardhat test
 .PHONY: test
 
 clean: stop
@@ -75,6 +73,6 @@ clean: stop
 
 all: run-geth init-accounts deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange add-quorum register-lagrange init-committee
 
-all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange add-quorum deploy-register init-committee	
+all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deploy-register init-committee	
 
 .PHONY: all clean all-mock

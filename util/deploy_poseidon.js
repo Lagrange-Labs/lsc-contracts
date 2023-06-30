@@ -3,6 +3,7 @@ const path = require('path');
 const exec = require('child_process');
 const poseidonUnit = require("circomlibjs").poseidonContract;
 const ethers = require("ethers");
+require('dotenv').config();
 
 sponge = 0;
 
@@ -11,11 +12,11 @@ async function deployPoseidon() {
     console.log('Generating and deploying Hermez/Poseidon contracts...');
 
     // Poseidon Contracts
-    const currentProvider = new ethers.providers.JsonRpcProvider('http://0.0.0.0:8545');
-    const signerNode = await currentProvider.getSigner();
+    const currentProvider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+    const signerNode = new ethers.Wallet(process.env.PRIVATE_KEY, currentProvider);
     poseidonAddrs = {};
     hashNums = [1, 2, 3, 4, 5, 6];
-    for (it = 0; it <= hashNums.length; it++) {
+    for (it = 0; it < hashNums.length; it++) {
         i = hashNums[it];
         console.log(i);
         poseidonCode = null;
@@ -55,11 +56,11 @@ async function deployPoseidon() {
 
     jsonAddrs = JSON.stringify(poseidonAddrs, null, 2);
 
-    fs.writeFile(path.join(__dirname, 'output/poseidonAddresses.json'), jsonAddrs, err => {
+    fs.writeFile(path.join(__dirname, '../script/output/deployed_poseidon.json'), jsonAddrs, err => {
         if (err) {
             console.log('Error writing addresses to file:', err)
         } else {
-            console.log('Addresses written to output/poseidonAddresses.json')
+            console.log('Addresses written to output/deployed_poseidon.json')
         }
     });
     console.log(jsonAddrs);

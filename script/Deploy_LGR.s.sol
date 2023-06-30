@@ -21,9 +21,9 @@ contract Deploy is Script, Test {
         string(bytes("script/output/deployed_mock.json"));
         // string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
-        string(bytes("util/output/poseidonAddresses.json"));
+        string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath =
-        string(bytes("config/LagrangeService.json"));
+        string(bytes("script/LagrangeService.json"));
 
     address slasherAddress;
     address strategyManagerAddress;

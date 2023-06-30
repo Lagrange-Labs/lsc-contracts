@@ -2,6 +2,7 @@
   "dependencies": {
     "bls-eth-wasm": "^1.0.6",
     "circomlibjs": "^0.1.7",
+    "dotenv": "^16.3.1",
     "hermez-contracts": "github:hermeznetwork/contracts",
     "solidity-rlp": "github:hamdiallam/Solidity-RLP"
   },
