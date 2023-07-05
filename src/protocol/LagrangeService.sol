@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
+
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
 import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
 import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
@@ -45,9 +46,7 @@ contract LagrangeService is
         _disableInitializers();
     }
 
-    function initialize(
-        address initialOwner
-    ) external initializer {
+    function initialize(address initialOwner) external initializer {
         _transferOwnership(initialOwner);
     }
 
@@ -162,7 +161,10 @@ contract LagrangeService is
         uint256 blockNumber,
         uint256 chainID
     ) internal returns (bool) {
-        (ILagrangeCommittee.CommitteeData memory currentCommittee, uint256 nextRoot) = committee.getCommittee(chainID, blockNumber);
+        (
+            ILagrangeCommittee.CommitteeData memory currentCommittee,
+            uint256 nextRoot
+        ) = committee.getCommittee(chainID, blockNumber);
         require(
             correctCurrentCommitteeRoot == bytes32(currentCommittee.root),
             "Reference current committee roots do not match."
@@ -171,15 +173,14 @@ contract LagrangeService is
             correctNextCommitteeRoot == bytes32(nextRoot),
             "Reference next committee roots do not match."
         );
-        
-        return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
+
+        return
+            (currentCommitteeRoot == correctCurrentCommitteeRoot) &&
+            (nextCommitteeRoot == correctNextCommitteeRoot);
     }
 
     /// Slash the given operator
-    function _freezeOperator(
-        address operator,
-        uint256 chainID
-    ) internal {
+    function _freezeOperator(address operator, uint256 chainID) internal {
         serviceManager.freezeOperator(operator);
         committee.setSlashed(operator, chainID, true);
 
