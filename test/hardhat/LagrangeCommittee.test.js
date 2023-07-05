@@ -47,7 +47,7 @@ const deployPoseidon = async (signerNode) => {
 }
 
 const serveUntilBlock = 4294967295;
-const operators = require("../../docker/operators.json");
+const operators = require("../../config/operators.json");
 const stake = 100000000;
 
 describe("LagrangeCommittee", function () {
