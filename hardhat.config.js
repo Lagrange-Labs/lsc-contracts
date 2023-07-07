@@ -32,5 +32,6 @@ module.exports = {
   paths: {
     sources: "./src",
     cache: "./cache_hardhat",
+    tests: "./test/hardhat",
   }
 };
