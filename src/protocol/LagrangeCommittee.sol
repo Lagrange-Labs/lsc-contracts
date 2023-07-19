@@ -290,7 +290,7 @@ contract LagrangeCommittee is
         uint256 epochNumber,
         uint256 chainID
     ) public view returns (bool) {
-        uint256 epochEnd = epochNumber + CommitteeParams[chainID].duration;
+        uint256 epochEnd = epochNumber * CommitteeParams[chainID].duration + CommitteeParams[chainID].startBlock;
         uint256 freezeDuration = CommitteeParams[chainID].freezeDuration;
         return block.number > epochEnd - freezeDuration;
     }

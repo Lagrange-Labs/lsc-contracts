@@ -2,7 +2,7 @@
     "lagrange": {
         "addresses": {
             "lagrangeCommittee": "0xA36De7F7795B8e80262A0CA34101441696258d86",
-            "lagrangeCommitteeImp": "0xeD02234E2b85E3AE1107E0d27168BFAA40c40760",
+            "lagrangeCommitteeImp": "0x4030486eeeb0568D4974C406e890E340C39629f2",
             "lagrangeService": "0xE1FA07d66DAAA1d562982a6c31dFC7AAf77fE9Cb",
             "lagrangeServiceImp": "0x9a94bA4e5c031A638311749696c75b1078EEBc2D",
             "lagrangeServiceManager": "0x97478CA8BbAeA0FcAA893F0Fdf2494A558D000a8",
