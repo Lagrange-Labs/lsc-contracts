@@ -296,9 +296,7 @@ contract LagrangeCommittee is
     }
 
     // If applicable, updates committee based on staking, unstaking, and slashing.
-    function update(uint256 chainID) public {
-        uint256 epochNumber = getEpochNumber(chainID, block.number);
-
+    function update(uint256 chainID, uint256 epochNumber) public {
         require(
             isUpdatable(epochNumber, chainID),
             "Block number is prior to committee freeze window."
