@@ -37,6 +37,6 @@ interface ILagrangeCommittee {
 
     function addOperator(address operator, uint256 chainID, bytes memory blsPubKey, uint256 stake, uint32 serveUntilBlock) external;
 
-    function update(uint256 chainID) external;
+    function update(uint256 chainID, uint256 epochNumber) external;
 }
 

@@ -290,15 +290,13 @@ contract LagrangeCommittee is
         uint256 epochNumber,
         uint256 chainID
     ) public view returns (bool) {
-        uint256 epochEnd = epochNumber + CommitteeParams[chainID].duration;
+        uint256 epochEnd = epochNumber * CommitteeParams[chainID].duration + CommitteeParams[chainID].startBlock;
         uint256 freezeDuration = CommitteeParams[chainID].freezeDuration;
         return block.number > epochEnd - freezeDuration;
     }
 
     // If applicable, updates committee based on staking, unstaking, and slashing.
-    function update(uint256 chainID) public {
-        uint256 epochNumber = getEpochNumber(chainID, block.number);
-
+    function update(uint256 chainID, uint256 epochNumber) public {
         require(
             isUpdatable(epochNumber, chainID),
             "Block number is prior to committee freeze window."
