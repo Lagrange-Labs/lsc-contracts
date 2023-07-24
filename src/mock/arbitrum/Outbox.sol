@@ -1,1 +1,276 @@
-{"payload":{"allShortcutsEnabled":false,"fileTree":{"src/bridge":{"items":[{"name":"Bridge.sol","path":"src/bridge/Bridge.sol","contentType":"file"},{"name":"IBridge.sol","path":"src/bridge/IBridge.sol","contentType":"file"},{"name":"IDelayedMessageProvider.sol","path":"src/bridge/IDelayedMessageProvider.sol","contentType":"file"},{"name":"IInbox.sol","path":"src/bridge/IInbox.sol","contentType":"file"},{"name":"IOutbox.sol","path":"src/bridge/IOutbox.sol","contentType":"file"},{"name":"IOwnable.sol","path":"src/bridge/IOwnable.sol","contentType":"file"},{"name":"ISequencerInbox.sol","path":"src/bridge/ISequencerInbox.sol","contentType":"file"},{"name":"Inbox.sol","path":"src/bridge/Inbox.sol","contentType":"file"},{"name":"Messages.sol","path":"src/bridge/Messages.sol","contentType":"file"},{"name":"Outbox.sol","path":"src/bridge/Outbox.sol","contentType":"file"},{"name":"SequencerInbox.sol","path":"src/bridge/SequencerInbox.sol","contentType":"file"}],"totalCount":11},"src":{"items":[{"name":"bridge","path":"src/bridge","contentType":"directory"},{"name":"challenge","path":"src/challenge","contentType":"directory"},{"name":"libraries","path":"src/libraries","contentType":"directory"},{"name":"mocks","path":"src/mocks","contentType":"directory"},{"name":"node-interface","path":"src/node-interface","contentType":"directory"},{"name":"osp","path":"src/osp","contentType":"directory"},{"name":"precompiles","path":"src/precompiles","contentType":"directory"},{"name":"rollup","path":"src/rollup","contentType":"directory"},{"name":"state","path":"src/state","contentType":"directory"},{"name":"test-helpers","path":"src/test-helpers","contentType":"directory"}],"totalCount":10},"":{"items":[{"name":".github","path":".github","contentType":"directory"},{"name":"deploy","path":"deploy","contentType":"directory"},{"name":"patches","path":"patches","contentType":"directory"},{"name":"scripts","path":"scripts","contentType":"directory"},{"name":"src","path":"src","contentType":"directory"},{"name":"test","path":"test","contentType":"directory"},{"name":".clabot","path":".clabot","contentType":"file"},{"name":".eslintrc.js","path":".eslintrc.js","contentType":"file"},{"name":".gitignore","path":".gitignore","contentType":"file"},{"name":".prettierignore","path":".prettierignore","contentType":"file"},{"name":".prettierrc.js","path":".prettierrc.js","contentType":"file"},{"name":".solhint.json","path":".solhint.json","contentType":"file"},{"name":"LICENSE","path":"LICENSE","contentType":"file"},{"name":"README.md","path":"README.md","contentType":"file"},{"name":"hardhat.config.ts","path":"hardhat.config.ts","contentType":"file"},{"name":"package.json","path":"package.json","contentType":"file"},{"name":"tsconfig.json","path":"tsconfig.json","contentType":"file"},{"name":"yarn.lock","path":"yarn.lock","contentType":"file"}],"totalCount":18}},"fileTreeProcessingTime":6.279311,"foldersToFetch":[],"reducedMotionEnabled":null,"repo":{"id":637266749,"defaultBranch":"main","name":"nitro-contracts","ownerLogin":"OffchainLabs","currentUserCanPush":false,"isFork":false,"isEmpty":false,"createdAt":"2023-05-07T02:46:58.000Z","ownerAvatar":"https://avatars.githubusercontent.com/u/43838009?v=4","public":true,"private":false,"isOrgOwned":true},"refInfo":{"name":"develop","listCacheKey":"v0:1689866049.0","canEdit":false,"refType":"branch","currentOid":"913028d43ab866e6902306504b2eb1caaac2e04e"},"path":"src/bridge/Outbox.sol","currentUser":null,"blob":{"rawLines":["// Copyright 2021-2022, Offchain Labs, Inc.","// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE","// SPDX-License-Identifier: BUSL-1.1","","pragma solidity ^0.8.4;","","import {","    AlreadyInit,","    NotRollup,","    ProofTooLong,","    PathNotMinimal,","    UnknownRoot,","    AlreadySpent,","    BridgeCallFailed,","    HadZeroInit","} from \"../libraries/Error.sol\";","import \"./IBridge.sol\";","import \"./IOutbox.sol\";","import \"../libraries/MerkleLib.sol\";","import \"../libraries/DelegateCallAware.sol\";","","/// @dev this error is thrown since certain functions are only expected to be used in simulations, not in actual txs","error SimulationOnlyEntrypoint();","","contract Outbox is DelegateCallAware, IOutbox {","    address public rollup; // the rollup contract","    IBridge public bridge; // the bridge contract","","    mapping(uint256 => bytes32) public spent; // packed spent bitmap","    mapping(bytes32 => bytes32) public roots; // maps root hashes => L2 block hash","","    struct L2ToL1Context {","        uint128 l2Block;","        uint128 l1Block;","        uint128 timestamp;","        bytes32 outputId;","        address sender;","    }","    // Note, these variables are set and then wiped during a single transaction.","    // Therefore their values don't need to be maintained, and their slots will","    // be empty outside of transactions","    L2ToL1Context internal context;","","    // default context values to be used in storage instead of zero, to save on storage refunds","    // it is assumed that arb-os never assigns these values to a valid leaf to be redeemed","    uint128 private constant L2BLOCK_DEFAULT_CONTEXT = type(uint128).max;","    uint128 private constant L1BLOCK_DEFAULT_CONTEXT = type(uint128).max;","    uint128 private constant TIMESTAMP_DEFAULT_CONTEXT = type(uint128).max;","    bytes32 private constant OUTPUTID_DEFAULT_CONTEXT = bytes32(type(uint256).max);","    address private constant SENDER_DEFAULT_CONTEXT = address(type(uint160).max);","","    uint128 public constant OUTBOX_VERSION = 2;","","    function initialize(IBridge _bridge) external onlyDelegated {","        if (address(_bridge) == address(0)) revert HadZeroInit();","        if (address(bridge) != address(0)) revert AlreadyInit();","        // address zero is returned if no context is set, but the values used in storage","        // are non-zero to save users some gas (as storage refunds are usually maxed out)","        // EIP-1153 would help here","        context = L2ToL1Context({","            l2Block: L2BLOCK_DEFAULT_CONTEXT,","            l1Block: L1BLOCK_DEFAULT_CONTEXT,","            timestamp: TIMESTAMP_DEFAULT_CONTEXT,","            outputId: OUTPUTID_DEFAULT_CONTEXT,","            sender: SENDER_DEFAULT_CONTEXT","        });","        bridge = _bridge;","        rollup = address(_bridge.rollup());","    }","","    function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external {","        if (msg.sender != rollup) revert NotRollup(msg.sender, rollup);","        roots[root] = l2BlockHash;","        emit SendRootUpdated(root, l2BlockHash);","    }","","    /// @inheritdoc IOutbox","    function l2ToL1Sender() external view returns (address) {","        address sender = context.sender;","        // we don't return the default context value to avoid a breaking change in the API","        if (sender == SENDER_DEFAULT_CONTEXT) return address(0);","        return sender;","    }","","    /// @inheritdoc IOutbox","    function l2ToL1Block() external view returns (uint256) {","        uint128 l2Block = context.l2Block;","        // we don't return the default context value to avoid a breaking change in the API","        if (l2Block == L1BLOCK_DEFAULT_CONTEXT) return uint256(0);","        return uint256(l2Block);","    }","","    /// @inheritdoc IOutbox","    function l2ToL1EthBlock() external view returns (uint256) {","        uint128 l1Block = context.l1Block;","        // we don't return the default context value to avoid a breaking change in the API","        if (l1Block == L1BLOCK_DEFAULT_CONTEXT) return uint256(0);","        return uint256(l1Block);","    }","","    /// @inheritdoc IOutbox","    function l2ToL1Timestamp() external view returns (uint256) {","        uint128 timestamp = context.timestamp;","        // we don't return the default context value to avoid a breaking change in the API","        if (timestamp == TIMESTAMP_DEFAULT_CONTEXT) return uint256(0);","        return uint256(timestamp);","    }","","    /// @notice batch number is deprecated and now always returns 0","    function l2ToL1BatchNum() external pure returns (uint256) {","        return 0;","    }","","    /// @inheritdoc IOutbox","    function l2ToL1OutputId() external view returns (bytes32) {","        bytes32 outputId = context.outputId;","        // we don't return the default context value to avoid a breaking change in the API","        if (outputId == OUTPUTID_DEFAULT_CONTEXT) return bytes32(0);","        return outputId;","    }","","    /// @inheritdoc IOutbox","    function executeTransaction(","        bytes32[] calldata proof,","        uint256 index,","        address l2Sender,","        address to,","        uint256 l2Block,","        uint256 l1Block,","        uint256 l2Timestamp,","        uint256 value,","        bytes calldata data","    ) external {","        bytes32 userTx = calculateItemHash(","            l2Sender,","            to,","            l2Block,","            l1Block,","            l2Timestamp,","            value,","            data","        );","","        recordOutputAsSpent(proof, index, userTx);","","        executeTransactionImpl(index, l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);","    }","","    /// @inheritdoc IOutbox","    function executeTransactionSimulation(","        uint256 index,","        address l2Sender,","        address to,","        uint256 l2Block,","        uint256 l1Block,","        uint256 l2Timestamp,","        uint256 value,","        bytes calldata data","    ) external {","        if (msg.sender != address(0)) revert SimulationOnlyEntrypoint();","        executeTransactionImpl(index, l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);","    }","","    function executeTransactionImpl(","        uint256 outputId,","        address l2Sender,","        address to,","        uint256 l2Block,","        uint256 l1Block,","        uint256 l2Timestamp,","        uint256 value,","        bytes calldata data","    ) internal {","        emit OutBoxTransactionExecuted(to, l2Sender, 0, outputId);","","        // we temporarily store the previous values so the outbox can naturally","        // unwind itself when there are nested calls to `executeTransaction`","        L2ToL1Context memory prevContext = context;","","        context = L2ToL1Context({","            sender: l2Sender,","            l2Block: uint128(l2Block),","            l1Block: uint128(l1Block),","            timestamp: uint128(l2Timestamp),","            outputId: bytes32(outputId)","        });","","        // set and reset vars around execution so they remain valid during call","        executeBridgeCall(to, value, data);","","        context = prevContext;","    }","","    function _calcSpentIndexOffset(uint256 index)","        internal","        view","        returns (","            uint256,","            uint256,","            bytes32","        )","    {","        uint256 spentIndex = index / 255; // Note: Reserves the MSB.","        uint256 bitOffset = index % 255;","        bytes32 replay = spent[spentIndex];","        return (spentIndex, bitOffset, replay);","    }","","    function _isSpent(uint256 bitOffset, bytes32 replay) internal pure returns (bool) {","        return ((replay >> bitOffset) & bytes32(uint256(1))) != bytes32(0);","    }","","    /// @inheritdoc IOutbox","    function isSpent(uint256 index) external view returns (bool) {","        (, uint256 bitOffset, bytes32 replay) = _calcSpentIndexOffset(index);","        return _isSpent(bitOffset, replay);","    }","","    function recordOutputAsSpent(","        bytes32[] memory proof,","        uint256 index,","        bytes32 item","    ) internal {","        if (proof.length >= 256) revert ProofTooLong(proof.length);","        if (index >= 2**proof.length) revert PathNotMinimal(index, 2**proof.length);","","        // Hash the leaf an extra time to prove it's a leaf","        bytes32 calcRoot = calculateMerkleRoot(proof, index, item);","        if (roots[calcRoot] == bytes32(0)) revert UnknownRoot(calcRoot);","","        (uint256 spentIndex, uint256 bitOffset, bytes32 replay) = _calcSpentIndexOffset(index);","","        if (_isSpent(bitOffset, replay)) revert AlreadySpent(index);","        spent[spentIndex] = (replay | bytes32(1 << bitOffset));","    }","","    function executeBridgeCall(","        address to,","        uint256 value,","        bytes memory data","    ) internal {","        (bool success, bytes memory returndata) = bridge.executeCall(to, value, data);","        if (!success) {","            if (returndata.length > 0) {","                // solhint-disable-next-line no-inline-assembly","                assembly {","                    let returndata_size := mload(returndata)","                    revert(add(32, returndata), returndata_size)","                }","            } else {","                revert BridgeCallFailed();","            }","        }","    }","","    function calculateItemHash(","        address l2Sender,","        address to,","        uint256 l2Block,","        uint256 l1Block,","        uint256 l2Timestamp,","        uint256 value,","        bytes calldata data","    ) public pure returns (bytes32) {","        return","            keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));","    }","","    function calculateMerkleRoot(","        bytes32[] memory proof,","        uint256 path,","        bytes32 item","    ) public pure returns (bytes32) {","        return MerkleLib.calculateRoot(proof, path, keccak256(abi.encodePacked(item)));","    }","}"],"stylingDirectives":[[{"start":0,"end":43,"cssClass":"pl-c"}],[{"start":0,"end":97,"cssClass":"pl-c"}],[{"start":0,"end":36,"cssClass":"pl-c"}],[],[{"start":0,"end":15,"cssClass":"pl-k"},{"start":16,"end":17,"cssClass":"pl-k"},{"start":17,"end":22,"cssClass":"pl-c1"}],[],[{"start":0,"end":6,"cssClass":"pl-k"}],[],[],[],[],[],[],[],[],[{"start":2,"end":6,"cssClass":"pl-k"},{"start":7,"end":31,"cssClass":"pl-s"}],[{"start":0,"end":6,"cssClass":"pl-k"},{"start":7,"end":22,"cssClass":"pl-s"}],[{"start":0,"end":6,"cssClass":"pl-k"},{"start":7,"end":22,"cssClass":"pl-s"}],[{"start":0,"end":6,"cssClass":"pl-k"},{"start":7,"end":35,"cssClass":"pl-s"}],[{"start":0,"end":6,"cssClass":"pl-k"},{"start":7,"end":43,"cssClass":"pl-s"}],[],[{"start":0,"end":116,"cssClass":"pl-c"}],[{"start":0,"end":30,"cssClass":"pl-k"},{"start":5,"end":30,"cssClass":"pl-en"}],[],[{"start":0,"end":8,"cssClass":"pl-k"},{"start":9,"end":15,"cssClass":"pl-en"},{"start":16,"end":18,"cssClass":"pl-k"},{"start":19,"end":36,"cssClass":"pl-en"},{"start":38,"end":45,"cssClass":"pl-en"}],[{"start":4,"end":11,"cssClass":"pl-c1"},{"start":12,"end":18,"cssClass":"pl-k"},{"start":27,"end":49,"cssClass":"pl-c"}],[{"start":12,"end":18,"cssClass":"pl-k"},{"start":27,"end":49,"cssClass":"pl-c"}],[],[{"start":4,"end":11,"cssClass":"pl-k"},{"start":12,"end":19,"cssClass":"pl-c1"},{"start":20,"end":22,"cssClass":"pl-k"},{"start":23,"end":30,"cssClass":"pl-c1"},{"start":32,"end":38,"cssClass":"pl-k"},{"start":46,"end":68,"cssClass":"pl-c"}],[{"start":4,"end":11,"cssClass":"pl-k"},{"start":12,"end":19,"cssClass":"pl-c1"},{"start":20,"end":22,"cssClass":"pl-k"},{"start":23,"end":30,"cssClass":"pl-c1"},{"start":32,"end":38,"cssClass":"pl-k"},{"start":46,"end":82,"cssClass":"pl-c"}],[],[{"start":4,"end":24,"cssClass":"pl-k"},{"start":10,"end":24,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"}],[],[{"start":4,"end":80,"cssClass":"pl-c"}],[{"start":4,"end":79,"cssClass":"pl-c"}],[{"start":4,"end":39,"cssClass":"pl-c"}],[{"start":18,"end":26,"cssClass":"pl-k"}],[],[{"start":4,"end":95,"cssClass":"pl-c"}],[{"start":4,"end":90,"cssClass":"pl-c"}],[{"start":4,"end":11,"cssClass":"pl-c1"},{"start":12,"end":29,"cssClass":"pl-k"},{"start":53,"end":54,"cssClass":"pl-k"},{"start":55,"end":59,"cssClass":"pl-k"},{"start":60,"end":67,"cssClass":"pl-c1"}],[{"start":4,"end":11,"cssClass":"pl-c1"},{"start":12,"end":29,"cssClass":"pl-k"},{"start":53,"end":54,"cssClass":"pl-k"},{"start":55,"end":59,"cssClass":"pl-k"},{"start":60,"end":67,"cssClass":"pl-c1"}],[{"start":4,"end":11,"cssClass":"pl-c1"},{"start":12,"end":29,"cssClass":"pl-k"},{"start":55,"end":56,"cssClass":"pl-k"},{"start":57,"end":61,"cssClass":"pl-k"},{"start":62,"end":69,"cssClass":"pl-c1"}],[{"start":4,"end":11,"cssClass":"pl-c1"},{"start":12,"end":29,"cssClass":"pl-k"},{"start":54,"end":55,"cssClass":"pl-k"},{"start":56,"end":63,"cssClass":"pl-c1"},{"start":64,"end":68,"cssClass":"pl-k"},{"start":69,"end":76,"cssClass":"pl-c1"}],[{"start":4,"end":11,"cssClass":"pl-c1"},{"start":12,"end":29,"cssClass":"pl-k"},{"start":52,"end":53,"cssClass":"pl-k"},{"start":54,"end":61,"cssClass":"pl-c1"},{"start":62,"end":66,"cssClass":"pl-k"},{"start":67,"end":74,"cssClass":"pl-c1"}],[],[{"start":4,"end":11,"cssClass":"pl-c1"},{"start":12,"end":28,"cssClass":"pl-k"},{"start":43,"end":44,"cssClass":"pl-k"},{"start":45,"end":46,"cssClass":"pl-c1"}],[],[{"start":4,"end":23,"cssClass":"pl-k"},{"start":12,"end":23,"cssClass":"pl-en"},{"start":32,"end":39,"cssClass":"pl-v"},{"start":41,"end":49,"cssClass":"pl-k"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":12,"end":19,"cssClass":"pl-c1"},{"start":29,"end":31,"cssClass":"pl-k"},{"start":32,"end":39,"cssClass":"pl-c1"},{"start":40,"end":41,"cssClass":"pl-c1"},{"start":44,"end":50,"cssClass":"pl-k"},{"start":51,"end":62,"cssClass":"pl-en"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":12,"end":19,"cssClass":"pl-c1"},{"start":28,"end":30,"cssClass":"pl-k"},{"start":31,"end":38,"cssClass":"pl-c1"},{"start":39,"end":40,"cssClass":"pl-c1"},{"start":43,"end":49,"cssClass":"pl-k"},{"start":50,"end":61,"cssClass":"pl-en"}],[{"start":8,"end":88,"cssClass":"pl-c"}],[{"start":8,"end":89,"cssClass":"pl-c"}],[{"start":8,"end":35,"cssClass":"pl-c"}],[{"start":16,"end":17,"cssClass":"pl-k"},{"start":18,"end":31,"cssClass":"pl-en"}],[],[],[],[],[],[],[{"start":15,"end":16,"cssClass":"pl-k"}],[{"start":15,"end":16,"cssClass":"pl-k"},{"start":17,"end":24,"cssClass":"pl-c1"},{"start":33,"end":39,"cssClass":"pl-en"}],[],[],[{"start":4,"end":27,"cssClass":"pl-k"},{"start":12,"end":27,"cssClass":"pl-en"},{"start":28,"end":35,"cssClass":"pl-c1"},{"start":36,"end":40,"cssClass":"pl-v"},{"start":42,"end":49,"cssClass":"pl-c1"},{"start":50,"end":61,"cssClass":"pl-v"},{"start":63,"end":71,"cssClass":"pl-k"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":12,"end":15,"cssClass":"pl-c1"},{"start":16,"end":22,"cssClass":"pl-c1"},{"start":23,"end":25,"cssClass":"pl-k"},{"start":34,"end":40,"cssClass":"pl-k"},{"start":41,"end":50,"cssClass":"pl-en"},{"start":51,"end":54,"cssClass":"pl-c1"},{"start":55,"end":61,"cssClass":"pl-c1"}],[{"start":20,"end":21,"cssClass":"pl-k"}],[{"start":8,"end":12,"cssClass":"pl-k"},{"start":13,"end":28,"cssClass":"pl-en"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":25,"cssClass":"pl-k"},{"start":12,"end":25,"cssClass":"pl-en"},{"start":28,"end":36,"cssClass":"pl-k"},{"start":37,"end":41,"cssClass":"pl-k"},{"start":42,"end":49,"cssClass":"pl-k"},{"start":51,"end":58,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":23,"end":24,"cssClass":"pl-k"}],[{"start":8,"end":90,"cssClass":"pl-c"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":19,"end":21,"cssClass":"pl-k"},{"start":46,"end":52,"cssClass":"pl-k"},{"start":53,"end":60,"cssClass":"pl-c1"},{"start":61,"end":62,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":24,"cssClass":"pl-k"},{"start":12,"end":24,"cssClass":"pl-en"},{"start":27,"end":35,"cssClass":"pl-k"},{"start":36,"end":40,"cssClass":"pl-k"},{"start":41,"end":48,"cssClass":"pl-k"},{"start":50,"end":57,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":24,"end":25,"cssClass":"pl-k"}],[{"start":8,"end":90,"cssClass":"pl-c"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":20,"end":22,"cssClass":"pl-k"},{"start":48,"end":54,"cssClass":"pl-k"},{"start":55,"end":62,"cssClass":"pl-c1"},{"start":63,"end":64,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"},{"start":15,"end":22,"cssClass":"pl-c1"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":27,"cssClass":"pl-k"},{"start":12,"end":27,"cssClass":"pl-en"},{"start":30,"end":38,"cssClass":"pl-k"},{"start":39,"end":43,"cssClass":"pl-k"},{"start":44,"end":51,"cssClass":"pl-k"},{"start":53,"end":60,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":24,"end":25,"cssClass":"pl-k"}],[{"start":8,"end":90,"cssClass":"pl-c"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":20,"end":22,"cssClass":"pl-k"},{"start":48,"end":54,"cssClass":"pl-k"},{"start":55,"end":62,"cssClass":"pl-c1"},{"start":63,"end":64,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"},{"start":15,"end":22,"cssClass":"pl-c1"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":28,"cssClass":"pl-k"},{"start":12,"end":28,"cssClass":"pl-en"},{"start":31,"end":39,"cssClass":"pl-k"},{"start":40,"end":44,"cssClass":"pl-k"},{"start":45,"end":52,"cssClass":"pl-k"},{"start":54,"end":61,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":26,"end":27,"cssClass":"pl-k"}],[{"start":8,"end":90,"cssClass":"pl-c"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":22,"end":24,"cssClass":"pl-k"},{"start":52,"end":58,"cssClass":"pl-k"},{"start":59,"end":66,"cssClass":"pl-c1"},{"start":67,"end":68,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"},{"start":15,"end":22,"cssClass":"pl-c1"}],[],[],[{"start":4,"end":67,"cssClass":"pl-c"}],[{"start":4,"end":27,"cssClass":"pl-k"},{"start":12,"end":27,"cssClass":"pl-en"},{"start":30,"end":38,"cssClass":"pl-k"},{"start":39,"end":43,"cssClass":"pl-k"},{"start":44,"end":51,"cssClass":"pl-k"},{"start":53,"end":60,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"},{"start":15,"end":16,"cssClass":"pl-c1"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":27,"cssClass":"pl-k"},{"start":12,"end":27,"cssClass":"pl-en"},{"start":30,"end":38,"cssClass":"pl-k"},{"start":39,"end":43,"cssClass":"pl-k"},{"start":44,"end":51,"cssClass":"pl-k"},{"start":53,"end":60,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":25,"end":26,"cssClass":"pl-k"}],[{"start":8,"end":90,"cssClass":"pl-c"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":21,"end":23,"cssClass":"pl-k"},{"start":50,"end":56,"cssClass":"pl-k"},{"start":57,"end":64,"cssClass":"pl-c1"},{"start":65,"end":66,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":31,"cssClass":"pl-k"},{"start":12,"end":31,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":18,"end":26,"cssClass":"pl-k"},{"start":27,"end":32,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":24,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":18,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":27,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":13,"cssClass":"pl-c1"},{"start":14,"end":22,"cssClass":"pl-k"},{"start":23,"end":27,"cssClass":"pl-v"}],[{"start":6,"end":14,"cssClass":"pl-k"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":23,"end":24,"cssClass":"pl-k"},{"start":25,"end":42,"cssClass":"pl-en"}],[],[],[],[],[],[],[],[],[],[{"start":8,"end":27,"cssClass":"pl-en"}],[],[{"start":8,"end":30,"cssClass":"pl-en"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":41,"cssClass":"pl-k"},{"start":12,"end":41,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":24,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":18,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":27,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":13,"cssClass":"pl-c1"},{"start":14,"end":22,"cssClass":"pl-k"},{"start":23,"end":27,"cssClass":"pl-v"}],[{"start":6,"end":14,"cssClass":"pl-k"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":12,"end":15,"cssClass":"pl-c1"},{"start":16,"end":22,"cssClass":"pl-c1"},{"start":23,"end":25,"cssClass":"pl-k"},{"start":26,"end":33,"cssClass":"pl-c1"},{"start":34,"end":35,"cssClass":"pl-c1"},{"start":38,"end":44,"cssClass":"pl-k"},{"start":45,"end":69,"cssClass":"pl-en"}],[{"start":8,"end":30,"cssClass":"pl-en"}],[],[],[{"start":4,"end":35,"cssClass":"pl-k"},{"start":12,"end":35,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":24,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":24,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":18,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":27,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":13,"cssClass":"pl-c1"},{"start":14,"end":22,"cssClass":"pl-k"},{"start":23,"end":27,"cssClass":"pl-v"}],[{"start":6,"end":14,"cssClass":"pl-k"}],[{"start":8,"end":12,"cssClass":"pl-k"},{"start":13,"end":38,"cssClass":"pl-en"},{"start":53,"end":54,"cssClass":"pl-c1"}],[],[{"start":8,"end":79,"cssClass":"pl-c"}],[{"start":8,"end":76,"cssClass":"pl-c"}],[{"start":22,"end":28,"cssClass":"pl-k"},{"start":41,"end":42,"cssClass":"pl-k"}],[],[{"start":16,"end":17,"cssClass":"pl-k"},{"start":18,"end":31,"cssClass":"pl-en"}],[],[{"start":21,"end":28,"cssClass":"pl-c1"}],[{"start":21,"end":28,"cssClass":"pl-c1"}],[{"start":23,"end":30,"cssClass":"pl-c1"}],[{"start":22,"end":29,"cssClass":"pl-c1"}],[],[],[{"start":8,"end":79,"cssClass":"pl-c"}],[{"start":8,"end":25,"cssClass":"pl-en"}],[],[{"start":16,"end":17,"cssClass":"pl-k"}],[],[],[{"start":4,"end":34,"cssClass":"pl-k"},{"start":12,"end":34,"cssClass":"pl-en"},{"start":35,"end":42,"cssClass":"pl-c1"},{"start":43,"end":48,"cssClass":"pl-v"}],[{"start":8,"end":16,"cssClass":"pl-k"}],[{"start":8,"end":12,"cssClass":"pl-k"}],[{"start":8,"end":15,"cssClass":"pl-k"}],[{"start":12,"end":19,"cssClass":"pl-c1"}],[{"start":12,"end":19,"cssClass":"pl-c1"}],[{"start":12,"end":19,"cssClass":"pl-c1"}],[],[],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":27,"end":28,"cssClass":"pl-k"},{"start":35,"end":36,"cssClass":"pl-k"},{"start":37,"end":40,"cssClass":"pl-c1"},{"start":42,"end":68,"cssClass":"pl-c"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":26,"end":27,"cssClass":"pl-k"},{"start":34,"end":35,"cssClass":"pl-k"},{"start":36,"end":39,"cssClass":"pl-c1"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":23,"end":24,"cssClass":"pl-k"}],[{"start":8,"end":14,"cssClass":"pl-k"}],[],[],[{"start":4,"end":21,"cssClass":"pl-k"},{"start":12,"end":21,"cssClass":"pl-en"},{"start":22,"end":29,"cssClass":"pl-c1"},{"start":30,"end":39,"cssClass":"pl-v"},{"start":41,"end":48,"cssClass":"pl-c1"},{"start":49,"end":55,"cssClass":"pl-v"},{"start":57,"end":65,"cssClass":"pl-k"},{"start":66,"end":70,"cssClass":"pl-k"},{"start":71,"end":78,"cssClass":"pl-k"},{"start":80,"end":84,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"},{"start":24,"end":26,"cssClass":"pl-k"},{"start":38,"end":39,"cssClass":"pl-k"},{"start":40,"end":47,"cssClass":"pl-c1"},{"start":48,"end":55,"cssClass":"pl-c1"},{"start":56,"end":57,"cssClass":"pl-c1"},{"start":61,"end":63,"cssClass":"pl-k"},{"start":64,"end":71,"cssClass":"pl-c1"},{"start":72,"end":73,"cssClass":"pl-c1"}],[],[],[{"start":4,"end":27,"cssClass":"pl-c"}],[{"start":4,"end":20,"cssClass":"pl-k"},{"start":12,"end":20,"cssClass":"pl-en"},{"start":21,"end":28,"cssClass":"pl-c1"},{"start":29,"end":34,"cssClass":"pl-v"},{"start":36,"end":44,"cssClass":"pl-k"},{"start":45,"end":49,"cssClass":"pl-k"},{"start":50,"end":57,"cssClass":"pl-k"},{"start":59,"end":63,"cssClass":"pl-c1"}],[{"start":11,"end":18,"cssClass":"pl-c1"},{"start":19,"end":28,"cssClass":"pl-v"},{"start":30,"end":37,"cssClass":"pl-c1"},{"start":38,"end":44,"cssClass":"pl-v"},{"start":46,"end":47,"cssClass":"pl-k"},{"start":48,"end":69,"cssClass":"pl-en"}],[{"start":8,"end":14,"cssClass":"pl-k"},{"start":15,"end":23,"cssClass":"pl-en"}],[],[],[{"start":4,"end":32,"cssClass":"pl-k"},{"start":12,"end":32,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":18,"end":24,"cssClass":"pl-k"},{"start":25,"end":30,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":20,"cssClass":"pl-v"}],[{"start":6,"end":14,"cssClass":"pl-k"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":18,"end":24,"cssClass":"pl-mi"},{"start":25,"end":27,"cssClass":"pl-k"},{"start":28,"end":31,"cssClass":"pl-c1"},{"start":33,"end":39,"cssClass":"pl-k"},{"start":40,"end":52,"cssClass":"pl-en"},{"start":59,"end":65,"cssClass":"pl-mi"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":18,"end":20,"cssClass":"pl-k"},{"start":21,"end":22,"cssClass":"pl-c1"},{"start":22,"end":24,"cssClass":"pl-k"},{"start":30,"end":36,"cssClass":"pl-mi"},{"start":38,"end":44,"cssClass":"pl-k"},{"start":45,"end":59,"cssClass":"pl-en"},{"start":67,"end":68,"cssClass":"pl-c1"},{"start":68,"end":70,"cssClass":"pl-k"},{"start":76,"end":82,"cssClass":"pl-mi"}],[],[{"start":8,"end":59,"cssClass":"pl-c"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":25,"end":26,"cssClass":"pl-k"},{"start":27,"end":46,"cssClass":"pl-en"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":28,"end":30,"cssClass":"pl-k"},{"start":31,"end":38,"cssClass":"pl-c1"},{"start":39,"end":40,"cssClass":"pl-c1"},{"start":43,"end":49,"cssClass":"pl-k"},{"start":50,"end":61,"cssClass":"pl-en"}],[],[{"start":9,"end":16,"cssClass":"pl-c1"},{"start":17,"end":27,"cssClass":"pl-v"},{"start":29,"end":36,"cssClass":"pl-c1"},{"start":37,"end":46,"cssClass":"pl-v"},{"start":48,"end":55,"cssClass":"pl-c1"},{"start":56,"end":62,"cssClass":"pl-v"},{"start":64,"end":65,"cssClass":"pl-k"},{"start":66,"end":87,"cssClass":"pl-en"}],[],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":12,"end":20,"cssClass":"pl-en"},{"start":41,"end":47,"cssClass":"pl-k"},{"start":48,"end":60,"cssClass":"pl-en"}],[{"start":26,"end":27,"cssClass":"pl-k"},{"start":36,"end":37,"cssClass":"pl-k"},{"start":38,"end":45,"cssClass":"pl-c1"},{"start":46,"end":47,"cssClass":"pl-c1"},{"start":48,"end":50,"cssClass":"pl-k"}],[],[],[{"start":4,"end":30,"cssClass":"pl-k"},{"start":12,"end":30,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":18,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":13,"cssClass":"pl-c1"},{"start":14,"end":20,"cssClass":"pl-k"},{"start":21,"end":25,"cssClass":"pl-v"}],[{"start":6,"end":14,"cssClass":"pl-k"}],[{"start":9,"end":13,"cssClass":"pl-c1"},{"start":14,"end":21,"cssClass":"pl-v"},{"start":23,"end":28,"cssClass":"pl-c1"},{"start":29,"end":35,"cssClass":"pl-k"},{"start":36,"end":46,"cssClass":"pl-v"},{"start":48,"end":49,"cssClass":"pl-k"},{"start":57,"end":68,"cssClass":"pl-en"}],[{"start":8,"end":10,"cssClass":"pl-k"},{"start":12,"end":13,"cssClass":"pl-k"}],[{"start":12,"end":14,"cssClass":"pl-k"},{"start":27,"end":33,"cssClass":"pl-mi"},{"start":34,"end":35,"cssClass":"pl-k"},{"start":36,"end":37,"cssClass":"pl-c1"}],[{"start":16,"end":63,"cssClass":"pl-c"}],[{"start":16,"end":24,"cssClass":"pl-k"}],[{"start":20,"end":23,"cssClass":"pl-k"},{"start":40,"end":42,"cssClass":"pl-k"},{"start":43,"end":48,"cssClass":"pl-k"}],[{"start":20,"end":26,"cssClass":"pl-k"},{"start":27,"end":30,"cssClass":"pl-k"},{"start":31,"end":33,"cssClass":"pl-c1"}],[],[{"start":14,"end":18,"cssClass":"pl-k"}],[{"start":16,"end":22,"cssClass":"pl-k"},{"start":23,"end":39,"cssClass":"pl-en"}],[],[],[],[],[{"start":4,"end":30,"cssClass":"pl-k"},{"start":12,"end":30,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":24,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":18,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":23,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":27,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":21,"cssClass":"pl-v"}],[{"start":8,"end":13,"cssClass":"pl-c1"},{"start":14,"end":22,"cssClass":"pl-k"},{"start":23,"end":27,"cssClass":"pl-v"}],[{"start":6,"end":12,"cssClass":"pl-k"},{"start":13,"end":17,"cssClass":"pl-k"},{"start":18,"end":25,"cssClass":"pl-k"},{"start":27,"end":34,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"}],[{"start":12,"end":21,"cssClass":"pl-c1"},{"start":22,"end":38,"cssClass":"pl-c1"}],[],[],[{"start":4,"end":32,"cssClass":"pl-k"},{"start":12,"end":32,"cssClass":"pl-en"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":18,"end":24,"cssClass":"pl-k"},{"start":25,"end":30,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":20,"cssClass":"pl-v"}],[{"start":8,"end":15,"cssClass":"pl-c1"},{"start":16,"end":20,"cssClass":"pl-v"}],[{"start":6,"end":12,"cssClass":"pl-k"},{"start":13,"end":17,"cssClass":"pl-k"},{"start":18,"end":25,"cssClass":"pl-k"},{"start":27,"end":34,"cssClass":"pl-c1"}],[{"start":8,"end":14,"cssClass":"pl-k"},{"start":25,"end":38,"cssClass":"pl-en"},{"start":52,"end":61,"cssClass":"pl-c1"},{"start":62,"end":78,"cssClass":"pl-c1"}],[],[]],"csv":null,"csvError":null,"dependabotInfo":{"showConfigurationBanner":false,"configFilePath":null,"networkDependabotPath":"/OffchainLabs/nitro-contracts/network/updates","dismissConfigurationNoticePath":"/settings/dismiss-notice/dependabot_configuration_notice","configurationNoticeDismissed":null,"repoAlertsPath":"/OffchainLabs/nitro-contracts/security/dependabot","repoSecurityAndAnalysisPath":"/OffchainLabs/nitro-contracts/settings/security_analysis","repoOwnerIsOrg":true,"currentUserCanAdminRepo":false},"displayName":"Outbox.sol","displayUrl":"https://github.com/OffchainLabs/nitro-contracts/blob/develop/src/bridge/Outbox.sol?raw=true","headerInfo":{"blobSize":"9.37 KB","deleteInfo":{"deletePath":null,"deleteTooltip":"You must be signed in to make or propose changes"},"editInfo":{"editTooltip":"You must be signed in to make or propose changes"},"ghDesktopPath":"https://desktop.github.com","gitLfsPath":null,"onBranch":true,"shortPath":"9020e66","siteNavLoginPath":"/login?return_to=https%3A%2F%2Fgithub.com%2FOffchainLabs%2Fnitro-contracts%2Fblob%2Fdevelop%2Fsrc%2Fbridge%2FOutbox.sol","isCSV":false,"isRichtext":false,"toc":null,"lineInfo":{"truncatedLoc":"276","truncatedSloc":"241"},"mode":"file"},"image":false,"isCodeownersFile":null,"isValidLegacyIssueTemplate":false,"issueTemplateHelpUrl":"https://docs.github.com/articles/about-issue-and-pull-request-templates","issueTemplate":null,"discussionTemplate":null,"language":"Solidity","large":false,"loggedIn":false,"newDiscussionPath":"/OffchainLabs/nitro-contracts/discussions/new","newIssuePath":"/OffchainLabs/nitro-contracts/issues/new","planSupportInfo":{"repoIsFork":null,"repoOwnedByCurrentUser":null,"requestFullPath":"/OffchainLabs/nitro-contracts/blob/develop/src/bridge/Outbox.sol","showFreeOrgGatedFeatureMessage":null,"showPlanSupportBanner":null,"upgradeDataAttributes":null,"upgradePath":null},"publishBannersInfo":{"dismissActionNoticePath":"/settings/dismiss-notice/publish_action_from_dockerfile","dismissStackNoticePath":"/settings/dismiss-notice/publish_stack_from_file","releasePath":"/OffchainLabs/nitro-contracts/releases/new?marketplace=true","showPublishActionBanner":false,"showPublishStackBanner":false},"renderImageOrRaw":false,"richText":null,"renderedFileInfo":null,"tabSize":8,"topBannersInfo":{"overridingGlobalFundingFile":false,"globalPreferredFundingPath":null,"repoOwner":"OffchainLabs","repoName":"nitro-contracts","showInvalidCitationWarning":false,"citationHelpUrl":"https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/about-citation-files","showDependabotConfigurationBanner":false,"actionsOnboardingTip":null},"truncated":false,"viewable":true,"workflowRedirectUrl":null,"symbols":{"timedOut":false,"notAnalyzed":true,"symbols":[]}},"copilotUserAccess":null,"csrf_tokens":{"/OffchainLabs/nitro-contracts/branches":{"post":"hHqxhnYEV6kNJJ1xfTu2t41eZKkL4_fOMlvR1Ga3qr6zVsKGCt_BofdBY5CNVvJ4WAd9_7kFFZXODOYosHe1iQ"}}},"title":"nitro-contracts/src/bridge/Outbox.sol at develop · OffchainLabs/nitro-contracts","locale":"en"}
+// Copyright 2021-2022, Offchain Labs, Inc.
+// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// SPDX-License-Identifier: BUSL-1.1
+
+pragma solidity ^0.8.4;
+
+import {
+    AlreadyInit,
+    NotRollup,
+    ProofTooLong,
+    PathNotMinimal,
+    UnknownRoot,
+    AlreadySpent,
+    BridgeCallFailed,
+    HadZeroInit
+} from "../libraries/Error.sol";
+import "./IBridge.sol";
+import "./IOutbox.sol";
+import "../libraries/MerkleLib.sol";
+import "../libraries/DelegateCallAware.sol";
+
+/// @dev this error is thrown since certain functions are only expected to be used in simulations, not in actual txs
+error SimulationOnlyEntrypoint();
+
+contract Outbox is DelegateCallAware, IOutbox {
+    address public rollup; // the rollup contract
+    IBridge public bridge; // the bridge contract
+
+    mapping(uint256 => bytes32) public spent; // packed spent bitmap
+    mapping(bytes32 => bytes32) public roots; // maps root hashes => L2 block hash
+
+    struct L2ToL1Context {
+        uint128 l2Block;
+        uint128 l1Block;
+        uint128 timestamp;
+        bytes32 outputId;
+        address sender;
+    }
+    // Note, these variables are set and then wiped during a single transaction.
+    // Therefore their values don't need to be maintained, and their slots will
+    // be empty outside of transactions
+    L2ToL1Context internal context;
+
+    // default context values to be used in storage instead of zero, to save on storage refunds
+    // it is assumed that arb-os never assigns these values to a valid leaf to be redeemed
+    uint128 private constant L2BLOCK_DEFAULT_CONTEXT = type(uint128).max;
+    uint128 private constant L1BLOCK_DEFAULT_CONTEXT = type(uint128).max;
+    uint128 private constant TIMESTAMP_DEFAULT_CONTEXT = type(uint128).max;
+    bytes32 private constant OUTPUTID_DEFAULT_CONTEXT = bytes32(type(uint256).max);
+    address private constant SENDER_DEFAULT_CONTEXT = address(type(uint160).max);
+
+    uint128 public constant OUTBOX_VERSION = 2;
+
+    function initialize(IBridge _bridge) external onlyDelegated {
+        if (address(_bridge) == address(0)) revert HadZeroInit();
+        if (address(bridge) != address(0)) revert AlreadyInit();
+        // address zero is returned if no context is set, but the values used in storage
+        // are non-zero to save users some gas (as storage refunds are usually maxed out)
+        // EIP-1153 would help here
+        context = L2ToL1Context({
+            l2Block: L2BLOCK_DEFAULT_CONTEXT,
+            l1Block: L1BLOCK_DEFAULT_CONTEXT,
+            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
+            outputId: OUTPUTID_DEFAULT_CONTEXT,
+            sender: SENDER_DEFAULT_CONTEXT
+        });
+        bridge = _bridge;
+        rollup = address(_bridge.rollup());
+    }
+
+    function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external {
+        if (msg.sender != rollup) revert NotRollup(msg.sender, rollup);
+        roots[root] = l2BlockHash;
+        emit SendRootUpdated(root, l2BlockHash);
+    }
+
+    /// @inheritdoc IOutbox
+    function l2ToL1Sender() external view returns (address) {
+        address sender = context.sender;
+        // we don't return the default context value to avoid a breaking change in the API
+        if (sender == SENDER_DEFAULT_CONTEXT) return address(0);
+        return sender;
+    }
+
+    /// @inheritdoc IOutbox
+    function l2ToL1Block() external view returns (uint256) {
+        uint128 l2Block = context.l2Block;
+        // we don't return the default context value to avoid a breaking change in the API
+        if (l2Block == L1BLOCK_DEFAULT_CONTEXT) return uint256(0);
+        return uint256(l2Block);
+    }
+
+    /// @inheritdoc IOutbox
+    function l2ToL1EthBlock() external view returns (uint256) {
+        uint128 l1Block = context.l1Block;
+        // we don't return the default context value to avoid a breaking change in the API
+        if (l1Block == L1BLOCK_DEFAULT_CONTEXT) return uint256(0);
+        return uint256(l1Block);
+    }
+
+    /// @inheritdoc IOutbox
+    function l2ToL1Timestamp() external view returns (uint256) {
+        uint128 timestamp = context.timestamp;
+        // we don't return the default context value to avoid a breaking change in the API
+        if (timestamp == TIMESTAMP_DEFAULT_CONTEXT) return uint256(0);
+        return uint256(timestamp);
+    }
+
+    /// @notice batch number is deprecated and now always returns 0
+    function l2ToL1BatchNum() external pure returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc IOutbox
+    function l2ToL1OutputId() external view returns (bytes32) {
+        bytes32 outputId = context.outputId;
+        // we don't return the default context value to avoid a breaking change in the API
+        if (outputId == OUTPUTID_DEFAULT_CONTEXT) return bytes32(0);
+        return outputId;
+    }
+
+    /// @inheritdoc IOutbox
+    function executeTransaction(
+        bytes32[] calldata proof,
+        uint256 index,
+        address l2Sender,
+        address to,
+        uint256 l2Block,
+        uint256 l1Block,
+        uint256 l2Timestamp,
+        uint256 value,
+        bytes calldata data
+    ) external {
+        bytes32 userTx = calculateItemHash(
+            l2Sender,
+            to,
+            l2Block,
+            l1Block,
+            l2Timestamp,
+            value,
+            data
+        );
+
+        recordOutputAsSpent(proof, index, userTx);
+
+        executeTransactionImpl(index, l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);
+    }
+
+    /// @inheritdoc IOutbox
+    function executeTransactionSimulation(
+        uint256 index,
+        address l2Sender,
+        address to,
+        uint256 l2Block,
+        uint256 l1Block,
+        uint256 l2Timestamp,
+        uint256 value,
+        bytes calldata data
+    ) external {
+        if (msg.sender != address(0)) revert SimulationOnlyEntrypoint();
+        executeTransactionImpl(index, l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);
+    }
+
+    function executeTransactionImpl(
+        uint256 outputId,
+        address l2Sender,
+        address to,
+        uint256 l2Block,
+        uint256 l1Block,
+        uint256 l2Timestamp,
+        uint256 value,
+        bytes calldata data
+    ) internal {
+        emit OutBoxTransactionExecuted(to, l2Sender, 0, outputId);
+
+        // we temporarily store the previous values so the outbox can naturally
+        // unwind itself when there are nested calls to `executeTransaction`
+        L2ToL1Context memory prevContext = context;
+
+        context = L2ToL1Context({
+            sender: l2Sender,
+            l2Block: uint128(l2Block),
+            l1Block: uint128(l1Block),
+            timestamp: uint128(l2Timestamp),
+            outputId: bytes32(outputId)
+        });
+
+        // set and reset vars around execution so they remain valid during call
+        executeBridgeCall(to, value, data);
+
+        context = prevContext;
+    }
+
+    function _calcSpentIndexOffset(uint256 index)
+        internal
+        view
+        returns (
+            uint256,
+            uint256,
+            bytes32
+        )
+    {
+        uint256 spentIndex = index / 255; // Note: Reserves the MSB.
+        uint256 bitOffset = index % 255;
+        bytes32 replay = spent[spentIndex];
+        return (spentIndex, bitOffset, replay);
+    }
+
+    function _isSpent(uint256 bitOffset, bytes32 replay) internal pure returns (bool) {
+        return ((replay >> bitOffset) & bytes32(uint256(1))) != bytes32(0);
+    }
+
+    /// @inheritdoc IOutbox
+    function isSpent(uint256 index) external view returns (bool) {
+        (, uint256 bitOffset, bytes32 replay) = _calcSpentIndexOffset(index);
+        return _isSpent(bitOffset, replay);
+    }
+
+    function recordOutputAsSpent(
+        bytes32[] memory proof,
+        uint256 index,
+        bytes32 item
+    ) internal {
+        if (proof.length >= 256) revert ProofTooLong(proof.length);
+        if (index >= 2**proof.length) revert PathNotMinimal(index, 2**proof.length);
+
+        // Hash the leaf an extra time to prove it's a leaf
+        bytes32 calcRoot = calculateMerkleRoot(proof, index, item);
+        if (roots[calcRoot] == bytes32(0)) revert UnknownRoot(calcRoot);
+
+        (uint256 spentIndex, uint256 bitOffset, bytes32 replay) = _calcSpentIndexOffset(index);
+
+        if (_isSpent(bitOffset, replay)) revert AlreadySpent(index);
+        spent[spentIndex] = (replay | bytes32(1 << bitOffset));
+    }
+
+    function executeBridgeCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal {
+        (bool success, bytes memory returndata) = bridge.executeCall(to, value, data);
+        if (!success) {
+            if (returndata.length > 0) {
+                // solhint-disable-next-line no-inline-assembly
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert BridgeCallFailed();
+            }
+        }
+    }
+
+    function calculateItemHash(
+        address l2Sender,
+        address to,
+        uint256 l2Block,
+        uint256 l1Block,
+        uint256 l2Timestamp,
+        uint256 value,
+        bytes calldata data
+    ) public pure returns (bytes32) {
+        return
+            keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
+    }
+
+    function calculateMerkleRoot(
+        bytes32[] memory proof,
+        uint256 path,
+        bytes32 item
+    ) public pure returns (bytes32) {
+        return MerkleLib.calculateRoot(proof, path, keccak256(abi.encodePacked(item)));
+    }
+}
