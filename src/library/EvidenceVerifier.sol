@@ -2,7 +2,10 @@
 pragma solidity ^0.8.12;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {Common} from "./Common.sol";
 import "solidity-rlp/contracts/Helper.sol";
+import {OptimismVerifier} from "./OptimismVerifier.sol";
+import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
 
 contract EvidenceVerifier {
     // Evidence is the data structure to store the slashing evidence.
@@ -22,11 +25,8 @@ contract EvidenceVerifier {
         bytes rawBlockHeader;
     }
 
-    uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
-    uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
-
     uint public constant CHAIN_ID_MAINNET = 1;
-    uint public constant CHAIN_ID_OPTIMISM = 10;
+    uint public constant CHAIN_ID_OPTIMISM_BEDROCK = 420;
     uint public constant CHAIN_ID_BASE = 84531;
     uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
@@ -34,25 +34,35 @@ contract EvidenceVerifier {
     using RLPReader for RLPReader.Iterator;
     using RLPReader for bytes;
 
+    function _verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
+        bytes32 blockHash;
+        for (uint256 i = 0; i < sequence.length; i++) {
+	    RLPReader.RLPItem[] memory decoded = sequence[i].toRlpItem().toList();
+	    RLPReader.RLPItem memory prevHash = decoded[0]; // prevHash/parentHash
+	    bytes32 cmpHash = bytes32(prevHash.toUint());
+	    if (i > 0 && cmpHash != blockHash) return false;
+	    blockHash = keccak256(sequence[i]);
+	}
+	if (latestHash != blockHash) {
+	    return false;
+	}
+        return true;
+    }
+
     function calculateBlockHash(bytes memory rlpData) public pure returns (bytes32) {
         return keccak256(rlpData);
     }
     
-    function checkAndDecodeRLP(bytes memory rlpData, bytes32 comparisonBlockHash) public pure returns (RLPReader.RLPItem[] memory) {
-        bytes32 blockHash = keccak256(rlpData);
-        require(blockHash == comparisonBlockHash, "Hash of RLP data diverges from comparison block hash");
-        RLPReader.RLPItem[] memory decoded = rlpData.toRlpItem().toList();
-	return decoded;
-    }
-
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public pure returns (bool) {
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-            return true; // TODO: add the logic
-        }
+            return true;
+        } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
+	    return true;
+	}
     
-        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
-        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
+        RLPReader.RLPItem[] memory decoded = Common.checkAndDecodeRLP(rlpData, comparisonBlockHash);
+        RLPReader.RLPItem memory blockNumberItem = decoded[Common.BLOCK_HEADER_NUMBER_INDEX];
         uint number = blockNumberItem.toUint();
         bool res = number == comparisonNumber;
         return res;
@@ -88,38 +98,4 @@ contract EvidenceVerifier {
                 )
             );
     }
-
-/*
-    IRollupCore	public ArbRollupCore;
-    IOutbox	public ArbOutbox;
-    
-    function verifyArbBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
-        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
-        RLPReader.RLPItem memory extraDataItem = decoded[BLOCK_HEADER_EXTRADATA_INDEX];
-        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
-        
-        bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
-        bytes32 l2Hash = ArbOutbox.roots[extraData];
-        if (l2Hash == bytes32(0)) {
-            // No such confirmed node... TODO determine how these should be handled
-            return false;
-        }
-        uint number = blockNumberItem.toUint();
-        
-        bool hashCheck = l2hash == comparisonBlockHash;
-        bool numberCheck = number == comparisonNumber;
-        bool res = hashCheck && numberCheck;
-        return res;
-    }
-    
-    IICanonicalTransactionChain public Optimism;
-    
-    function verifyOptBlockNumber(uint comparisonNumber, bytes32 comparisonBatchRoot, uint256 chainID) external view returns (bool) {
-        // BlockHash does not seem to be available, but root and number can be verified onchain.
-//        uint number = 
-        bool res = false;
-        return res;
-    }
-*/
-
 }
