@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity ^0.8.12;
 
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import { Semver } from "../universal/Semver.sol";
-import { Types } from "../libraries/Types.sol";
 
-/// @custom:proxied
-/// @title L2OutputOracle
-/// @notice The L2OutputOracle contains an array of L2 state outputs, where each output is a
-///         commitment to the state of the L2 chain. Other contracts like the OptimismPortal use
-///         these outputs to verify information about the state of L2.
-contract L2OutputOracle is Initializable, Semver {
+import { Types } from "./Types.sol";
+
+contract L2OutputOracle is Initializable {
     /// @notice The interval in L2 blocks at which checkpoints must be submitted.
     ///         Although this is immutable, it can safely be modified by upgrading the
     ///         implementation contract.
@@ -33,35 +28,10 @@ contract L2OutputOracle is Initializable, Semver {
 
     /// @notice The timestamp of the first L2 block recorded in this contract.
     uint256 public startingTimestamp;
-
+//include
     /// @notice An array of L2 output proposals.
     Types.OutputProposal[] internal l2Outputs;
 
-    /// @notice Emitted when an output is proposed.
-    /// @param outputRoot    The output root.
-    /// @param l2OutputIndex The index of the output in the l2Outputs array.
-    /// @param l2BlockNumber The L2 block number of the output root.
-    /// @param l1Timestamp   The L1 timestamp when proposed.
-    event OutputProposed(
-        bytes32 indexed outputRoot,
-        uint256 indexed l2OutputIndex,
-        uint256 indexed l2BlockNumber,
-        uint256 l1Timestamp
-    );
-
-    /// @notice Emitted when outputs are deleted.
-    /// @param prevNextOutputIndex Next L2 output index before the deletion.
-    /// @param newNextOutputIndex  Next L2 output index after the deletion.
-    event OutputsDeleted(uint256 indexed prevNextOutputIndex, uint256 indexed newNextOutputIndex);
-
-    /// @custom:semver 1.3.1
-    /// @notice Constructs the L2OutputOracle contract.
-    /// @param _submissionInterval  Interval in blocks at which checkpoints must be submitted.
-    /// @param _l2BlockTime         The time per L2 block, in seconds.
-    /// @param _startingBlockNumber The number of the first L2 block.
-    /// @param _startingTimestamp   The timestamp of the first L2 block.
-    /// @param _proposer            The address of the proposer.
-    /// @param _challenger          The address of the challenger.
     constructor(
         uint256 _submissionInterval,
         uint256 _l2BlockTime,
@@ -70,7 +40,7 @@ contract L2OutputOracle is Initializable, Semver {
         address _proposer,
         address _challenger,
         uint256 _finalizationPeriodSeconds
-    ) Semver(1, 3, 1) {
+    ) {
         require(_l2BlockTime > 0, "L2OutputOracle: L2 block time must be greater than 0");
         require(
             _submissionInterval > 0,
@@ -100,39 +70,6 @@ contract L2OutputOracle is Initializable, Semver {
 
         startingTimestamp = _startingTimestamp;
         startingBlockNumber = _startingBlockNumber;
-    }
-
-    /// @notice Deletes all output proposals after and including the proposal that corresponds to
-    ///         the given output index. Only the challenger address can delete outputs.
-    /// @param _l2OutputIndex Index of the first L2 output to be deleted.
-    ///                       All outputs after this output will also be deleted.
-    // solhint-disable-next-line ordering
-    function deleteL2Outputs(uint256 _l2OutputIndex) external {
-        require(
-            msg.sender == CHALLENGER,
-            "L2OutputOracle: only the challenger address can delete outputs"
-        );
-
-        // Make sure we're not *increasing* the length of the array.
-        require(
-            _l2OutputIndex < l2Outputs.length,
-            "L2OutputOracle: cannot delete outputs after the latest output index"
-        );
-
-        // Do not allow deleting any outputs that have already been finalized.
-        require(
-            block.timestamp - l2Outputs[_l2OutputIndex].timestamp < FINALIZATION_PERIOD_SECONDS,
-            "L2OutputOracle: cannot delete outputs that have already been finalized"
-        );
-
-        uint256 prevNextL2OutputIndex = nextOutputIndex();
-
-        // Use assembly to delete the array elements because Solidity doesn't allow it.
-        assembly {
-            sstore(l2Outputs.slot, _l2OutputIndex)
-        }
-
-        emit OutputsDeleted(prevNextL2OutputIndex, _l2OutputIndex);
     }
 
     /// @notice Accepts an outputRoot and the timestamp of the corresponding L2 block.
@@ -183,7 +120,7 @@ contract L2OutputOracle is Initializable, Semver {
             );
         }
 
-        emit OutputProposed(_outputRoot, nextOutputIndex(), _l2BlockNumber, block.timestamp);
+        //emit OutputProposed(_outputRoot, nextOutputIndex(), _l2BlockNumber, block.timestamp);
 
         l2Outputs.push(
             Types.OutputProposal({
@@ -205,6 +142,7 @@ contract L2OutputOracle is Initializable, Semver {
         return l2Outputs[_l2OutputIndex];
     }
 
+//include
     /// @notice Returns the index of the L2 output that checkpoints a given L2 block number.
     ///         Uses a binary search to find the first output greater than or equal to the given
     ///         block.
@@ -237,7 +175,7 @@ contract L2OutputOracle is Initializable, Semver {
 
         return lo;
     }
-
+//include
     /// @notice Returns the L2 output proposal that checkpoints a given L2 block number.
     ///         Uses a binary search to find the first output greater than or equal to the given
     ///         block.
@@ -263,7 +201,7 @@ contract L2OutputOracle is Initializable, Semver {
     function nextOutputIndex() public view returns (uint256) {
         return l2Outputs.length;
     }
-
+//include
     /// @notice Returns the block number of the latest submitted L2 output proposal.
     ///         If no proposals been submitted yet then this function will return the starting
     ///         block number.
