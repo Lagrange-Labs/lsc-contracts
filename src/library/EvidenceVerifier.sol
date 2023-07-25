@@ -34,35 +34,52 @@ contract EvidenceVerifier {
     using RLPReader for RLPReader.Iterator;
     using RLPReader for bytes;
 
-    function _verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
+    function _verifyRawHeaderSequence(
+        bytes32 latestHash,
+        bytes[] calldata sequence
+    ) public view returns (bool) {
         bytes32 blockHash;
         for (uint256 i = 0; i < sequence.length; i++) {
-	    RLPReader.RLPItem[] memory decoded = sequence[i].toRlpItem().toList();
-	    RLPReader.RLPItem memory prevHash = decoded[0]; // prevHash/parentHash
-	    bytes32 cmpHash = bytes32(prevHash.toUint());
-	    if (i > 0 && cmpHash != blockHash) return false;
-	    blockHash = keccak256(sequence[i]);
-	}
-	if (latestHash != blockHash) {
-	    return false;
-	}
+            RLPReader.RLPItem[] memory decoded = sequence[i]
+                .toRlpItem()
+                .toList();
+            RLPReader.RLPItem memory prevHash = decoded[0]; // prevHash/parentHash
+            bytes32 cmpHash = bytes32(prevHash.toUint());
+            if (i > 0 && cmpHash != blockHash) return false;
+            blockHash = keccak256(sequence[i]);
+        }
+        if (latestHash != blockHash) {
+            return false;
+        }
         return true;
     }
 
-    function calculateBlockHash(bytes memory rlpData) public pure returns (bytes32) {
+    function calculateBlockHash(
+        bytes memory rlpData
+    ) public pure returns (bytes32) {
         return keccak256(rlpData);
     }
-    
+
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public pure returns (bool) {
+    function verifyBlockNumber(
+        uint comparisonNumber,
+        bytes memory rlpData,
+        bytes32 comparisonBlockHash,
+        uint256 chainID
+    ) public pure returns (bool) {
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
             return true;
         } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
-	    return true;
-	}
-    
-        RLPReader.RLPItem[] memory decoded = Common.checkAndDecodeRLP(rlpData, comparisonBlockHash);
-        RLPReader.RLPItem memory blockNumberItem = decoded[Common.BLOCK_HEADER_NUMBER_INDEX];
+            return true;
+        }
+
+        RLPReader.RLPItem[] memory decoded = Common.checkAndDecodeRLP(
+            rlpData,
+            comparisonBlockHash
+        );
+        RLPReader.RLPItem memory blockNumberItem = decoded[
+            Common.BLOCK_HEADER_NUMBER_INDEX
+        ];
         uint number = blockNumberItem.toUint();
         bool res = number == comparisonNumber;
         return res;
@@ -77,14 +94,21 @@ contract EvidenceVerifier {
     }
 
     // check the evidence identity and the ECDSA signature
-    function checkCommitSignature(Evidence calldata evidence) public pure returns (bool) {
+    function checkCommitSignature(
+        Evidence calldata evidence
+    ) public pure returns (bool) {
         bytes32 commitHash = getCommitHash(evidence);
-        address recoveredAddress = ECDSA.recover(commitHash, evidence.commitSignature);
+        address recoveredAddress = ECDSA.recover(
+            commitHash,
+            evidence.commitSignature
+        );
         return recoveredAddress == evidence.operator;
     }
 
     // get the hash of the commit request
-    function getCommitHash(Evidence calldata evidence) public pure returns (bytes32) {
+    function getCommitHash(
+        Evidence calldata evidence
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
