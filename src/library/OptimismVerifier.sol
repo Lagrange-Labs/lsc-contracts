@@ -12,12 +12,14 @@ contract OptimismVerifier {
         uint128 l2BlockNumber;
     }
 
-    function verifyOptBlockNumber(
+    function verifyOptBlock(
         address L2OutputOracle,
+	bytes calldata rlpData,
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
-        bytes32[4] calldata outputProof
-    ) external returns (bool) {
+        bytes32[4] calldata outputProof,
+	bytes calldata headerProof
+    ) external returns (bool, bytes32) {
         // 1. get next output root
         bytes memory _call = abi.encodeWithSignature(
             "getL2OutputAfter(uint256)",
@@ -50,6 +52,6 @@ contract OptimismVerifier {
         // 4. May now proceed to verify comparison hash
         //...
         bool res = false;
-        return res;
+        return (res, comparisonBlockHash);
     }
 }

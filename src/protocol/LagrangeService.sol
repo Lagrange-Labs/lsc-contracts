@@ -141,7 +141,7 @@ contract LagrangeService is
         bytes32 correctBlockHash,
         bytes32 blockHash,
         uint256 blockNumber,
-        bytes memory rawBlockHeader,
+        bytes calldata rawBlockHeader,
         uint256 chainID
     ) internal pure returns (bool) {
         return

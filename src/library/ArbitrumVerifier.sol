@@ -11,13 +11,12 @@ contract ArbitrumVerifier {
     using RLPReader for RLPReader.Iterator;
     using RLPReader for bytes;
 
-    function verifyArbBlockNumber(
+    function verifyArbBlock(
         IOutbox ArbOutbox,
-        uint comparisonNumber,
 	bytes memory rlpData,
 	bytes32 comparisonBlockHash,
-	uint256 chainID
-    ) external view returns (bool) {
+	bytes calldata headerProof
+    ) external view returns (bool,bytes32) {
         RLPReader.RLPItem[] memory decoded = Common.checkAndDecodeRLP(rlpData, comparisonBlockHash);
         RLPReader.RLPItem memory extraDataItem = decoded[Common.BLOCK_HEADER_EXTRADATA_INDEX];
         RLPReader.RLPItem memory blockNumberItem = decoded[Common.BLOCK_HEADER_NUMBER_INDEX];
@@ -27,14 +26,14 @@ contract ArbitrumVerifier {
         bytes32 l2Hash = ArbOutbox.roots(extraData);
         if (l2Hash == bytes32(0)) {
             // No such confirmed node... TODO determine how these should be handled
-            return false;
+            return (false,bytes32(0));
         }
         
         //bool hashCheck = l2hash == comparisonBlockHash;
         //bool numberCheck = number == comparisonNumber;
         //bool res = hashCheck && numberCheck;
 	bool res = true;
-        return res;
+        return (res,l2Hash);
     }
     
 }

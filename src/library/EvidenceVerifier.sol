@@ -6,8 +6,9 @@ import {Common} from "./Common.sol";
 import "solidity-rlp/contracts/Helper.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
+import "../mock/arbitrum/IOutbox.sol";
 
-contract EvidenceVerifier {
+contract EvidenceVerifier is OptimismVerifier, ArbitrumVerifier {
     // Evidence is the data structure to store the slashing evidence.
     struct Evidence {
         address operator;
@@ -33,6 +34,17 @@ contract EvidenceVerifier {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for RLPReader.Iterator;
     using RLPReader for bytes;
+    
+    IOutbox ArbOutbox;
+    address L2OutputOracle;
+    
+    function setArbAddr(IOutbox _arbOutbox) public /*onlyOwner*/ {
+      ArbOutbox = _arbOutbox;
+    }
+
+    function setOptAddr(address _l2OutputOracle) public /*onlyOwner*/ {
+      L2OutputOracle = _l2OutputOracle;
+    }
 
     function _verifyRawHeaderSequence(
         bytes32 latestHash,
@@ -63,16 +75,23 @@ contract EvidenceVerifier {
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(
         uint comparisonNumber,
-        bytes memory rlpData,
+        bytes calldata rlpData,
         bytes32 comparisonBlockHash,
         uint256 chainID
     ) public pure returns (bool) {
+        // Retrieve Checkpoint Block
+        bytes32 checkpointBlockHash;
+        bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-            return true;
+//            (success, checkpoint) = verifyArbBlock();
         } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
-            return true;
+//            (success, checkpoint) = verifyOptBlock();
         }
-
+        if (!success) {
+        }
+        // Verify Proof
+        
+        // Verify Block Number
         RLPReader.RLPItem[] memory decoded = Common.checkAndDecodeRLP(
             rlpData,
             comparisonBlockHash
@@ -84,7 +103,7 @@ contract EvidenceVerifier {
         bool res = number == comparisonNumber;
         return res;
     }
-
+    
     function toUint(bytes memory src) internal pure returns (uint) {
         uint value;
         for (uint i = 0; i < src.length; i++) {

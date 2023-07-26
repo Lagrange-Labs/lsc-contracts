@@ -11,13 +11,17 @@
             "chain_name": "arbitrum",
             "chain_id": 1337,
             "epoch_period": 5,
-            "freeze_duration": 2
+            "freeze_duration": 2,
         },
         {
             "chain_name": "optimism",
             "chain_id": 420,
             "epoch_period": 43200,
-            "freeze_duration": 6000
+            "freeze_duration": 6000,
         }
+    ],
+    "settlement": [
+	    "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
+	    "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
     ]
 }
