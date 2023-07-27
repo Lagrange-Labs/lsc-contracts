@@ -10,6 +10,10 @@
 After cloning the repository, run the following command to install the dependencies
 
 ```bash
+# Update forge packages
+foundryup
+
+# Install or update dependencies
 forge install
 ```
 
@@ -25,7 +29,7 @@ forge install
 
     - Execute `make init-accounts` to initialize the accounts
     
-    - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `localnet/script/M1_deploy.config.json` with the deployed address
+    - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `script/localnet/M1_deploy.config.json` with the deployed address
 
         ```bash
         make deploy-weth9
