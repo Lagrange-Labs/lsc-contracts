@@ -68,11 +68,6 @@ contract Deploy is Script, Test {
         // deploy proxy admin for ability to upgrade proxy contracts
         proxyAdmin = new ProxyAdmin();
         
-        // deploy evidence verifier
-        evidenceVerifier = new EvidenceVerifier();
-        arbitrumVerifier = new ArbitrumVerifier();
-        optimismVerifier = new OptimismVerifier();
-
         // deploy upgradeable proxy contracts
         emptyContract = new EmptyContract();
         lagrangeCommittee = LagrangeCommittee(
@@ -124,6 +119,13 @@ return;
 	IOutbox arb_Outbox = IOutbox(address(outbox));
 //	lagrangeServiceImp.setOptAddr(opt_L2OutputOracle);
 //	lagrangeServiceImp.setArbAddr(arb_Outbox);
+
+        // deploy evidence verifier
+        arbitrumVerifier = new ArbitrumVerifier(outbox);
+        optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
+        //evidenceVerifier = new EvidenceVerifier();
+        lagrangeService.setOptAddr(optimismVerifier);
+        lagrangeService.setArbAddr(arbitrumVerifier);
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
