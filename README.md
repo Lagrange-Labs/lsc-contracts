@@ -19,6 +19,15 @@ forge install
 
 ## Local Deployment
 
+The following walks through the necessary steps to deploy the Lagrange contracts, interfacing with mock contracts for EigenLayer, as well as Arbitrum Nitro and Optimism Bedrock settlement mock contracts.
+```
+bash make all-mock
+```
+
+## Local Deployment
+
+**Note**: *The following steps are deprecated as of July 2023.*
+
 1. Eigenlayer Deployment
 
     - Run the `geth` node using the following command
