@@ -3,23 +3,27 @@ pragma solidity ^0.8.12;
 
 import {Common} from "./Common.sol";
 
-contract OptimismVerifier {
+contract OptimismVerifier is Common {
     uint256 public constant OUTPUT_PROOF_BLOCKHASH_INDEX = 3;
+
+    address L2OutputOracle;
+
+    constructor(address _L2OutputOracle) {
+        L2OutputOracle = _L2OutputOracle;
+    }
 
     struct OutputProposal {
         bytes32 outputRoot;
         uint128 timestamp;
         uint128 l2BlockNumber;
     }
-
-    function verifyOptBlock(
-        address L2OutputOracle,
-	bytes calldata rlpData,
+    
+    function verifyOutputProof(
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
-        bytes32[4] calldata outputProof,
-	bytes calldata headerProof
-    ) external returns (bool, bytes32) {
+        bytes32[4] calldata outputProof
+//	bytes calldata headerProof,
+    ) external returns (bool) {
         // 1. get next output root
         bytes memory _call = abi.encodeWithSignature(
             "getL2OutputAfter(uint256)",
@@ -45,13 +49,7 @@ contract OptimismVerifier {
                 outputProof[3]
             )
         );
-        require(
-            outputRootProof == comparisonProof,
-            "Output Root Proofs do not match"
-        );
-        // 4. May now proceed to verify comparison hash
-        //...
-        bool res = false;
-        return (res, comparisonBlockHash);
+        bool res = outputRootProof == comparisonProof;
+        return res;
     }
 }

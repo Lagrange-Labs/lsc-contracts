@@ -2,13 +2,11 @@
 pragma solidity ^0.8.12;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {Common} from "./Common.sol";
-import "solidity-rlp/contracts/Helper.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
-import "../mock/arbitrum/IOutbox.sol";
+import {Common} from "./Common.sol";
 
-contract EvidenceVerifier is OptimismVerifier, ArbitrumVerifier {
+contract EvidenceVerifier is Common {
     // Evidence is the data structure to store the slashing evidence.
     struct Evidence {
         address operator;
@@ -31,39 +29,23 @@ contract EvidenceVerifier is OptimismVerifier, ArbitrumVerifier {
     uint public constant CHAIN_ID_BASE = 84531;
     uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
-    using RLPReader for RLPReader.RLPItem;
-    using RLPReader for RLPReader.Iterator;
-    using RLPReader for bytes;
+    OptimismVerifier OptVerify;
+    ArbitrumVerifier ArbVerify;
     
-    IOutbox ArbOutbox;
-    address L2OutputOracle;
-    
-    function setArbAddr(IOutbox _arbOutbox) public /*onlyOwner*/ {
-      ArbOutbox = _arbOutbox;
+    function setArbAddr(ArbitrumVerifier _arb) public {
+      ArbVerify = _arb;
     }
 
-    function setOptAddr(address _l2OutputOracle) public /*onlyOwner*/ {
-      L2OutputOracle = _l2OutputOracle;
+    function setOptAddr(OptimismVerifier _opt) public {
+      OptVerify = _opt;
+    }
+    
+    function getArbAddr() public view returns (address) /*onlyOwner*/ {
+        return address(ArbVerify);
     }
 
-    function _verifyRawHeaderSequence(
-        bytes32 latestHash,
-        bytes[] calldata sequence
-    ) public view returns (bool) {
-        bytes32 blockHash;
-        for (uint256 i = 0; i < sequence.length; i++) {
-            RLPReader.RLPItem[] memory decoded = sequence[i]
-                .toRlpItem()
-                .toList();
-            RLPReader.RLPItem memory prevHash = decoded[0]; // prevHash/parentHash
-            bytes32 cmpHash = bytes32(prevHash.toUint());
-            if (i > 0 && cmpHash != blockHash) return false;
-            blockHash = keccak256(sequence[i]);
-        }
-        if (latestHash != blockHash) {
-            return false;
-        }
-        return true;
+    function getOptAddr() public view returns (address) /*onlyOwner*/ {
+        return address(OptVerify);
     }
 
     function calculateBlockHash(
@@ -75,12 +57,11 @@ contract EvidenceVerifier is OptimismVerifier, ArbitrumVerifier {
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(
         uint comparisonNumber,
-        bytes calldata rlpData,
+        bytes memory rlpData,
         bytes32 comparisonBlockHash,
         uint256 chainID
     ) public pure returns (bool) {
-        // Retrieve Checkpoint Block
-        bytes32 checkpointBlockHash;
+        bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
         bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
 //            (success, checkpoint) = verifyArbBlock();
@@ -89,18 +70,6 @@ contract EvidenceVerifier is OptimismVerifier, ArbitrumVerifier {
         }
         if (!success) {
         }
-        // Verify Proof
-        
-        // Verify Block Number
-        RLPReader.RLPItem[] memory decoded = Common.checkAndDecodeRLP(
-            rlpData,
-            comparisonBlockHash
-        );
-        RLPReader.RLPItem memory blockNumberItem = decoded[
-            Common.BLOCK_HEADER_NUMBER_INDEX
-        ];
-        uint number = blockNumberItem.toUint();
-        bool res = number == comparisonNumber;
         return res;
     }
     
