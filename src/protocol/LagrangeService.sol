@@ -10,7 +10,6 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
 
-import {Common} from "../library/Common.sol";
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
 contract LagrangeService is
@@ -152,11 +151,11 @@ contract LagrangeService is
                 chainID
             ) && blockHash == correctBlockHash;
     }
-
+/*
     function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
         return _verifyRawHeaderSequence(latestHash, sequence);
     }
-
+*/
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,
