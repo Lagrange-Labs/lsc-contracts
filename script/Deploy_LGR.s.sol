@@ -23,11 +23,12 @@ import "forge-std/Test.sol";
 import {IOutbox} from "src/mock/arbitrum/IOutbox.sol";
 import {Outbox} from "src/mock/arbitrum/Outbox.sol";
 import {L2OutputOracle} from "src/mock/optimism/L2OutputOracle.sol";
+import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath =
         string(bytes("script/output/deployed_mock.json"));
-        // string(bytes("script/output/M1_deployment_data.json"));
+        //string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
         string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath =
@@ -111,21 +112,20 @@ contract Deploy is Script, Test {
             IStrategyManager(strategyManagerAddress)
         );
 	
-return;
-        //L2OutputOracle l2oo = new L2OutputOracle();
 	outbox = new Outbox();
-	address opt_L2OutputOracle = stdJson.readAddress(configData, ".settlement.opt_l2outputoracle");
+	IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(stdJson.readAddress(configData, ".settlement.opt_l2outputoracle"));
+	//L2OutputOracle l2oo = new L2OutputOracle();
+	//IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
 	//IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
 	IOutbox arb_Outbox = IOutbox(address(outbox));
-//	lagrangeServiceImp.setOptAddr(opt_L2OutputOracle);
-//	lagrangeServiceImp.setArbAddr(arb_Outbox);
 
         // deploy evidence verifier
         arbitrumVerifier = new ArbitrumVerifier(outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
         //evidenceVerifier = new EvidenceVerifier();
-        lagrangeService.setOptAddr(optimismVerifier);
-        lagrangeService.setArbAddr(arbitrumVerifier);
+
+        lagrangeServiceImp.setOptAddr(optimismVerifier);
+        lagrangeServiceImp.setArbAddr(arbitrumVerifier);
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(

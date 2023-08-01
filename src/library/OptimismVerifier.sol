@@ -2,13 +2,15 @@
 pragma solidity ^0.8.12;
 
 import {Common} from "./Common.sol";
+import {IL2OutputOracle} from "../mock/optimism/IL2OutputOracle.sol";
+import {Types} from "../mock/optimism/Types.sol";
 
 contract OptimismVerifier is Common {
     uint256 public constant OUTPUT_PROOF_BLOCKHASH_INDEX = 3;
 
-    address L2OutputOracle;
+    IL2OutputOracle L2OutputOracle;
 
-    constructor(address _L2OutputOracle) {
+    constructor(IL2OutputOracle _L2OutputOracle) {
         L2OutputOracle = _L2OutputOracle;
     }
 
@@ -18,29 +20,7 @@ contract OptimismVerifier is Common {
         uint128 l2BlockNumber;
     }
     
-    function verifyOutputProof(
-        uint256 comparisonNumber,
-        bytes32 comparisonBlockHash,
-        bytes32[4] calldata outputProof
-//	bytes calldata headerProof,
-    ) external returns (bool) {
-        // 1. get next output root
-        bytes memory _call = abi.encodeWithSignature(
-            "getL2OutputAfter(uint256)",
-            comparisonNumber
-        );
-        (bool success, bytes memory result) = L2OutputOracle.call(
-            _call
-        );
-        require(success, "Call to Optimism L2OutputOracle contract failed.");
-        
-        OutputProposal memory outputProposal;
-        
-        (outputProposal.outputRoot, outputProposal.timestamp, outputProposal.l2BlockNumber) = abi.decode(result, (bytes32, uint128, uint128));
-        
-        // 2. Derive output root from result
-        bytes32 outputRootProof;
-        // 3. Verify independently generated proof against
+    function getOutputHash(bytes32[4] calldata outputProof) public view returns (bytes32) {
         bytes32 comparisonProof = keccak256(
             abi.encode(
                 outputProof[0],
@@ -49,7 +29,22 @@ contract OptimismVerifier is Common {
                 outputProof[3]
             )
         );
-        bool res = outputRootProof == comparisonProof;
+        return comparisonProof;
+    }
+    
+    function verifyOutputProof(
+        uint256 comparisonNumber,
+        bytes32 comparisonBlockHash,
+        bytes32[4] calldata outputProof
+//	bytes calldata headerProof,
+    ) external view returns (bool) {
+        // 1. get next output root
+        Types.OutputProposal memory outputProposal = L2OutputOracle.getL2OutputAfter(comparisonNumber);
+        // 2. Derive output root from result
+        bytes32 outputRoot = outputProposal.outputRoot;
+        // 3. Verify independently generated proof against
+        bytes32 comparisonProof = getOutputHash(outputProof);
+        bool res = outputRoot == comparisonProof;
         return res;
     }
 }
