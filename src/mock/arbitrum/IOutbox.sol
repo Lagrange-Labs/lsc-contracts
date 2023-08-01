@@ -7,4 +7,5 @@ pragma solidity ^0.8.12;
 
 interface IOutbox {
     function roots(bytes32) external view returns (bytes32); // maps root hashes => L2 block hash
+    function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external;
 }
