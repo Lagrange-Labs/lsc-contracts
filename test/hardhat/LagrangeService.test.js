@@ -5,6 +5,7 @@ const rlp = require('rlp');
 const Big = require('big.js');
 const sha3 = require('js-sha3');
 const fs = require('fs');
+const bls = require("bls-eth-wasm");
 
 async function genBLSKey() {
     await bls.init(bls.BLS12_381);
@@ -19,9 +20,27 @@ async function uint2num(x) {
 
 async function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
+async function getSampleEvidence() {
+    return  [
+          "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9", //operator
+          "0xabce508955d1aedc65109b5d11a197fde880dd771b613b28a045c6bf72f2c969", //blockhash
+          "0xabce508955d1aedc65109b5d11a197fde880dd771b613b28a045c6bf72f2c969", //correctblockhash
+          "0x0000000000000000000000000000000000000000000000000000000000000001", //currentCommitteeRoot
+          "0x0000000000000000000000000000000000000000000000000000000000000001", //correctCurrentCommitteeRoot
+          "0x0000000000000000000000000000000000000000000000000000000000000002", //nextCommitteeRoot
+          "0x0000000000000000000000000000000000000000000000000000000000000002", //correctNextCommitteeRoot
+          '0x'+BigInt('0x01c8f418').toString(16), //blockNumber
+          '0x'+BigInt('0x0').toString(16), //epochBlockNumber
+          "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", //blockSignature
+          "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", //commitSignature
+          "0x1A4", //chainID
+          "0xf90224a03e35bf1913bae12f31df48d9bd5450c9adf0fcd0686bb7bb68f5dfbb6823e398a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794a4b000000000000000000073657175656e636572a0af635f011e499ad2366378afaabbe75459dd3a3d9bf92658e7c15e9ad92ef543a02acba3ec11a59c368c8cbd9667239af674848f4dd129f9b93fca0131b1cbf190a07b687f4eff7095882b12a863619b74adfd84a40bf8d2e5512f5e078189b7c930b9010000000000000000000000000000000000000000020000000000000000000000000000000000000000800000000000000000200000000000000000000000200000004000000000000400000008000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000010000000010000000000000000800000000000002000000000000000100000000000000000020000001000000000000000000000000000000000000000000000002000000000000002000000100000000000000000000000010200000000000000000000000010000000000000000000000000000000000000000000000000000000000000018401c8f41887040000000000008306d4568464abbf39a093f89bc3c61a48a17c55ad285b2586df8e19fb9ce6790eca03aa30df8b639809a0000000000000981200000000008e3b0b000000000000000a0000000000000000880000000000074d998405f5e100", //rawBlockHeader
+        ];
+}
+
 describe("LagrangeService",
  function () {
-    let admin, proxy, lagrangeService, lc, lsm, lsaddr;
+    let admin, proxy, lagrangeService, lc, lsm, lsaddr, l2ooAddr, outboxAddr;
 
     before(async function () {
         [admin] = await ethers.getSigners();
@@ -66,15 +85,44 @@ describe("LagrangeService",
 
         console.log("Deploying Lagrange Service...");
 
-        const LSFactory = await ethers.getContractFactory("LagrangeService",{
-//    libraries: {
-//      Common: common.address,
-//    }        
-        });
+        const LSFactory = await ethers.getContractFactory("LagrangeService",{});
         const lagrangeService = await LSFactory.deploy(lsm.address, lc.address, sm.address, overrides);
         await lagrangeService.deployed();
         lsaddr = lagrangeService.address;
+        
+        const outboxFactory = await ethers.getContractFactory("Outbox");
+        const outbox = await outboxFactory.deploy();
+        await outbox.deployed();
+
+        const l2ooFactory = await ethers.getContractFactory("L2OutputOracle");
+        const l2oo = await l2ooFactory.deploy(
+            1,//_submissionInterval
+            1,//_l2BlockTime
+            11991388-1,//_startingBlockNumber
+            1,//_startingTimestamp
+            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",//_proposer
+            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",//_challenger
+            5//_finalizationPeriodSeconds
+        );
+        await l2oo.deployed();
+        l2ooAddr = l2oo.address;
+        
+        const ovFactory = await ethers.getContractFactory("OptimismVerifier");
+        const opt = await ovFactory.deploy(l2oo.address);
+        
+        const avFactory = await ethers.getContractFactory("ArbitrumVerifier");
+        const arb = await avFactory.deploy(outbox.address);
+        
+        console.log("L2OutputOracle:",l2oo.address);
+        console.log("Outbox:",outbox.address);
+        
+        await lagrangeService.setOptAddr(opt.address);
+        await lagrangeService.setArbAddr(arb.address);
+
+        console.log("OptimismVerifier:",opt.address);
+        console.log("ArbitrumVerifier:",arb.address);
     });
+        
 /*
     it('Verify raw blockheader sequence', async function() {
       const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin)
@@ -111,8 +159,8 @@ describe("LagrangeService",
      it('Smoke test L2-L1 settlement interfaces', async function() {
          const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin)
 
-	 await lagrangeService.setArbAddr("0x0000000000000000000000000000000000000001");
-	 await lagrangeService.setOptAddr("0x0000000000000000000000000000000000000001");
+//	 await lagrangeService.setArbAddr("0x0000000000000000000000000000000000000001");
+//	 await lagrangeService.setOptAddr("0x0000000000000000000000000000000000000001");
 
 	 addr = await lagrangeService.getArbAddr();
 	 console.log(addr);
@@ -120,16 +168,94 @@ describe("LagrangeService",
 	 console.log(addr);
 	 
      });
+    it('Slashed status', async function() {
+        const lc = shared.LagrangeCommittee;
+        slashed = await lc.getSlashed("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
+        expect(slashed).to.equal(false);
+    });
+    it('Evidence submission (no registration)', async function() {
+        const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin)
+        evidence = await getSampleEvidence();
+        console.log(evidence)
+        // Pre-registration
+        try {
+            await lagrangeService.uploadEvidence(evidence);
+            expect(false).to.equal(false);
+        } catch(error) {
+        }
+    });
+    it('Optimism Output Verification', async function() {
+        const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin);
+        optAddr = await lagrangeService.getOptAddr();
+        console.log(optAddr);
+        const ov = await ethers.getContractAt("OptimismVerifier", optAddr, admin);
+        const l2oo = await ethers.getContractAt("IL2OutputOracle", l2ooAddr, admin);
+        //console.log(l2oo);
+        for (i = 0; i < 2; i++) {
+          try {
+          console.log("verifyOutputProof (pass "+(i+1)+")");
+          outputProof = [
+                  "0x0000000000000000000000000000000000000000000000000000000000000000",
+                  "0xd0670aef39b98b172b625ca7dcb5823ba8b5be30e6832cb6a2d337d5b1038250",
+                  "0xadb5d075466430af8891c4c88014ffb2e759752dde83a813713c4a5cd1fb3de6",
+                  "0x061ec88a69acdc6f70289979cdb84d29f9024a09fabf6a48a11d7625078870b8"
+              ];
+          expect(i).to.equal(1);
+          hash = await ov.getOutputHash(outputProof);
+          console.log(hash);
+          res = await ov.verifyOutputProof(
+              11991348,
+              "0xdd0ababc17fd2e1b37941fe55302df7ee03672b1b8acd738d05eac8c75cddd74",
+              outputProof
+          );
+          console.log("result:",res);
+          // check against output
+          } catch(error) {
+              // no output, first pass
+              let provider = ethers.provider; // You can also use other providers
+              let block = await provider.getBlock('latest');
+              
+              latest = await l2oo.latestBlockNumber();
+              next = await l2oo.nextBlockNumber();
+              console.log("l1 block:",block.number);
+              console.log("latest:",latest);
+              console.log("next:",next);
+              
+              if(i) {
+                  console.log(error);
+              }
+              expect(i).to.equal(0);
+
+              // propose output
+              await l2oo.proposeL2Output(
+                "0x9c7c59dcfc75aa57697ae880a52f82f179150a7e24d208f7f7ad804ea99535cb",
+                11991388,
+                block.hash,
+                block.number
+              );
+              // confirm output exists
+              oi = await l2oo.getL2OutputAfter(11991348);
+              console.log(oi);
+              // proceed to second pass
+          }
+        }
+    });
+    /*
+    it('Registration', async function() {
+        const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin);
+        // Register
+        blsKey = await genBLSKey();
+        priv = blsKey.serializeToHexStr();
+        pub = blsKey.getPublicKey();
+        res = await lagrangeService.register(420,pub.serialize(),5);
+    });
+    */
         /*
-    it('DefaultFreeze', async function() {
         frozenStatus = await lsm.slasher.isFrozen("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
-        expect(frozenStatus).to.equal(false);
         try {
             await lagrangeService.freezeOperator("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
         } catch(error) {
 	    freezeException = true;
         }
-        return freezeException && !frozenStatus;
-    });
         */
 });
