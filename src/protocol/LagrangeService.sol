@@ -140,7 +140,7 @@ contract LagrangeService is
         bytes32 correctBlockHash,
         bytes32 blockHash,
         uint256 blockNumber,
-        bytes memory rawBlockHeader,
+        bytes calldata rawBlockHeader,
         uint256 chainID
     ) internal pure returns (bool) {
         return
@@ -151,7 +151,11 @@ contract LagrangeService is
                 chainID
             ) && blockHash == correctBlockHash;
     }
-
+/*
+    function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
+        return _verifyRawHeaderSequence(latestHash, sequence);
+    }
+*/
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,

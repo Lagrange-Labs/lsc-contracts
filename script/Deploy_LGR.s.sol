@@ -13,17 +13,26 @@ import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 
+import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
+import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
+import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
+
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
+
+import {IOutbox} from "src/mock/arbitrum/IOutbox.sol";
+import {Outbox} from "src/mock/arbitrum/Outbox.sol";
+import {L2OutputOracle} from "src/mock/optimism/L2OutputOracle.sol";
+import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath =
         string(bytes("script/output/deployed_mock.json"));
-        // string(bytes("script/output/M1_deployment_data.json"));
+        //string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
         string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath =
-        string(bytes("script/LagrangeService.json"));
+        string(bytes("config/LagrangeService.json"));
 
     address slasherAddress;
     address strategyManagerAddress;
@@ -39,8 +48,16 @@ contract Deploy is Script, Test {
 
     EmptyContract public emptyContract;
 
+    EvidenceVerifier public evidenceVerifier;
+    OptimismVerifier public optimismVerifier;
+    ArbitrumVerifier public arbitrumVerifier;
+
+    Outbox public outbox;
+    L2OutputOracle public l2oo;
+
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
+        string memory configData = vm.readFile(serviceDataPath);
         slasherAddress = stdJson.readAddress(deployData, ".addresses.slasher");
         strategyManagerAddress = stdJson.readAddress(
             deployData,
@@ -51,7 +68,7 @@ contract Deploy is Script, Test {
 
         // deploy proxy admin for ability to upgrade proxy contracts
         proxyAdmin = new ProxyAdmin();
-
+        
         // deploy upgradeable proxy contracts
         emptyContract = new EmptyContract();
         lagrangeCommittee = LagrangeCommittee(
@@ -88,11 +105,27 @@ contract Deploy is Script, Test {
         lagrangeServiceManagerImp = new LagrangeServiceManager(
             ISlasher(slasherAddress)
         );
+	
         lagrangeServiceImp = new LagrangeService(
             lagrangeServiceManager,
             lagrangeCommittee,
             IStrategyManager(strategyManagerAddress)
         );
+	
+	outbox = new Outbox();
+	IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(stdJson.readAddress(configData, ".settlement.opt_l2outputoracle"));
+	//L2OutputOracle l2oo = new L2OutputOracle();
+	//IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
+	//IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
+	IOutbox arb_Outbox = IOutbox(address(outbox));
+
+        // deploy evidence verifier
+        arbitrumVerifier = new ArbitrumVerifier(outbox);
+        optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
+        //evidenceVerifier = new EvidenceVerifier();
+
+        lagrangeServiceImp.setOptAddr(optimismVerifier);
+        lagrangeServiceImp.setArbAddr(arbitrumVerifier);
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -132,7 +165,6 @@ contract Deploy is Script, Test {
         ISlasher(slasherAddress).optIntoSlashing(
             address(lagrangeServiceManager)
         );
-
         vm.stopBroadcast();
 
         // write deployment data to file

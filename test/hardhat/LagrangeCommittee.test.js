@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { poseidon } = require('circomlib');
 const bls = require('@noble/bls12-381');
+const shared = require("./shared");
 
 const poseidonUnit = require("circomlibjs").poseidonContract;
 
@@ -88,6 +89,8 @@ describe("LagrangeCommittee", function () {
             committee.address,
             committee.interface.encodeFunctionData("initialize", [admin.address, poseidonAddresses[1], poseidonAddresses[2], poseidonAddresses[3], poseidonAddresses[4], poseidonAddresses[5], poseidonAddresses[6]])
         )
+        
+        shared.LagrangeCommittee = committee;
     });
 
     it("leaf hash", async function () {

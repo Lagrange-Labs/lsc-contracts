@@ -2,9 +2,11 @@
 pragma solidity ^0.8.12;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "solidity-rlp/contracts/Helper.sol";
+import {OptimismVerifier} from "./OptimismVerifier.sol";
+import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
+import {Common} from "./Common.sol";
 
-contract EvidenceVerifier {
+contract EvidenceVerifier is Common {
     // Evidence is the data structure to store the slashing evidence.
     struct Evidence {
         address operator;
@@ -22,42 +24,55 @@ contract EvidenceVerifier {
         bytes rawBlockHeader;
     }
 
-    uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
-    uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
-
     uint public constant CHAIN_ID_MAINNET = 1;
-    uint public constant CHAIN_ID_OPTIMISM = 10;
+    uint public constant CHAIN_ID_OPTIMISM_BEDROCK = 420;
     uint public constant CHAIN_ID_BASE = 84531;
     uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
-    using RLPReader for RLPReader.RLPItem;
-    using RLPReader for RLPReader.Iterator;
-    using RLPReader for bytes;
+    OptimismVerifier OptVerify;
+    ArbitrumVerifier ArbVerify;
+    
+    function setArbAddr(ArbitrumVerifier _arb) public {
+      ArbVerify = _arb;
+    }
 
-    function calculateBlockHash(bytes memory rlpData) public pure returns (bytes32) {
-        return keccak256(rlpData);
+    function setOptAddr(OptimismVerifier _opt) public {
+      OptVerify = _opt;
     }
     
-    function checkAndDecodeRLP(bytes memory rlpData, bytes32 comparisonBlockHash) public pure returns (RLPReader.RLPItem[] memory) {
-        bytes32 blockHash = keccak256(rlpData);
-        require(blockHash == comparisonBlockHash, "Hash of RLP data diverges from comparison block hash");
-        RLPReader.RLPItem[] memory decoded = rlpData.toRlpItem().toList();
-	return decoded;
+    function getArbAddr() public view returns (address) /*onlyOwner*/ {
+        return address(ArbVerify);
+    }
+
+    function getOptAddr() public view returns (address) /*onlyOwner*/ {
+        return address(OptVerify);
+    }
+
+    function calculateBlockHash(
+        bytes memory rlpData
+    ) public pure returns (bytes32) {
+        return keccak256(rlpData);
     }
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
-    function verifyBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) public pure returns (bool) {
+    function verifyBlockNumber(
+        uint comparisonNumber,
+        bytes memory rlpData,
+        bytes32 comparisonBlockHash,
+        uint256 chainID
+    ) public pure returns (bool) {
+        bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
+        bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-            return true; // TODO: add the logic
+//            (success, checkpoint) = verifyArbBlock();
+        } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
+//            (success, checkpoint) = verifyOptBlock();
         }
-    
-        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
-        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
-        uint number = blockNumberItem.toUint();
-        bool res = number == comparisonNumber;
+        if (!success) {
+        }
         return res;
     }
-
+    
     function toUint(bytes memory src) internal pure returns (uint) {
         uint value;
         for (uint i = 0; i < src.length; i++) {
@@ -67,14 +82,21 @@ contract EvidenceVerifier {
     }
 
     // check the evidence identity and the ECDSA signature
-    function checkCommitSignature(Evidence calldata evidence) public pure returns (bool) {
+    function checkCommitSignature(
+        Evidence calldata evidence
+    ) public pure returns (bool) {
         bytes32 commitHash = getCommitHash(evidence);
-        address recoveredAddress = ECDSA.recover(commitHash, evidence.commitSignature);
+        address recoveredAddress = ECDSA.recover(
+            commitHash,
+            evidence.commitSignature
+        );
         return recoveredAddress == evidence.operator;
     }
 
     // get the hash of the commit request
-    function getCommitHash(Evidence calldata evidence) public pure returns (bytes32) {
+    function getCommitHash(
+        Evidence calldata evidence
+    ) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
@@ -88,38 +110,4 @@ contract EvidenceVerifier {
                 )
             );
     }
-
-/*
-    IRollupCore	public ArbRollupCore;
-    IOutbox	public ArbOutbox;
-    
-    function verifyArbBlockNumber(uint comparisonNumber, bytes memory rlpData, bytes32 comparisonBlockHash, uint256 chainID) external view returns (bool) {
-        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
-        RLPReader.RLPItem memory extraDataItem = decoded[BLOCK_HEADER_EXTRADATA_INDEX];
-        RLPReader.RLPItem memory blockNumberItem = decoded[BLOCK_HEADER_NUMBER_INDEX];
-        
-        bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
-        bytes32 l2Hash = ArbOutbox.roots[extraData];
-        if (l2Hash == bytes32(0)) {
-            // No such confirmed node... TODO determine how these should be handled
-            return false;
-        }
-        uint number = blockNumberItem.toUint();
-        
-        bool hashCheck = l2hash == comparisonBlockHash;
-        bool numberCheck = number == comparisonNumber;
-        bool res = hashCheck && numberCheck;
-        return res;
-    }
-    
-    IICanonicalTransactionChain public Optimism;
-    
-    function verifyOptBlockNumber(uint comparisonNumber, bytes32 comparisonBatchRoot, uint256 chainID) external view returns (bool) {
-        // BlockHash does not seem to be available, but root and number can be verified onchain.
-//        uint number = 
-        bool res = false;
-        return res;
-    }
-*/
-
 }

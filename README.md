@@ -10,10 +10,23 @@
 After cloning the repository, run the following command to install the dependencies
 
 ```bash
+# Update forge packages
+foundryup
+
+# Install or update dependencies
 forge install
 ```
 
 ## Local Deployment
+
+The following walks through the necessary steps to deploy the Lagrange contracts, interfacing with mock contracts for EigenLayer, as well as Arbitrum Nitro and Optimism Bedrock settlement mock contracts.
+```
+bash make all-mock
+```
+
+## Local Deployment
+
+**Note**: *The following steps are deprecated as of July 2023.*
 
 1. Eigenlayer Deployment
 
@@ -25,7 +38,7 @@ forge install
 
     - Execute `make init-accounts` to initialize the accounts
     
-    - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `localnet/script/M1_deploy.config.json` with the deployed address
+    - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `script/localnet/M1_deploy.config.json` with the deployed address
 
         ```bash
         make deploy-weth9

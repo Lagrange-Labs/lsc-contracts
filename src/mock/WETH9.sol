@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/token/ERC20/ERC20Upgradeable.sol";
