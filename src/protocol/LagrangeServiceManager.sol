@@ -6,39 +6,62 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
+import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
 
-//import "../interfaces/ILagrangeCommittee.sol";
+import {ILagrangeCommittee, OperatorUpdate} from "../interfaces/ILagrangeCommittee.sol";
+import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 contract LagrangeServiceManager is
     Initializable,
     OwnableUpgradeable,
-    IServiceManager
+    IServiceManager,
+    VoteWeigherBase
 {
+    uint256 public constant UPDATE_TYPE_REGISTER = 1;
+    uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
+    uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
+
     ISlasher public immutable slasher;
+    ILagrangeCommittee public immutable committee;
+    ILagrangeService public immutable service;
 
     uint32 public taskNumber = 0;
     uint32 public latestServeUntilBlock = 0;
 
-    constructor(ISlasher _slasher) {
+    modifier onlyService() {
+        require(
+            msg.sender == address(service),
+            "Only Lagrange service can call this function."
+        );
+        _;
+    }
+
+    constructor(
+        ISlasher _slasher,
+        ILagrangeCommittee _committee,
+        ILagrangeService _service
+    ) {
         slasher = _slasher;
+        committee = _committee;
+        service = _service;
         _disableInitializers();
     }
 
-    function initialize(
-        address initialOwner
-    ) external initializer {
+    function initialize(address initialOwner) external initializer {
         _transferOwnership(initialOwner);
     }
 
     // slash the given operator
-    function freezeOperator(address operator) external {
+    function freezeOperator(address operator) external onlyService {
+        committee.updateOperator(operator, UPDATE_TYPE_UNREGISTER);
         slasher.freezeOperator(operator);
     }
 
     function recordFirstStakeUpdate(
         address operator,
         uint32 serveUntilBlock
-    ) external {
+    ) external onlyService {
+        committee.updateOperator(operator, UPDATE_TYPE_REGISTER);
         slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
     }
 
@@ -48,6 +71,7 @@ contract LagrangeServiceManager is
         uint32 serveUntilBlock,
         uint256 prevElement
     ) external {
+        committee.updateOperator(operator, UPDATE_TYPE_AMOUNT_CHANGE);
         slasher.recordStakeUpdate(
             operator,
             updateBlock,
@@ -59,14 +83,20 @@ contract LagrangeServiceManager is
     function recordLastStakeUpdateAndRevokeSlashingAbility(
         address operator,
         uint32 serveUntilBlock
-    ) external {
+    ) external onlyService {
+        committee.updateOperator(operator, UPDATE_TYPE_UNREGISTER);
         slasher.recordLastStakeUpdateAndRevokeSlashingAbility(
             operator,
             serveUntilBlock
         );
     }
 
-    function owner() public view override(OwnableUpgradeable, IServiceManager) returns (address) {
+    function owner()
+        public
+        view
+        override(OwnableUpgradeable, IServiceManager)
+        returns (address)
+    {
         return OwnableUpgradeable.owner();
     }
 }

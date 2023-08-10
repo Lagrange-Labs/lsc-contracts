@@ -4,6 +4,9 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
+import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
+import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
+
 import "../library/HermezHelpers.sol";
 import "../library/EvidenceVerifier.sol";
 import "../interfaces/ILagrangeCommittee.sol";
@@ -16,35 +19,33 @@ contract LagrangeCommittee is
     ILagrangeCommittee
 {
     ILagrangeService public immutable service;
+    IServiceManager public immutable serviceManager;
 
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
     // Frozen Committee - Next "Current" Committee
     uint256 public constant COMMITTEE_NEXT_1 = 1;
 
-    // ChainID => Address
-    mapping(uint256 => address[]) public addedAddrs;
-    mapping(uint256 => address[]) public removedAddrs;
+    // ChainID => Address => UpdateType (1 = register, 2 = amount change, 3 = unregister)
+    mapping(uint32 => mapping(address => uint8)) public updatedOperators;
 
     // ChainID => Committee
-    mapping(uint256 => CommitteeDef) public CommitteeParams;
+    mapping(uint32 => CommitteeDef) public committeeParams;
     // ChainID => Epoch => CommitteeData
-    mapping(uint256 => mapping(uint256 => CommitteeData)) public Committees;
+    mapping(uint32 => mapping(uint256 => CommitteeData)) public committees;
 
     /* Live Committee Data */
-    // ChainID => Committee Map Length
-    mapping(uint256 => uint256) public CommitteeMapLength;
-    // ChainID => Committee Leaf Hash
-    mapping(uint256 => uint256[]) public CommitteeMapKeys;
-    // ChainID => Committee Leaf Hash => Committee Leaf
-    mapping(uint256 => mapping(uint256 => CommitteeLeaf)) public CommitteeMap;
     // ChainID => Merkle Nodes
-    mapping(uint256 => uint256[]) public CommitteeLeaves;
+    mapping(uint32 => uint256[]) public committeeLeaves;
+    // ChainID => Address => CommitteeLeaf Index
+    mapping(uint32 => mapping(address => uint32)) public committeeLeavesMap;
+    // ChainID => Address[]
+    mapping(uint32 => address[]) public committeeAddrs;
 
     mapping(address => OperatorStatus) public operators;
 
     // ChainID => Epoch check if committee tree has been updated
-    mapping(uint256 => uint256) public updatedEpoch;
+    mapping(uint32 => uint256) public updatedEpoch;
 
     // Event fired on initialization of a new committee
     event InitCommittee(
@@ -59,13 +60,26 @@ contract LagrangeCommittee is
     modifier onlyService() {
         require(
             msg.sender == address(service),
-            "Only service can call this function."
+            "Only Lagrange service can call this function."
         );
         _;
     }
 
-    constructor(ILagrangeService _service) {
+    modifier onlyServiceManager() {
+        require(
+            msg.sender == address(serviceManager),
+            "Only Lagrange service manager can call this function."
+        );
+        _;
+    }
+
+    constructor(
+        ILagrangeService _service,
+        IServiceManager _serviceManager,
+        IStrategyManager _strategyManager
+    ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
         service = _service;
+        serviceManager = _serviceManager;
         _disableInitializers();
     }
 
@@ -107,9 +121,6 @@ contract LagrangeCommittee is
             freezeDuration
         );
         Committees[chainID][0] = CommitteeData(0, 0, 0);
-
-        CommitteeMapKeys[chainID] = new uint256[](0);
-        CommitteeMapLength[chainID] = 0;
         CommitteeLeaves[chainID] = new uint256[](0);
 
         emit InitCommittee(chainID, _duration, freezeDuration);
@@ -119,57 +130,17 @@ contract LagrangeCommittee is
         return operators[operator].serveUntilBlock;
     }
 
-    function setSlashed(
-        address operator,
-        uint256 chainID,
-        bool slashed
-    ) public onlyService {
-        operators[operator].slashed = slashed;
-        removedAddrs[chainID].push(operator);
+    function updateOperator(address operator, uint256 updateType) external {
+        OperatorStatus memory op = operators[operator];
+        updatedOperators[op.chainID][operator] = uint8(updateType);
+    }
+
+    function setSlashed(address operator) public onlyService {
+        operators[operator].slashed = true;
     }
 
     function getSlashed(address operator) public view returns (bool) {
         return operators[operator].slashed;
-    }
-
-    // Remove address from committee map for chainID, update keys and length/height
-    function _removeCommitteeAddr(uint256 chainID, address addr) internal {
-        for (uint256 i = 0; i < CommitteeMapKeys[chainID].length; i++) {
-            uint256 _i = CommitteeMapKeys[chainID][i];
-            uint256 _if = CommitteeMapKeys[chainID][
-                CommitteeMapKeys[chainID].length - 1
-            ];
-            if (CommitteeMap[chainID][_i].addr == addr) {
-                CommitteeMap[chainID][_i] = CommitteeMap[chainID][_if];
-                CommitteeMap[chainID][_if] = CommitteeLeaf(address(0), 0, "");
-
-                CommitteeMapKeys[chainID][i] = CommitteeMapKeys[chainID][
-                    CommitteeMapKeys[chainID].length - 1
-                ];
-                CommitteeMapKeys[chainID].pop;
-                CommitteeMapLength[chainID]--;
-            }
-        }
-    }
-
-    // Add address to committee (NEXT_2) trie
-    function _committeeAdd(
-        uint256 chainID,
-        address addr,
-        uint256 stake,
-        bytes memory _blsPubKey
-    ) internal {
-        require(
-            CommitteeParams[chainID].startBlock > 0,
-            "A committee for this chain ID has not been initialized."
-        );
-
-        CommitteeLeaf memory cleaf = CommitteeLeaf(addr, stake, _blsPubKey);
-        uint256 lhash = getLeafHash(cleaf);
-        CommitteeMap[chainID][lhash] = cleaf;
-        CommitteeMapKeys[chainID].push(lhash);
-        CommitteeMapLength[chainID]++;
-        CommitteeLeaves[chainID].push(lhash);
     }
 
     // Returns chain's committee current and next roots at a given block.
@@ -253,12 +224,13 @@ contract LagrangeCommittee is
 
         // Update roots
         uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
-        Committees[chainID][nextEpoch].height = CommitteeMapLength[chainID];
+        Committees[chainID][nextEpoch].height = CommitteeLeaves[chainID].Length;
         Committees[chainID][nextEpoch].root = nextRoot;
-        Committees[chainID][nextEpoch]
-            .totalVotingPower = _getTotalVotingPower(chainID);
-    }    
-    
+        Committees[chainID][nextEpoch].totalVotingPower = _getTotalVotingPower(
+            chainID
+        );
+    }
+
     // Initializes a new committee, and optionally associates addresses with it.
     function registerChain(
         uint256 chainID,
@@ -290,7 +262,9 @@ contract LagrangeCommittee is
         uint256 epochNumber,
         uint256 chainID
     ) public view returns (bool) {
-        uint256 epochEnd = epochNumber * CommitteeParams[chainID].duration + CommitteeParams[chainID].startBlock;
+        uint256 epochEnd = epochNumber *
+            CommitteeParams[chainID].duration +
+            CommitteeParams[chainID].startBlock;
         uint256 freezeDuration = CommitteeParams[chainID].freezeDuration;
         return block.number > epochEnd - freezeDuration;
     }
@@ -308,6 +282,9 @@ contract LagrangeCommittee is
     }
 
     function _update(uint256 chainID, uint256 epochNumber) internal {
+        for (uint256 i = 0; i < updatedOperators.Length; i++) {}
+        uint96 stakeAmount = weightOfOperator(operator, 1);
+
         for (uint256 i = 0; i < addedAddrs[chainID].length; i++) {
             address addedAddr = addedAddrs[chainID][i];
             OperatorStatus memory op = operators[addedAddr];
@@ -351,44 +328,57 @@ contract LagrangeCommittee is
         return total;
     }
 
-    function getLeafSlices(CommitteeLeaf memory leaf) public pure returns (uint96[11] memory slices) {
+    function getLeafSlices(
+        OperatorStatus memory leaf,
+        address opAddr
+    ) public pure returns (uint96[11] memory slices) {
         for (uint i = 0; i < 8; i++) {
             bytes memory addr = new bytes(12);
             for (uint j = 0; j < 12; j++) {
-                addr[j] = leaf.blsPubKey[(i*12)+j];
+                addr[j] = leaf.blsPubKey[(i * 12) + j];
             }
-            bytes12 addr_chunk = bytes12(addr);
-            slices[i] = uint96(addr_chunk);
+            bytes12 addrChunk = bytes12(addr);
+            slices[i] = uint96(addrChunk);
         }
-        bytes memory addr_bytes = abi.encodePacked(leaf.addr, uint128(leaf.stake));
+        bytes memory addrBytes = abi.encodePacked(opAddr, uint128(leaf.amount));
         for (uint i = 0; i < 3; i++) {
             bytes memory addr = new bytes(12);
             for (uint j = 0; j < 12; j++) {
-                addr[j] = addr_bytes[(i*12)+j];
+                addr[j] = addrBytes[(i * 12) + j];
             }
-            bytes12 addr_chunk = bytes12(addr);
-            slices[i+8] = uint96(addr_chunk);
+            bytes12 addrChunk = bytes12(addr);
+            slices[i + 8] = uint96(addrChunk);
         }
     }
 
     function getLeafHash(
         CommitteeLeaf memory cleaf
     ) public view returns (uint256) {
-        uint96[11] memory leaf_slices = getLeafSlices(cleaf);
-        
-        return _hash2Elements([_hash6Elements([
-            uint256(leaf_slices[0]),
-            uint256(leaf_slices[1]),
-            uint256(leaf_slices[2]),
-            uint256(leaf_slices[3]),
-            uint256(leaf_slices[4]),
-            uint256(leaf_slices[5])
-        ]), _hash5Elements([
-            uint256(leaf_slices[6]),
-            uint256(leaf_slices[7]),
-            uint256(leaf_slices[8]),
-            uint256(leaf_slices[9]),
-            uint256(leaf_slices[10])
-        ])]);
+        uint96[11] memory leafSlices = getLeafSlices(cleaf);
+
+        return
+            _hash2Elements(
+                [
+                    _hash6Elements(
+                        [
+                            uint256(leafSlices[0]),
+                            uint256(leafSlices[1]),
+                            uint256(leafSlices[2]),
+                            uint256(leafSlices[3]),
+                            uint256(leafSlices[4]),
+                            uint256(leafSlices[5])
+                        ]
+                    ),
+                    _hash5Elements(
+                        [
+                            uint256(leafSlices[6]),
+                            uint256(leafSlices[7]),
+                            uint256(leafSlices[8]),
+                            uint256(leafSlices[9]),
+                            uint256(leafSlices[10])
+                        ]
+                    )
+                ]
+            );
     }
 }
