@@ -17,7 +17,7 @@ contract InitCommittee is Script, Test {
     string public configPath = string(bytes("config/LagrangeService.json"));
 
     struct InitialChains {
-        uint256 chainId;
+        uint32 chainId;
         string chainName;
         uint256 epochPeriod;
         uint256 freezeDuration;
@@ -32,12 +32,9 @@ contract InitCommittee is Script, Test {
         LagrangeCommittee lagrangeCommittee = LagrangeCommittee(
             stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee")
         );
-    
+
         // initialize the lagrange committee
-        bytes memory initChains = stdJson.parseRaw(
-            configData,
-            ".chains"
-        );
+        bytes memory initChains = stdJson.parseRaw(configData, ".chains");
         InitialChains[] memory initialChains = abi.decode(
             initChains,
             (InitialChains[])
@@ -48,7 +45,7 @@ contract InitCommittee is Script, Test {
                 initialChains[i].chainId,
                 initialChains[i].epochPeriod,
                 initialChains[i].freezeDuration
-            );               
+            );
         }
 
         vm.stopBroadcast();

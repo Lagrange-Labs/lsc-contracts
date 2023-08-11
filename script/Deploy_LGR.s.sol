@@ -28,7 +28,7 @@ import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
 contract Deploy is Script, Test {
     string public deployDataPath =
         string(bytes("script/output/deployed_mock.json"));
-        //string(bytes("script/output/M1_deployment_data.json"));
+    //string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
         string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath =
@@ -68,7 +68,7 @@ contract Deploy is Script, Test {
 
         // deploy proxy admin for ability to upgrade proxy contracts
         proxyAdmin = new ProxyAdmin();
-        
+
         // deploy upgradeable proxy contracts
         emptyContract = new EmptyContract();
         lagrangeCommittee = LagrangeCommittee(
@@ -101,23 +101,30 @@ contract Deploy is Script, Test {
 
         // deploy implementation contracts
         string memory poseidonData = vm.readFile(poseidonDataPath);
-        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService);
-        lagrangeServiceManagerImp = new LagrangeServiceManager(
-            ISlasher(slasherAddress)
-        );
-	
-        lagrangeServiceImp = new LagrangeService(
+        lagrangeCommitteeImp = new LagrangeCommittee(
+            lagrangeService,
             lagrangeServiceManager,
-            lagrangeCommittee,
             IStrategyManager(strategyManagerAddress)
         );
-	
-	outbox = new Outbox();
-	IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(stdJson.readAddress(configData, ".settlement.opt_l2outputoracle"));
-	//L2OutputOracle l2oo = new L2OutputOracle();
-	//IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
-	//IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
-	IOutbox arb_Outbox = IOutbox(address(outbox));
+        lagrangeServiceManagerImp = new LagrangeServiceManager(
+            ISlasher(slasherAddress),
+            lagrangeCommittee,
+            lagrangeService
+        );
+
+        lagrangeServiceImp = new LagrangeService(
+            lagrangeCommittee,
+            lagrangeServiceManager
+        );
+
+        outbox = new Outbox();
+        IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
+            stdJson.readAddress(configData, ".settlement.opt_l2outputoracle")
+        );
+        //L2OutputOracle l2oo = new L2OutputOracle();
+        //IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
+        //IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
+        IOutbox arb_Outbox = IOutbox(address(outbox));
 
         // deploy evidence verifier
         arbitrumVerifier = new ArbitrumVerifier(outbox);

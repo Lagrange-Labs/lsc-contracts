@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
 
 import {ILagrangeCommittee, OperatorUpdate} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
@@ -14,12 +13,11 @@ import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 contract LagrangeServiceManager is
     Initializable,
     OwnableUpgradeable,
-    IServiceManager,
-    VoteWeigherBase
+    IServiceManager
 {
-    uint256 public constant UPDATE_TYPE_REGISTER = 1;
-    uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
-    uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
+    uint8 public constant UPDATE_TYPE_REGISTER = 1;
+    uint8 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
+    uint8 public constant UPDATE_TYPE_UNREGISTER = 3;
 
     ISlasher public immutable slasher;
     ILagrangeCommittee public immutable committee;
@@ -53,7 +51,12 @@ contract LagrangeServiceManager is
 
     // slash the given operator
     function freezeOperator(address operator) external onlyService {
-        committee.updateOperator(operator, UPDATE_TYPE_UNREGISTER);
+        committee.updateOperator(
+            OperatorUpdate({
+                operator: operator,
+                updateType: UPDATE_TYPE_UNREGISTER
+            })
+        );
         slasher.freezeOperator(operator);
     }
 
@@ -61,7 +64,12 @@ contract LagrangeServiceManager is
         address operator,
         uint32 serveUntilBlock
     ) external onlyService {
-        committee.updateOperator(operator, UPDATE_TYPE_REGISTER);
+        committee.updateOperator(
+            OperatorUpdate({
+                operator: operator,
+                updateType: UPDATE_TYPE_REGISTER
+            })
+        );
         slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
     }
 
@@ -71,7 +79,12 @@ contract LagrangeServiceManager is
         uint32 serveUntilBlock,
         uint256 prevElement
     ) external {
-        committee.updateOperator(operator, UPDATE_TYPE_AMOUNT_CHANGE);
+        committee.updateOperator(
+            OperatorUpdate({
+                operator: operator,
+                updateType: UPDATE_TYPE_AMOUNT_CHANGE
+            })
+        );
         slasher.recordStakeUpdate(
             operator,
             updateBlock,
@@ -84,7 +97,12 @@ contract LagrangeServiceManager is
         address operator,
         uint32 serveUntilBlock
     ) external onlyService {
-        committee.updateOperator(operator, UPDATE_TYPE_UNREGISTER);
+        committee.updateOperator(
+            OperatorUpdate({
+                operator: operator,
+                updateType: UPDATE_TYPE_UNREGISTER
+            })
+        );
         slasher.recordLastStakeUpdateAndRevokeSlashingAbility(
             operator,
             serveUntilBlock

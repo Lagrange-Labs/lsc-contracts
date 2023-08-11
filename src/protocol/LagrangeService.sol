@@ -21,6 +21,7 @@ contract LagrangeService is
     uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
 
     ILagrangeCommittee public immutable committee;
+    IServiceManager public immutable serviceManager;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
 
@@ -38,8 +39,12 @@ contract LagrangeService is
         uint32 chainID
     );
 
-    constructor(ILagrangeCommittee _committee) {
+    constructor(
+        ILagrangeCommittee _committee,
+        IServiceManager _serviceManager
+    ) {
         committee = _committee;
+        serviceManager = _serviceManager;
         _disableInitializers();
     }
 
@@ -54,8 +59,9 @@ contract LagrangeService is
         bytes memory _blsPubKey,
         uint32 serveUntilBlock
     ) external {
-        serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
+        // NOTE: Please ensure that the order of the following two lines remains unchanged
         committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
+        serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
@@ -152,7 +158,7 @@ contract LagrangeService is
         bytes32 correctNextCommitteeRoot,
         bytes32 nextCommitteeRoot,
         uint256 blockNumber,
-        uint256 chainID
+        uint32 chainID
     ) internal returns (bool) {
         (
             ILagrangeCommittee.CommitteeData memory currentCommittee,

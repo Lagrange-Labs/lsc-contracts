@@ -9,6 +9,11 @@ struct OperatorStatus {
     bool slashed;
 }
 
+struct OperatorUpdate {
+    address operator;
+    uint8 updateType;
+}
+
 interface ILagrangeCommittee {
     struct CommitteeDef {
         uint256 startBlock;
@@ -29,7 +34,7 @@ interface ILagrangeCommittee {
     function getSlashed(address operator) external returns (bool);
 
     function getCommittee(
-        uint256 chainID,
+        uint32 chainID,
         uint256 blockNumber
     ) external returns (CommitteeData memory, uint256);
 
@@ -40,7 +45,7 @@ interface ILagrangeCommittee {
         uint32 serveUntilBlock
     ) external;
 
-    function updateOperator(address operator, uint256 updateType) external;
+    function updateOperator(OperatorUpdate memory opUpdate) external;
 
     function update(uint32 chainID, uint256 epochNumber) external;
 }
