@@ -62,17 +62,17 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
       return address(RHVerify);
     }
 
-    function calculateBlockHash(
-        bytes memory rlpData
-    ) public pure returns (bytes32) {
-        return keccak256(rlpData);
-    }
-
     function verifyHeaderProof(bytes calldata headerProof) public view returns (bool) {
         //1. Decode headerProof bytes to necessary inputs
 	//2. Call RHVerify contract and supply decoded inputs
 	//3. Return result of verification.
         return false;
+    }
+    
+    function calculateBlockHash(
+        bytes memory rlpData
+    ) public pure returns (bytes32) {
+        return keccak256(rlpData);
     }
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
@@ -85,9 +85,15 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
         uint256 chainID
     ) public view returns (bool) {
         // verify block number and hash
-        bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
+        bool res = _verifyBlockNumber(
+            comparisonNumber,
+            rlpData,
+            comparisonBlockHash,
+            chainID
+        );
         bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
+            //            (success, checkpoint) = verifyArbBlock();
             success = ArbVerify.verifyArbBlock(
 	        rlpData,
 		comparisonNumber,
@@ -95,6 +101,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
 		headerProof
 	    );
         } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
+            //            (success, checkpoint) = verifyOptBlock();
             success = OptVerify.verifyOutputProof(
 		comparisonNumber,
 		comparisonBlockHash,

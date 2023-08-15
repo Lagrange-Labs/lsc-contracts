@@ -101,26 +101,40 @@ contract Deploy is Script, Test {
 
         // deploy implementation contracts
         string memory poseidonData = vm.readFile(poseidonDataPath);
-        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService);
+        lagrangeCommitteeImp = new LagrangeCommittee(
+            lagrangeService,
+            lagrangeServiceManager,
+            IStrategyManager(strategyManagerAddress)
+        );
         lagrangeServiceManagerImp = new LagrangeServiceManager(
-            ISlasher(slasherAddress)
+            ISlasher(slasherAddress),
+            lagrangeCommittee,
+            lagrangeService
         );
 	
         lagrangeServiceImp = new LagrangeService(
-            lagrangeServiceManager,
             lagrangeCommittee,
-            IStrategyManager(strategyManagerAddress)
+            lagrangeServiceManager
         );
+
+	// L2 Settlement - Interface
 	
-	outbox = new Outbox();
-	IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(stdJson.readAddress(configData, ".settlement.opt_l2outputoracle"));
-	//L2OutputOracle l2oo = new L2OutputOracle();
-	//IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
-	//IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
-	IOutbox arb_Outbox = IOutbox(address(outbox));
+        //IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
+        //    stdJson.readAddress(configData, ".settlement.opt_l2outputoracle")
+        //);
+        //IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
+
+	// L2 Settlement - Mock
+	
+        outbox = new Outbox();
+        L2OutputOracle l2oo = new L2OutputOracle();
+	
+        IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
+        IOutbox arb_Outbox = IOutbox(outbox.address);
 
         // deploy evidence verifier
-        arbitrumVerifier = new ArbitrumVerifier(outbox);
+	
+        arbitrumVerifier = new ArbitrumVerifier(arb_outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
         //evidenceVerifier = new EvidenceVerifier();
 

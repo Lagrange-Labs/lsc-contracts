@@ -1,7 +1,7 @@
 {
     "strategies": [
         {
-            "strategy_address": "0xdEe9De63F5E5db89cfCcC550ABAaDF61A48E7225",
+            "strategy_address": "0x91E333A3d61862B1FE976351cf0F3b30aff1D202",
             "strategy_name": "Wrapped Ether",
             "multiplier": 1000000000
         }
@@ -21,7 +21,7 @@
         }
     ],
     "settlement": {
-	    "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
-	    "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
+	"opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
+	"arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
     }
 }

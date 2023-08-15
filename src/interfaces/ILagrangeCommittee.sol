@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+struct OperatorStatus {
+    uint256 amount;
+    bytes blsPubKey;
+    uint32 serveUntilBlock;
+    uint32 chainID;
+    bool slashed;
+}
+
+struct OperatorUpdate {
+    address operator;
+    uint8 updateType;
+}
+
 interface ILagrangeCommittee {
-    struct OperatorStatus {
-        uint256 amount;
-        bytes blsPubKey;
-        uint32 serveUntilBlock;
-        bool slashed;
-    }
-
-    /// Leaf in Lagrange State Committee Trie
-    struct CommitteeLeaf {
-        address addr;
-        uint256 stake;
-        bytes blsPubKey;
-    }
-
     struct CommitteeDef {
         uint256 startBlock;
         uint256 duration;
@@ -29,14 +28,24 @@ interface ILagrangeCommittee {
     }
 
     function getServeUntilBlock(address operator) external returns (uint32);
-    
-    function setSlashed(address operator, uint256 chainID, bool slashed) external;
+
+    function setSlashed(address operator) external;
+
     function getSlashed(address operator) external returns (bool);
-    
-    function getCommittee(uint256 chainID, uint256 blockNumber) external returns (CommitteeData memory, uint256);
 
-    function addOperator(address operator, uint256 chainID, bytes memory blsPubKey, uint256 stake, uint32 serveUntilBlock) external;
+    function getCommittee(
+        uint32 chainID,
+        uint256 blockNumber
+    ) external returns (CommitteeData memory, uint256);
 
-    function update(uint256 chainID, uint256 epochNumber) external;
+    function addOperator(
+        address operator,
+        bytes memory blsPubKey,
+        uint32 chainID,
+        uint32 serveUntilBlock
+    ) external;
+
+    function updateOperator(OperatorUpdate memory opUpdate) external;
+
+    function update(uint32 chainID, uint256 epochNumber) external;
 }
-
