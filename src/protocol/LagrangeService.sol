@@ -44,11 +44,8 @@ contract LagrangeService is
         IServiceManager _serviceManager
     ) {
         committee = _committee;
-<<<<<<< HEAD
-        _transferOwnership(msg.sender);
-=======
         serviceManager = _serviceManager;
->>>>>>> b7e6ee0c6b4dec550dc1e5ac4f051db42e0baa79
+        _transferOwnership(msg.sender);
         _disableInitializers();
     }
 
@@ -136,18 +133,11 @@ contract LagrangeService is
 
     // Slashing condition.  Returns veriifcation of block hash and number for a given chain.
     function _checkBlockHash(
-<<<<<<< HEAD
         uint comparisonNumber,
         bytes memory rlpData,
         bytes32 comparisonBlockHash,
 	bytes calldata headerProof,
 	bytes calldata extraData,
-=======
-        bytes32 correctBlockHash,
-        bytes32 blockHash,
-        uint256 blockNumber,
-        bytes calldata rawBlockHeader,
->>>>>>> b7e6ee0c6b4dec550dc1e5ac4f051db42e0baa79
         uint256 chainID
     ) internal view returns (bool) {
         return
@@ -160,16 +150,11 @@ contract LagrangeService is
                 chainID
             );
     }
-<<<<<<< HEAD
-/*
-=======
-
     /*
->>>>>>> b7e6ee0c6b4dec550dc1e5ac4f051db42e0baa79
     function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
         return _verifyRawHeaderSequence(latestHash, sequence);
     }
-*/
+    */
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,

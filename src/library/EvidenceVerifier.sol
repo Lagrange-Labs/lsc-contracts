@@ -5,6 +5,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
+import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 import {Common} from "./Common.sol";
 
 contract EvidenceVerifier is Common, OwnableUpgradeable {
@@ -58,7 +59,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
         return address(OptVerify);
     }
 
-    function getRHVerifier() public address {
+    function getRHVerifier() public view returns (address) {
       return address(RHVerify);
     }
 
