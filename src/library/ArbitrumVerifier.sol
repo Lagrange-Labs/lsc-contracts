@@ -21,8 +21,7 @@ contract ArbitrumVerifier is Common {
 	bytes memory rlpData,
         uint256 comparisonNumber,
 	bytes32 comparisonBlockHash,
-	bytes calldata headerProof,
-        uint256 chainID
+	bytes calldata headerProof
     ) external view returns (bool) {
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
         RLPReader.RLPItem memory extraDataItem = decoded[Common.BLOCK_HEADER_EXTRADATA_INDEX];

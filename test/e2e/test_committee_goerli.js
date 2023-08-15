@@ -27,6 +27,10 @@ contract.getEpochNumber(optChainID, 9372848).then((epoch) => {
     console.log("Opt epoch: ", epoch);
 });
 
+contract.getCommittee(optChainID, 9372848).then((root) => {
+    console.log("Opt Root: ", root);
+});
+
 contract.isUpdatable(2, arbChainID).then((updatable) => {
     console.log("Arb updatable: ", updatable);
 });
@@ -37,4 +41,8 @@ contract.isUpdatable(3, arbChainID).then((updatable) => {
 
 contract.updatedEpoch(arbChainID).then((epoch) => {
     console.log("Arb updated epoch: ", epoch);
+});
+
+contract.getCommittee(arbChainID, 9372848).then((root) => {
+    console.log("Arb Root: ", root);
 });

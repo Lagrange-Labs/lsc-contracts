@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
 import {Common} from "./Common.sol";
 
-contract EvidenceVerifier is Common {
+contract EvidenceVerifier is Common, OwnableUpgradeable {
     // Evidence is the data structure to store the slashing evidence.
     struct Evidence {
         address operator;
@@ -21,7 +22,11 @@ contract EvidenceVerifier is Common {
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
-        bytes rawBlockHeader;
+	bool status;
+        bytes correctRawHeader;
+	bytes32 checkpointBlockHash;
+	bytes headerProof;
+	bytes extraData;
     }
 
     uint public constant CHAIN_ID_MAINNET = 1;
@@ -31,21 +36,30 @@ contract EvidenceVerifier is Common {
 
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
-    
-    function setArbAddr(ArbitrumVerifier _arb) public {
+    IRecursiveHeaderVerifier RHVerify;
+
+    function setArbAddr(ArbitrumVerifier _arb) public onlyOwner {
       ArbVerify = _arb;
     }
 
-    function setOptAddr(OptimismVerifier _opt) public {
+    function setOptAddr(OptimismVerifier _opt) public onlyOwner {
       OptVerify = _opt;
     }
-    
-    function getArbAddr() public view returns (address) /*onlyOwner*/ {
+
+    function setRHVerifier(IRecursiveHeaderVerifier _rhv) public onlyOwner {
+      RHVerify = _rhv;
+    }
+
+    function getArbAddr() public view returns (address) {
         return address(ArbVerify);
     }
 
-    function getOptAddr() public view returns (address) /*onlyOwner*/ {
+    function getOptAddr() public view returns (address) {
         return address(OptVerify);
+    }
+
+    function getRHVerifier() public address {
+      return address(RHVerify);
     }
 
     function calculateBlockHash(
@@ -54,19 +68,38 @@ contract EvidenceVerifier is Common {
         return keccak256(rlpData);
     }
 
+    function verifyHeaderProof(bytes calldata headerProof) public view returns (bool) {
+        //1. Decode headerProof bytes to necessary inputs
+	//2. Call RHVerify contract and supply decoded inputs
+	//3. Return result of verification.
+        return false;
+    }
+
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(
         uint comparisonNumber,
         bytes memory rlpData,
         bytes32 comparisonBlockHash,
+	bytes calldata headerProof,
+	bytes calldata extraData,
         uint256 chainID
-    ) public pure returns (bool) {
+    ) public view returns (bool) {
+        // verify block number and hash
         bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
         bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-//            (success, checkpoint) = verifyArbBlock();
+            success = ArbVerify.verifyArbBlock(
+	        rlpData,
+		comparisonNumber,
+		comparisonBlockHash,
+		headerProof
+	    );
         } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
-//            (success, checkpoint) = verifyOptBlock();
+            success = OptVerify.verifyOutputProof(
+		comparisonNumber,
+		comparisonBlockHash,
+		extraData
+	    );
         }
         if (!success) {
         }

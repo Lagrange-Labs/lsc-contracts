@@ -149,7 +149,7 @@ contract Deploy is Script, Test {
             address(lagrangeServiceManagerImp),
             abi.encodeWithSelector(
                 LagrangeServiceManager.initialize.selector,
-                msg.sender
+                address(lagrangeServiceImp)
             )
         );
         proxyAdmin.upgradeAndCall(

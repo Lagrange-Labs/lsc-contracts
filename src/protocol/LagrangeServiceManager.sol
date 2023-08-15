@@ -31,14 +31,14 @@ contract LagrangeServiceManager is
     }
 
     // slash the given operator
-    function freezeOperator(address operator) external {
+    function freezeOperator(address operator) external onlyOwner {
         slasher.freezeOperator(operator);
     }
 
     function recordFirstStakeUpdate(
         address operator,
         uint32 serveUntilBlock
-    ) external {
+    ) external onlyOwner {
         slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
     }
 
@@ -47,7 +47,7 @@ contract LagrangeServiceManager is
         uint32 updateBlock,
         uint32 serveUntilBlock,
         uint256 prevElement
-    ) external {
+    ) external onlyOwner {
         slasher.recordStakeUpdate(
             operator,
             updateBlock,
@@ -59,7 +59,7 @@ contract LagrangeServiceManager is
     function recordLastStakeUpdateAndRevokeSlashingAbility(
         address operator,
         uint32 serveUntilBlock
-    ) external {
+    ) external onlyOwner {
         slasher.recordLastStakeUpdateAndRevokeSlashingAbility(
             operator,
             serveUntilBlock

@@ -43,6 +43,7 @@ contract LagrangeService is
         IStrategyManager _strategyManager
     ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
         committee = _committee;
+        _transferOwnership(msg.sender);
         _disableInitializers();
     }
 
@@ -97,10 +98,11 @@ contract LagrangeService is
 
         if (
             !_checkBlockHash(
-                evidence.correctBlockHash,
-                evidence.blockHash,
                 evidence.blockNumber,
-                evidence.rawBlockHeader,
+                evidence.correctRawHeader,
+                evidence.blockHash,
+                evidence.headerProof,
+                evidence.extraData,
                 evidence.chainID
             )
         ) {
@@ -137,19 +139,22 @@ contract LagrangeService is
 
     // Slashing condition.  Returns veriifcation of block hash and number for a given chain.
     function _checkBlockHash(
-        bytes32 correctBlockHash,
-        bytes32 blockHash,
-        uint256 blockNumber,
-        bytes calldata rawBlockHeader,
+        uint comparisonNumber,
+        bytes memory rlpData,
+        bytes32 comparisonBlockHash,
+	bytes calldata headerProof,
+	bytes calldata extraData,
         uint256 chainID
-    ) internal pure returns (bool) {
+    ) internal view returns (bool) {
         return
             verifyBlockNumber(
-                blockNumber,
-                rawBlockHeader,
-                correctBlockHash,
+                comparisonNumber,
+                rlpData,
+                comparisonBlockHash,
+	        headerProof,
+	        extraData,
                 chainID
-            ) && blockHash == correctBlockHash;
+            );
     }
 /*
     function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {

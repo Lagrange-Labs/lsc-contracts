@@ -43,7 +43,7 @@ contract Common {
         bytes memory rlpData,
         bytes32 comparisonBlockHash,
         uint256 chainID
-    ) public pure returns (bool) {
+    ) public view returns (bool) {
         // Verify Block Number
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(
             rlpData,
