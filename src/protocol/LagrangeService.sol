@@ -180,8 +180,8 @@ contract LagrangeService is
 
     /// Slash the given operator
     function _freezeOperator(address operator) internal {
-        serviceManager.freezeOperator(operator);
         committee.setSlashed(operator);
+        serviceManager.freezeOperator(operator);
 
         emit OperatorSlashed(operator);
     }
