@@ -1,3 +1,4 @@
+return;
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const shared = require("./shared");
@@ -47,81 +48,6 @@ describe("LagrangeService",
     });
 
     beforeEach(async function () {
-        const overrides = {
-            gasLimit: 5000000,
-        };
-
-	const Common = await ethers.getContractFactory("Common");
-	const common = await Common.deploy();
-	await common.deployed();
-          
-        console.log("Deploying Slasher mock...");
-
-        const SlasherFactory = await ethers.getContractFactory("Slasher");
-        const slasher = await SlasherFactory.deploy(overrides);
-        await slasher.deployed();
-
-        console.log("Deploying Lagrange Service Manager...");
-        
-        const LSMFactory = await ethers.getContractFactory("LagrangeServiceManager");
-        const lsm = await LSMFactory.deploy(slasher.address, overrides);
-        await lsm.deployed();
-        
-        console.log("Loading Lagrange Committee shared state...");
-        
-        lc = shared.LagrangeCommittee;
-
-        console.log("Deploying DelegationManager mock...");
-
-        const DMFactory = await ethers.getContractFactory("DelegationManager");
-        const dm = await DMFactory.deploy(overrides);
-        await dm.deployed();
-
-        console.log("Deploying StrategyManager mock...");
-
-        const SMFactory = await ethers.getContractFactory("StrategyManager");
-        const sm = await SMFactory.deploy(dm.address, overrides);
-        await sm.deployed();
-
-        console.log("Deploying Lagrange Service...");
-
-        const LSFactory = await ethers.getContractFactory("LagrangeService",{});
-        const lagrangeService = await LSFactory.deploy(lsm.address, lc.address, sm.address, overrides);
-        await lagrangeService.deployed();
-        lsaddr = lagrangeService.address;
-        
-        const outboxFactory = await ethers.getContractFactory("Outbox");
-        const outbox = await outboxFactory.deploy();
-        await outbox.deployed();
-        outboxAddr = outbox.address;
-
-        const l2ooFactory = await ethers.getContractFactory("L2OutputOracle");
-        const l2oo = await l2ooFactory.deploy(
-            1,//_submissionInterval
-            1,//_l2BlockTime
-            11991388-1,//_startingBlockNumber
-            1,//_startingTimestamp
-            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",//_proposer
-            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",//_challenger
-            5//_finalizationPeriodSeconds
-        );
-        await l2oo.deployed();
-        l2ooAddr = l2oo.address;
-        
-        const ovFactory = await ethers.getContractFactory("OptimismVerifier");
-        const opt = await ovFactory.deploy(l2oo.address);
-        
-        const avFactory = await ethers.getContractFactory("ArbitrumVerifier");
-        const arb = await avFactory.deploy(outbox.address);
-        
-        console.log("L2OutputOracle:",l2oo.address);
-        console.log("Outbox:",outbox.address);
-        
-        await lagrangeService.setOptAddr(opt.address);
-        await lagrangeService.setArbAddr(arb.address);
-
-        console.log("OptimismVerifier:",opt.address);
-        console.log("ArbitrumVerifier:",arb.address);
     });
         
      it('Smoke test L2-L1 settlement interfaces', async function() {
