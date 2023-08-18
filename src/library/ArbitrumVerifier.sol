@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {Common} from "./Common.sol";
 import "solidity-rlp/contracts/Helper.sol";
 import "../mock/arbitrum/IOutbox.sol";
+import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 
 contract ArbitrumVerifier is Common {
     IOutbox ArbOutbox;
@@ -20,7 +21,9 @@ contract ArbitrumVerifier is Common {
         bytes memory rlpData,
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
-        bytes calldata headerProof
+	bytes memory headerProof,
+        bytes calldata extraData,
+        IRecursiveHeaderVerifier RHVerify
     ) external view returns (bool) {
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(
             rlpData,
@@ -34,19 +37,12 @@ contract ArbitrumVerifier is Common {
         ];
         uint number = blockNumberItem.toUint();
 
-        bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
-        bytes32 l2Hash = ArbOutbox.roots(extraData);
+        bytes32 extraDataBytes32 = bytes32(extraDataItem.toUintStrict());
+        bytes32 l2Hash = ArbOutbox.roots(extraDataBytes32);
         if (l2Hash == bytes32(0)) {
-            // No such confirmed node... TODO determine how these should be handled
+            // No such confirmed node...
             return false;
         }
-        
-        //bool hashCheck = l2hash == comparisonBlockHash;
-        //bool numberCheck = number == comparisonNumber;
-        //bool res = hashCheck && numberCheck;
-	//bool res = true;
-        // Verify Proof
-        bool res = true;
-        return res;
+        return RHVerify.verifyProof(rlpData, headerProof, l2Hash);
     }
 }

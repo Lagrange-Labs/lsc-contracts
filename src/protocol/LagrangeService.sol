@@ -141,7 +141,7 @@ contract LagrangeService is
         uint256 chainID
     ) internal view returns (bool) {
         return
-            verifyBlockNumber(
+            verifyBlock(
                 comparisonNumber,
                 rlpData,
                 comparisonBlockHash,

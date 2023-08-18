@@ -6,6 +6,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
 import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
+import {IOptimismVerifier} from "../interfaces/IOptimismVerifier.sol";
 import {Common} from "./Common.sol";
 
 contract EvidenceVerifier is Common, OwnableUpgradeable {
@@ -35,7 +36,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     uint public constant CHAIN_ID_BASE = 84531;
     uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
-    OptimismVerifier OptVerify;
+    IOptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
     IRecursiveHeaderVerifier RHVerify;
 
@@ -43,7 +44,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
       ArbVerify = _arb;
     }
 
-    function setOptAddr(OptimismVerifier _opt) public onlyOwner {
+    function setOptAddr(IOptimismVerifier _opt) public onlyOwner {
       OptVerify = _opt;
     }
 
@@ -77,7 +78,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     }
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
-    function verifyBlockNumber(
+    function verifyBlock(
         uint comparisonNumber,
         bytes memory rlpData,
         bytes32 comparisonBlockHash,
@@ -92,24 +93,28 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
             comparisonBlockHash,
             chainID
         );
-        bool success = false;
+        if (!res) return false;
+        
+        // verify checkpoint
+        res = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-            //            (success, checkpoint) = verifyArbBlock();
-            success = ArbVerify.verifyArbBlock(
+            res = ArbVerify.verifyArbBlock(
+	        rlpData,
+	        comparisonNumber,
+		comparisonBlockHash,
+		headerProof,
+		extraData,
+		RHVerify
+	    );
+        } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
+            res = OptVerify.verifyOptBlock(
 	        rlpData,
 		comparisonNumber,
 		comparisonBlockHash,
-		headerProof
+		headerProof,
+		extraData,
+		RHVerify
 	    );
-        } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
-            //            (success, checkpoint) = verifyOptBlock();
-            success = OptVerify.verifyOutputProof(
-		comparisonNumber,
-		comparisonBlockHash,
-		extraData
-	    );
-        }
-        if (!success) {
         }
         return res;
     }
