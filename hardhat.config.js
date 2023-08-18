@@ -33,5 +33,12 @@ module.exports = {
     sources: "./src",
     cache: "./cache_hardhat",
     tests: "./test/hardhat",
-  }
+  },
+    networks: {
+      hardhat: {
+	gas: "auto", // Automatically estimate the gas in each transaction
+	blockGasLimit: 0x1fffffffffffff, // Set a high block gas limit
+	allowUnlimitedContractSize: true // This option disables the contract size check
+    },
+  },
 };
