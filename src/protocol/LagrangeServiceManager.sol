@@ -29,7 +29,7 @@ contract LagrangeServiceManager is
     modifier onlyService() {
         require(
             msg.sender == address(service),
-            "Only Lagrange service can call this function."
+            "LagrangeServiceManager: Only Lagrange service can call this function."
         );
         _;
     }

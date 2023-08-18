@@ -65,7 +65,7 @@ contract LagrangeCommittee is
     modifier onlyService() {
         require(
             msg.sender == address(service),
-            "Only Lagrange service can call this function."
+            "LagrangeCommittee: Only Lagrange service can call this function."
         );
         _;
     }
@@ -73,7 +73,7 @@ contract LagrangeCommittee is
     modifier onlyServiceManager() {
         require(
             msg.sender == address(serviceManager),
-            "Only Lagrange service manager can call this function."
+            "LagrangeCommittee: Only Lagrange service manager can call this function."
         );
         _;
     }
