@@ -21,7 +21,7 @@ contract OptimismVerifier is Common {
     }
 
     function getOutputHash(
-        bytes32[4] calldata outputProof
+        bytes32[4] memory outputProof
     ) public view returns (bytes32) {
         bytes32 comparisonProof = keccak256(
             abi.encode(
