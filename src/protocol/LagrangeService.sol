@@ -62,7 +62,7 @@ contract LagrangeService is
     ) external {
         // NOTE: Please ensure that the order of the following two lines remains unchanged
         committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
-        //serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
+        serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
