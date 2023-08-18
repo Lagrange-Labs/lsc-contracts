@@ -87,8 +87,6 @@ describe("LagrangeCommittee", function () {
         const sm = await SMFactory.deploy(dm.address, overrides);
         await sm.deployed();
 
-        /////////////////////////////////////////////
-
         console.log("Deploying empty contract...");
 
         const EmptyContractFactory = await ethers.getContractFactory("EmptyContract");
@@ -106,12 +104,14 @@ describe("LagrangeCommittee", function () {
         TransparentUpgradeableProxyFactory = await ethers.getContractFactory("TransparentUpgradeableProxy");
         lcproxy = await TransparentUpgradeableProxyFactory.deploy(emptyContract.address, proxyAdmin.address, "0x", overrides);
         await lcproxy.deployed();
+        console.log("Committee proxy:",lcproxy.address);
 
         console.log("Deploying transparent proxy...");
 
         TransparentUpgradeableProxyFactory = await ethers.getContractFactory("TransparentUpgradeableProxy");
         lsproxy = await TransparentUpgradeableProxyFactory.deploy(emptyContract.address, proxyAdmin.address, "0x", overrides);
         await lsproxy.deployed();
+        console.log("Service proxy:",lsproxy.address);
 
         console.log("Deploying transparent proxy...");
 
@@ -119,46 +119,51 @@ describe("LagrangeCommittee", function () {
         lsmproxy = await TransparentUpgradeableProxyFactory.deploy(emptyContract.address, proxyAdmin.address, "0x", overrides);
         await lsmproxy.deployed();
 
-        console.log("Deploying Lagrange Committee...");
-
-        const LagrangeCommitteeFactory = await ethers.getContractFactory("LagrangeCommittee");
-        const committee = await LagrangeCommitteeFactory.deploy(lsproxy.address, lsmproxy.address, sm.address);
-        await committee.deployed();
-
-
         console.log("Deploying Lagrange Service Manager...");
         
         const LSMFactory = await ethers.getContractFactory("LagrangeServiceManager");
         const lsm = await LSMFactory.deploy(slasher.address, lcproxy.address, lsproxy.address, overrides);
         await lsm.deployed();
 
+        console.log("Upgrading proxy...");
+        await proxyAdmin.upgradeAndCall(
+            lsmproxy.address,
+            lsm.address,
+            lsm.interface.encodeFunctionData("initialize", [admin.address])
+        )
 
         console.log("Deploying Lagrange Service...");
 
         const LSFactory = await ethers.getContractFactory("LagrangeService",{});
-        const lagrangeService = await LSFactory.deploy(lcproxy.address, lsm.address, overrides);
+        const lagrangeService = await LSFactory.deploy(lcproxy.address, lsmproxy.address, overrides);
         await lagrangeService.deployed();
         lsaddr = lagrangeService.address;
-
-        /////////////////////////////////////////////
+        lcpaddr = await lagrangeService.committee();
+        console.log("Service committee:",lcpaddr);
 
         console.log("Upgrading proxy...");
-
         await proxyAdmin.upgradeAndCall(
-            proxy.address,
+            lsproxy.address,
+            lagrangeService.address,
+            lagrangeService.interface.encodeFunctionData("initialize", [admin.address])
+        )
+        
+        console.log("Deploying Lagrange Committee...");
+
+        const LagrangeCommitteeFactory = await ethers.getContractFactory("LagrangeCommittee");
+        const committee = await LagrangeCommitteeFactory.deploy(lagrangeService.address, lsmproxy.address, sm.address);
+        await committee.deployed();
+        
+        serv = await committee.service();
+        console.log("Committee service:",serv);
+
+        console.log("Upgrading proxy...");
+        await proxyAdmin.upgradeAndCall(
+            lcproxy.address,
             committee.address,
             committee.interface.encodeFunctionData("initialize", [admin.address, poseidonAddresses[1], poseidonAddresses[2], poseidonAddresses[3], poseidonAddresses[4], poseidonAddresses[5], poseidonAddresses[6]])
         )
 
-
-        /////////////////////////////////////////////
-        
-        //console.log("Loading Lagrange Committee shared state...");
-
-        //lc = shared.LagrangeCommittee;
-        
-        /////////////////////////////////////////////
-        
         const outboxFactory = await ethers.getContractFactory("Outbox");
         const outbox = await outboxFactory.deploy();
         await outbox.deployed();
@@ -192,19 +197,24 @@ describe("LagrangeCommittee", function () {
         console.log("OptimismVerifier:",opt.address);
         console.log("ArbitrumVerifier:",arb.address);
         
-        /////////////////////////////////////////////
-
         shared.LagrangeCommittee = committee;
+        shared.LagrangeService = lagrangeService;
+        shared.LagrangeServiceManager = lsm;
+        shared.L2OutputOracle = l2oo;
+        shared.Outbox = outbox;
     });
 
     it("leaf hash", async function () {
-        const committee = await ethers.getContractAt("LagrangeCommittee", proxy.address, admin)
+        ls = shared.LagrangeService;
+        
+        const committee = await ethers.getContractAt("LagrangeCommittee", lcproxy.address, admin)
         const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[0].slice(2));
         const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
         const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
         const newPubKey = "0x" + Gx + Gy;
         const address = operators[0].operators[0];
-        await committee.addOperator(address, operators[0].chain_id, newPubKey, stake, serveUntilBlock);
+        await ls.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+        console.log("committee.registerChain()");
         await committee.registerChain(operators[0].chain_id, 10000, 1000);
 
         const chunks = [];
@@ -225,7 +235,7 @@ describe("LagrangeCommittee", function () {
         const leaf = poseidon([left, right]);
         console.log(chunks.map((e) => { return e.toString(16);}), leaf.toString(16));
 
-        const leafHash = await committee.CommitteeLeaves(operators[0].chain_id, 0);
+        const leafHash = await committee.committeeLeaves(operators[0].chain_id, 0);
         const committeeRoot = await committee.getCommittee(operators[0].chain_id, 1000);
         const op = await committee.operators(operators[0].operators[0]);
         console.log(op);
@@ -236,7 +246,9 @@ describe("LagrangeCommittee", function () {
     });
 
     it("merkle root", async function () {
-        const committee = await ethers.getContractAt("LagrangeCommittee", proxy.address, admin);
+        ls = shared.LagrangeService;
+        
+        const committee = await ethers.getContractAt("LagrangeCommittee", lcproxy.address, admin);
         for (let i = 0; i < operators[0].operators.length; i++) {
             const op = operators[0].operators[i];
             const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[i].slice(2));
@@ -244,13 +256,15 @@ describe("LagrangeCommittee", function () {
             const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
             const newPubKey = "0x" + Gx + Gy;
 
-            await committee.addOperator(op, operators[0].chain_id,
-                newPubKey, stake, serveUntilBlock);
+            console.log("lagrangeService.reguster()");
+            await ls.register(operators[0].chain_id, newPubKey, serveUntilBlock);
         }
-        await committee.registerChain(operators[0].chain_id, 10000, 1000);
+        console.log("lagrangeService.register()");
+        //await ls.register(operators[0].chain_id, newPubKey, serveUntilBlock);
 
+        console.log("calculating roots...");
         const leaves = await Promise.all(operators[0].operators.map(async (op, index) => {
-            const leaf = await committee.CommitteeLeaves(operators[0].chain_id, index);
+            const leaf = await committee.committeeLeaves(operators[0].chain_id, index);
             return BigInt(leaf.toHexString());
         }));
         const committeeRoot = await committee.getCommittee(operators[0].chain_id, 1000);
