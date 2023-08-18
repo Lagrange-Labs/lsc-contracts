@@ -39,29 +39,32 @@ contract OptimismVerifier is Common {
         bytes memory rlpData,
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
-	bytes memory headerProof,
+        bytes memory headerProof,
         bytes calldata extraData,
         IRecursiveHeaderVerifier RHVerify
     ) public view returns (bool) {
         bool res = false;
         bytes32 checkpoint = bytes32(0);
-        (res,checkpoint) = verifyOutputProof(
-	    comparisonNumber,
-	    comparisonBlockHash,
-	    extraData
-	);
-	if (!res) {
-	    return false;
-	}
+        (res, checkpoint) = verifyOutputProof(
+            comparisonNumber,
+            comparisonBlockHash,
+            extraData
+        );
+        if (!res) {
+            return false;
+        }
         return RHVerify.verifyProof(rlpData, headerProof, checkpoint);
     }
-    
+
     function verifyOutputProof(
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
         bytes calldata extraData
-    ) public view returns (bool,bytes32) {
-        bytes32[4] memory outputProofBytes32 = abi.decode(extraData, (bytes32[4]));
+    ) public view returns (bool, bytes32) {
+        bytes32[4] memory outputProofBytes32 = abi.decode(
+            extraData,
+            (bytes32[4])
+        );
         Types.OutputRootProof memory outputProof = Types.OutputRootProof(
             outputProofBytes32[0],
             outputProofBytes32[1],

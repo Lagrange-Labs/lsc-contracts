@@ -24,11 +24,11 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
-	bool status;
+        bool status;
         bytes correctRawHeader;
-	bytes32 checkpointBlockHash;
-	bytes headerProof;
-	bytes extraData;
+        bytes32 checkpointBlockHash;
+        bytes headerProof;
+        bytes extraData;
     }
 
     uint public constant CHAIN_ID_MAINNET = 1;
@@ -41,15 +41,15 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     IRecursiveHeaderVerifier RHVerify;
 
     function setArbAddr(ArbitrumVerifier _arb) public onlyOwner {
-      ArbVerify = _arb;
+        ArbVerify = _arb;
     }
 
     function setOptAddr(IOptimismVerifier _opt) public onlyOwner {
-      OptVerify = _opt;
+        OptVerify = _opt;
     }
 
     function setRHVerifier(IRecursiveHeaderVerifier _rhv) public onlyOwner {
-      RHVerify = _rhv;
+        RHVerify = _rhv;
     }
 
     function getArbAddr() public view returns (address) {
@@ -61,16 +61,18 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     }
 
     function getRHVerifier() public view returns (address) {
-      return address(RHVerify);
+        return address(RHVerify);
     }
 
-    function verifyHeaderProof(bytes calldata headerProof) public view returns (bool) {
+    function verifyHeaderProof(
+        bytes calldata headerProof
+    ) public view returns (bool) {
         //1. Decode headerProof bytes to necessary inputs
-	//2. Call RHVerify contract and supply decoded inputs
-	//3. Return result of verification.
+        //2. Call RHVerify contract and supply decoded inputs
+        //3. Return result of verification.
         return false;
     }
-    
+
     function calculateBlockHash(
         bytes memory rlpData
     ) public pure returns (bytes32) {
@@ -82,8 +84,8 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
         uint comparisonNumber,
         bytes memory rlpData,
         bytes32 comparisonBlockHash,
-	bytes calldata headerProof,
-	bytes calldata extraData,
+        bytes calldata headerProof,
+        bytes calldata extraData,
         uint256 chainID
     ) public view returns (bool) {
         // verify block number and hash
@@ -94,31 +96,31 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
             chainID
         );
         if (!res) return false;
-        
+
         // verify checkpoint
         res = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
             res = ArbVerify.verifyArbBlock(
-	        rlpData,
-	        comparisonNumber,
-		comparisonBlockHash,
-		headerProof,
-		extraData,
-		RHVerify
-	    );
+                rlpData,
+                comparisonNumber,
+                comparisonBlockHash,
+                headerProof,
+                extraData,
+                RHVerify
+            );
         } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
             res = OptVerify.verifyOptBlock(
-	        rlpData,
-		comparisonNumber,
-		comparisonBlockHash,
-		headerProof,
-		extraData,
-		RHVerify
-	    );
+                rlpData,
+                comparisonNumber,
+                comparisonBlockHash,
+                headerProof,
+                extraData,
+                RHVerify
+            );
         }
         return res;
     }
-    
+
     function toUint(bytes memory src) internal pure returns (uint) {
         uint value;
         for (uint i = 0; i < src.length; i++) {

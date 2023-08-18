@@ -21,7 +21,7 @@ contract ArbitrumVerifier is Common {
         bytes memory rlpData,
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
-	bytes memory headerProof,
+        bytes memory headerProof,
         bytes calldata extraData,
         IRecursiveHeaderVerifier RHVerify
     ) external view returns (bool) {

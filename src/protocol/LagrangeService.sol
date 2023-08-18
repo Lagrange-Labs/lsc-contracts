@@ -136,8 +136,8 @@ contract LagrangeService is
         uint comparisonNumber,
         bytes memory rlpData,
         bytes32 comparisonBlockHash,
-	bytes calldata headerProof,
-	bytes calldata extraData,
+        bytes calldata headerProof,
+        bytes calldata extraData,
         uint256 chainID
     ) internal view returns (bool) {
         return
@@ -145,11 +145,12 @@ contract LagrangeService is
                 comparisonNumber,
                 rlpData,
                 comparisonBlockHash,
-	        headerProof,
-	        extraData,
+                headerProof,
+                extraData,
                 chainID
             );
     }
+
     /*
     function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
         return _verifyRawHeaderSequence(latestHash, sequence);
