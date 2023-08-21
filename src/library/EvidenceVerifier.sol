@@ -31,15 +31,15 @@ contract EvidenceVerifier is Common {
 
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
-    
+
     function setArbAddr(ArbitrumVerifier _arb) public {
-      ArbVerify = _arb;
+        ArbVerify = _arb;
     }
 
     function setOptAddr(OptimismVerifier _opt) public {
-      OptVerify = _opt;
+        OptVerify = _opt;
     }
-    
+
     function getArbAddr() public view returns (address) /*onlyOwner*/ {
         return address(ArbVerify);
     }
@@ -61,18 +61,22 @@ contract EvidenceVerifier is Common {
         bytes32 comparisonBlockHash,
         uint256 chainID
     ) public pure returns (bool) {
-        bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
+        bool res = _verifyBlockNumber(
+            comparisonNumber,
+            rlpData,
+            comparisonBlockHash,
+            chainID
+        );
         bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-//            (success, checkpoint) = verifyArbBlock();
+            //            (success, checkpoint) = verifyArbBlock();
         } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
-//            (success, checkpoint) = verifyOptBlock();
+            //            (success, checkpoint) = verifyOptBlock();
         }
-        if (!success) {
-        }
+        if (!success) {}
         return res;
     }
-    
+
     function toUint(bytes memory src) internal pure returns (uint) {
         uint value;
         for (uint i = 0; i < src.length; i++) {

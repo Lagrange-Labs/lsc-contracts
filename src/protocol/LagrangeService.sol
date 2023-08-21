@@ -2,8 +2,6 @@
 pragma solidity ^0.8.12;
 
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
-import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -16,10 +14,14 @@ contract LagrangeService is
     Initializable,
     OwnableUpgradeable,
     ILagrangeService,
-    EvidenceVerifier,
-    VoteWeigherBase
+    EvidenceVerifier
 {
+    uint256 public constant UPDATE_TYPE_REGISTER = 1;
+    uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
+    uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
+
     ILagrangeCommittee public immutable committee;
+    IServiceManager public immutable serviceManager;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
 
@@ -38,11 +40,11 @@ contract LagrangeService is
     );
 
     constructor(
-        IServiceManager _serviceManager,
         ILagrangeCommittee _committee,
-        IStrategyManager _strategyManager
-    ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
+        IServiceManager _serviceManager
+    ) {
         committee = _committee;
+        serviceManager = _serviceManager;
         _disableInitializers();
     }
 
@@ -53,21 +55,13 @@ contract LagrangeService is
     /// Add the operator to the service.
     // Only unfractinalized WETH strategy shares assumed for stake amount
     function register(
-        uint256 chainID,
+        uint32 chainID,
         bytes memory _blsPubKey,
         uint32 serveUntilBlock
     ) external {
-        uint96 stakeAmount = weightOfOperator(msg.sender, 1);
-        require(stakeAmount > 0, "The stake amount is zero");
-
+        // NOTE: Please ensure that the order of the following two lines remains unchanged
+        committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
-        committee.addOperator(
-            msg.sender,
-            chainID,
-            _blsPubKey,
-            stakeAmount,
-            serveUntilBlock
-        );
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
@@ -104,7 +98,7 @@ contract LagrangeService is
                 evidence.chainID
             )
         ) {
-            _freezeOperator(evidence.operator, evidence.chainID);
+            _freezeOperator(evidence.operator);
         }
 
         if (
@@ -117,7 +111,7 @@ contract LagrangeService is
                 evidence.chainID
             )
         ) {
-            _freezeOperator(evidence.operator, evidence.chainID);
+            _freezeOperator(evidence.operator);
         }
 
         //_freezeOperator(evidence.operator,evidence.chainID); // TODO what is this for (no condition)?
@@ -151,7 +145,8 @@ contract LagrangeService is
                 chainID
             ) && blockHash == correctBlockHash;
     }
-/*
+
+    /*
     function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
         return _verifyRawHeaderSequence(latestHash, sequence);
     }
@@ -163,7 +158,7 @@ contract LagrangeService is
         bytes32 correctNextCommitteeRoot,
         bytes32 nextCommitteeRoot,
         uint256 blockNumber,
-        uint256 chainID
+        uint32 chainID
     ) internal returns (bool) {
         (
             ILagrangeCommittee.CommitteeData memory currentCommittee,
@@ -184,9 +179,9 @@ contract LagrangeService is
     }
 
     /// Slash the given operator
-    function _freezeOperator(address operator, uint256 chainID) internal {
+    function _freezeOperator(address operator) internal {
+        committee.setSlashed(operator);
         serviceManager.freezeOperator(operator);
-        committee.setSlashed(operator, chainID, true);
 
         emit OperatorSlashed(operator);
     }

@@ -20,15 +20,15 @@ contract RemoveQuorum is Script, Test {
 
         string memory deployLGRData = vm.readFile(deployedLGRPath);
 
-        LagrangeService lagrangeService = LagrangeService(
-            stdJson.readAddress(deployLGRData, ".addresses.lagrangeService")
+        LagrangeCommittee committee = LagrangeCommittee(
+            stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee")
         );
-        
+
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(0x91E333A3d61862B1FE976351cf0F3b30aff1D202);
         uint256[] memory indexes = new uint256[](1);
         indexes[0] = 0;
-        lagrangeService.removeStrategiesConsideredAndMultipliers(
+        committee.removeStrategiesConsideredAndMultipliers(
             1,
             strategies,
             indexes

@@ -34,6 +34,7 @@ contract PoseidonUnit5 {
 contract PoseidonUnit6 {
     function poseidon(uint256[6] memory) public pure returns (uint256) {}
 }
+
 /**
  * @dev Rollup helper functions
  */
@@ -92,23 +93,20 @@ contract HermezHelpers {
         _insPoseidonUnit6 = PoseidonUnit6(_poseidon6Elements);
     }
 
-    function _hash1Elements(uint256[1] memory inputs)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hash1Elements(
+        uint256[1] memory inputs
+    ) internal view returns (uint256) {
         return _insPoseidonUnit1.poseidon(inputs);
     }
+
     /**
      * @dev Hash poseidon for 2 elements
      * @param inputs Poseidon input array of 2 elements
      * @return Poseidon hash
      */
-    function _hash2Elements(uint256[2] memory inputs)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hash2Elements(
+        uint256[2] memory inputs
+    ) internal view returns (uint256) {
         return _insPoseidonUnit2.poseidon(inputs);
     }
 
@@ -117,11 +115,9 @@ contract HermezHelpers {
      * @param inputs Poseidon input array of 3 elements
      * @return Poseidon hash
      */
-    function _hash3Elements(uint256[3] memory inputs)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hash3Elements(
+        uint256[3] memory inputs
+    ) internal view returns (uint256) {
         return _insPoseidonUnit3.poseidon(inputs);
     }
 
@@ -130,40 +126,34 @@ contract HermezHelpers {
      * @param inputs Poseidon input array of 4 elements
      * @return Poseidon hash
      */
-    function _hash4Elements(uint256[4] memory inputs)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hash4Elements(
+        uint256[4] memory inputs
+    ) internal view returns (uint256) {
         return _insPoseidonUnit4.poseidon(inputs);
     }
 
-    function _hash5Elements(uint256[5] memory inputs)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hash5Elements(
+        uint256[5] memory inputs
+    ) internal view returns (uint256) {
         return _insPoseidonUnit5.poseidon(inputs);
     }
 
-    function _hash6Elements(uint256[6] memory inputs)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hash6Elements(
+        uint256[6] memory inputs
+    ) internal view returns (uint256) {
         return _insPoseidonUnit6.poseidon(inputs);
     }
+
     /**
      * @dev Hash poseidon for sparse merkle tree nodes
      * @param left Input element array
      * @param right Input element array
      * @return Poseidon hash
      */
-    function _hashNode(uint256 left, uint256 right)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hashNode(
+        uint256 left,
+        uint256 right
+    ) internal view returns (uint256) {
         uint256[2] memory inputs;
         inputs[0] = left;
         inputs[1] = right;
@@ -176,11 +166,10 @@ contract HermezHelpers {
      * @param value Input element array
      * @return Poseidon hash1
      */
-    function _hashFinalNode(uint256 key, uint256 value)
-        internal
-        view
-        returns (uint256)
-    {
+    function _hashFinalNode(
+        uint256 key,
+        uint256 value
+    ) internal view returns (uint256) {
         uint256[3] memory inputs;
         inputs[0] = key;
         inputs[1] = value;
@@ -261,7 +250,7 @@ contract HermezHelpers {
         uint256 e = float >> 35;
 
         // never overflow, max "e" value is 32
-        uint256 exp = 10**e;
+        uint256 exp = 10 ** e;
 
         // never overflow, max "fix" value is 1023 * 10^32
         uint256 fix = m * exp;
@@ -325,20 +314,18 @@ contract HermezHelpers {
             "HermezHelpers::_checkSig: INVALID_S_VALUE"
         );
 
-        bytes32 encodeData =
-            keccak256(
-                abi.encode(
-                    AUTHORISE_TYPEHASH,
-                    HERMEZ_NETWORK_HASH,
-                    ACCOUNT_CREATION_HASH,
-                    babyjub
-                )
-            );
+        bytes32 encodeData = keccak256(
+            abi.encode(
+                AUTHORISE_TYPEHASH,
+                HERMEZ_NETWORK_HASH,
+                ACCOUNT_CREATION_HASH,
+                babyjub
+            )
+        );
 
-        bytes32 messageDigest =
-            keccak256(
-                abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), encodeData)
-            );
+        bytes32 messageDigest = keccak256(
+            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), encodeData)
+        );
 
         address ethAddress = ecrecover(messageDigest, v, r, s);
 
@@ -356,11 +343,9 @@ contract HermezHelpers {
      * @return ptr ptr to the call data position where the actual data starts
      * @return len Length of the data
      */
-    function _getCallData(uint256 posParam)
-        internal
-        pure
-        returns (uint256 ptr, uint256 len)
-    {
+    function _getCallData(
+        uint256 posParam
+    ) internal pure returns (uint256 ptr, uint256 len) {
         assembly {
             let pos := add(4, mul(posParam, 32))
             ptr := add(calldataload(pos), 4)
@@ -394,9 +379,10 @@ contract HermezHelpers {
      * @param _preBytes bytes storage
      * @param _postBytes Bytes array memory
      */
-    function _concatStorage(bytes storage _preBytes, bytes memory _postBytes)
-        internal
-    {
+    function _concatStorage(
+        bytes storage _preBytes,
+        bytes memory _postBytes
+    ) internal {
         assembly {
             // Read the first 32 bytes of _preBytes storage, which is the length
             // of the array. (We don't need to use the offset into the slot
@@ -419,120 +405,120 @@ contract HermezHelpers {
             // if length < 32 bytes so let's prepare for that
             // v. http://solidity.readthedocs.io/en/latest/miscellaneous.html#layout-of-state-variables-in-storage
             switch add(lt(slength, 32), lt(newlength, 32))
-                case 2 {
-                    // Since the new array still fits in the slot, we just need to
-                    // update the contents of the slot.
-                    // uint256(bytes_storage) = uint256(bytes_storage) + uint256(bytes_memory) + new_length
-                    sstore(
-                        _preBytes.slot,
-                        // all the modifications to the slot are inside this
-                        // next block
+            case 2 {
+                // Since the new array still fits in the slot, we just need to
+                // update the contents of the slot.
+                // uint256(bytes_storage) = uint256(bytes_storage) + uint256(bytes_memory) + new_length
+                sstore(
+                    _preBytes.slot,
+                    // all the modifications to the slot are inside this
+                    // next block
+                    add(
+                        // we can just add to the slot contents because the
+                        // bytes we want to change are the LSBs
+                        fslot,
                         add(
-                            // we can just add to the slot contents because the
-                            // bytes we want to change are the LSBs
-                            fslot,
-                            add(
-                                mul(
-                                    div(
-                                        // load the bytes from memory
-                                        mload(add(_postBytes, 0x20)),
-                                        // zero all bytes to the right
-                                        exp(0x100, sub(32, mlength))
-                                    ),
-                                    // and now shift left the number of bytes to
-                                    // leave space for the length in the slot
-                                    exp(0x100, sub(32, newlength))
+                            mul(
+                                div(
+                                    // load the bytes from memory
+                                    mload(add(_postBytes, 0x20)),
+                                    // zero all bytes to the right
+                                    exp(0x100, sub(32, mlength))
                                 ),
-                                // increase length by the double of the memory
-                                // bytes length
-                                mul(mlength, 2)
-                            )
-                        )
-                    )
-                }
-                case 1 {
-                    // The stored value fits in the slot, but the combined value
-                    // will exceed it.
-                    // get the keccak hash to get the contents of the array
-                    mstore(0x0, _preBytes.slot)
-                    let sc := add(keccak256(0x0, 0x20), div(slength, 32))
-
-                    // save new length
-                    sstore(_preBytes.slot, add(mul(newlength, 2), 1))
-
-                    // The contents of the _postBytes array start 32 bytes into
-                    // the structure. Our first read should obtain the `submod`
-                    // bytes that can fit into the unused space in the last word
-                    // of the stored array. To get this, we read 32 bytes starting
-                    // from `submod`, so the data we read overlaps with the array
-                    // contents by `submod` bytes. Masking the lowest-order
-                    // `submod` bytes allows us to add that value directly to the
-                    // stored value.
-
-                    let submod := sub(32, slength)
-                    let mc := add(_postBytes, submod)
-                    let end := add(_postBytes, mlength)
-                    let mask := sub(exp(0x100, submod), 1)
-
-                    sstore(
-                        sc,
-                        add(
-                            and(
-                                fslot,
-                                0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00
+                                // and now shift left the number of bytes to
+                                // leave space for the length in the slot
+                                exp(0x100, sub(32, newlength))
                             ),
-                            and(mload(mc), mask)
+                            // increase length by the double of the memory
+                            // bytes length
+                            mul(mlength, 2)
                         )
                     )
+                )
+            }
+            case 1 {
+                // The stored value fits in the slot, but the combined value
+                // will exceed it.
+                // get the keccak hash to get the contents of the array
+                mstore(0x0, _preBytes.slot)
+                let sc := add(keccak256(0x0, 0x20), div(slength, 32))
 
-                    for {
-                        mc := add(mc, 0x20)
-                        sc := add(sc, 1)
-                    } lt(mc, end) {
-                        sc := add(sc, 1)
-                        mc := add(mc, 0x20)
-                    } {
-                        sstore(sc, mload(mc))
-                    }
+                // save new length
+                sstore(_preBytes.slot, add(mul(newlength, 2), 1))
 
-                    mask := exp(0x100, sub(mc, end))
+                // The contents of the _postBytes array start 32 bytes into
+                // the structure. Our first read should obtain the `submod`
+                // bytes that can fit into the unused space in the last word
+                // of the stored array. To get this, we read 32 bytes starting
+                // from `submod`, so the data we read overlaps with the array
+                // contents by `submod` bytes. Masking the lowest-order
+                // `submod` bytes allows us to add that value directly to the
+                // stored value.
 
-                    sstore(sc, mul(div(mload(mc), mask), mask))
+                let submod := sub(32, slength)
+                let mc := add(_postBytes, submod)
+                let end := add(_postBytes, mlength)
+                let mask := sub(exp(0x100, submod), 1)
+
+                sstore(
+                    sc,
+                    add(
+                        and(
+                            fslot,
+                            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00
+                        ),
+                        and(mload(mc), mask)
+                    )
+                )
+
+                for {
+                    mc := add(mc, 0x20)
+                    sc := add(sc, 1)
+                } lt(mc, end) {
+                    sc := add(sc, 1)
+                    mc := add(mc, 0x20)
+                } {
+                    sstore(sc, mload(mc))
                 }
-                default {
-                    // get the keccak hash to get the contents of the array
-                    mstore(0x0, _preBytes.slot)
-                    // Start copying to the last used word of the stored array.
-                    let sc := add(keccak256(0x0, 0x20), div(slength, 32))
 
-                    // save new length
-                    sstore(_preBytes.slot, add(mul(newlength, 2), 1))
+                mask := exp(0x100, sub(mc, end))
 
-                    // Copy over the first `submod` bytes of the new data as in
-                    // case 1 above.
-                    let slengthmod := mod(slength, 32)
-                    let mlengthmod := mod(mlength, 32)
-                    let submod := sub(32, slengthmod)
-                    let mc := add(_postBytes, submod)
-                    let end := add(_postBytes, mlength)
-                    let mask := sub(exp(0x100, submod), 1)
+                sstore(sc, mul(div(mload(mc), mask), mask))
+            }
+            default {
+                // get the keccak hash to get the contents of the array
+                mstore(0x0, _preBytes.slot)
+                // Start copying to the last used word of the stored array.
+                let sc := add(keccak256(0x0, 0x20), div(slength, 32))
 
-                    sstore(sc, add(sload(sc), and(mload(mc), mask)))
+                // save new length
+                sstore(_preBytes.slot, add(mul(newlength, 2), 1))
 
-                    for {
-                        sc := add(sc, 1)
-                        mc := add(mc, 0x20)
-                    } lt(mc, end) {
-                        sc := add(sc, 1)
-                        mc := add(mc, 0x20)
-                    } {
-                        sstore(sc, mload(mc))
-                    }
+                // Copy over the first `submod` bytes of the new data as in
+                // case 1 above.
+                let slengthmod := mod(slength, 32)
+                let mlengthmod := mod(mlength, 32)
+                let submod := sub(32, slengthmod)
+                let mc := add(_postBytes, submod)
+                let end := add(_postBytes, mlength)
+                let mask := sub(exp(0x100, submod), 1)
 
-                    mask := exp(0x100, sub(mc, end))
+                sstore(sc, add(sload(sc), and(mload(mc), mask)))
 
-                    sstore(sc, mul(div(mload(mc), mask), mask))
+                for {
+                    sc := add(sc, 1)
+                    mc := add(mc, 0x20)
+                } lt(mc, end) {
+                    sc := add(sc, 1)
+                    mc := add(mc, 0x20)
+                } {
+                    sstore(sc, mload(mc))
                 }
+
+                mask := exp(0x100, sub(mc, end))
+
+                sstore(sc, mul(div(mload(mc), mask), mask))
+            }
         }
     }
 }

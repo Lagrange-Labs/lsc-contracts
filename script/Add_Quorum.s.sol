@@ -28,8 +28,8 @@ contract AddQuorum is Script, Test {
         string memory deployLGRData = vm.readFile(deployedLGRPath);
         string memory configData = vm.readFile(configPath);
 
-        LagrangeService lagrangeService = LagrangeService(
-            stdJson.readAddress(deployLGRData, ".addresses.lagrangeService")
+        LagrangeCommittee committee = LagrangeCommittee(
+            stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee")
         );
 
         // add strategy multipliers to lagrange service
@@ -52,7 +52,7 @@ contract AddQuorum is Script, Test {
                 });
         }
 
-        lagrangeService.addStrategiesConsideredAndMultipliers(
+        committee.addStrategiesConsideredAndMultipliers(
             1,
             newStrategiesConsideredAndMultipliers
         );
