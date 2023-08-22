@@ -18,12 +18,17 @@ const arbChainID = 421613;
 const optChainID = 420;
 
 
-contract.getEpochNumber(arbChainID, 9372848).then((epoch) => {
+contract.getEpochNumber(arbChainID, 9377423).then((epoch) => {
     console.log("Arb epoch: ", epoch);
 });
 
+contract.getCommittee(arbChainID, 9377423).then((current) => {
+    console.log("Arb Current committee: ", current[0]);
+    console.log("Arb Next committee: ", current[1]);
+});
 
-contract.getEpochNumber(optChainID, 9372848).then((epoch) => {
+
+contract.getEpochNumber(optChainID, 9377423).then((epoch) => {
     console.log("Opt epoch: ", epoch);
 });
 

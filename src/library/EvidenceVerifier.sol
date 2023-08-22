@@ -118,6 +118,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
                 RHVerify
             );
         }
+        if (!success) {}
         return res;
     }
 

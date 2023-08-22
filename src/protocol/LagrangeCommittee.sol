@@ -137,6 +137,12 @@ contract LagrangeCommittee is
     function updateOperator(
         OperatorUpdate memory opUpdate
     ) external onlyServiceManager {
+        if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
+            operators[opUpdate.operator].amount = weightOfOperator(
+                opUpdate.operator,
+                1
+            );
+        }
         updatedOperators[operators[opUpdate.operator].chainID].push(opUpdate);
     }
 
