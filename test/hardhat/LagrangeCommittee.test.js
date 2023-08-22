@@ -187,12 +187,16 @@ describe("LagrangeCommittee", function () {
         
         const avFactory = await ethers.getContractFactory("ArbitrumVerifier");
         const arb = await avFactory.deploy(outbox.address);
-        
+
+        const rhvFactory = await ethers.getContractFactory("RecursiveHeaderVerifier");
+        const rhv = await rhvFactory.deploy();
+
         console.log("L2OutputOracle:",l2oo.address);
         console.log("Outbox:",outbox.address);
         
         await lagrangeService.setOptAddr(opt.address);
         await lagrangeService.setArbAddr(arb.address);
+        await lagrangeService.setRHVerifier(rhv.address);
 
         console.log("OptimismVerifier:",opt.address);
         console.log("ArbitrumVerifier:",arb.address);
@@ -202,6 +206,7 @@ describe("LagrangeCommittee", function () {
         shared.LagrangeServiceManager = lsm;
         shared.L2OutputOracle = l2oo;
         shared.Outbox = outbox;
+        shared.RecursiveHeaderVerifier = rhv;
     });
 
     it("leaf hash", async function () {
