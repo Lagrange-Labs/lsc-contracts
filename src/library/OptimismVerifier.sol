@@ -5,8 +5,9 @@ import {Common} from "./Common.sol";
 import {IL2OutputOracle} from "../mock/optimism/IL2OutputOracle.sol";
 import {Types} from "../mock/optimism/Types.sol";
 import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
+import {IOptimismVerifier} from "../interfaces/IOptimismVerifier.sol";
 
-contract OptimismVerifier is Common {
+contract OptimismVerifier is Common, IOptimismVerifier {
     uint256 public constant OUTPUT_PROOF_BLOCKHASH_INDEX = 3;
 
     IL2OutputOracle L2OutputOracle;
