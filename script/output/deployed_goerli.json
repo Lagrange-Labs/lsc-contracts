@@ -1,30 +1,29 @@
 {
     "lagrange": {
         "addresses": {
-            "lagrangeCommittee": "0xA36De7F7795B8e80262A0CA34101441696258d86",
-            "lagrangeCommitteeImp": "0x92a14fba5BFC0e7d27a67e1C76f95859C2411550",
-            "lagrangeService": "0xE1FA07d66DAAA1d562982a6c31dFC7AAf77fE9Cb",
-            "lagrangeServiceImp": "0x9a94bA4e5c031A638311749696c75b1078EEBc2D",
-            "lagrangeServiceManager": "0x97478CA8BbAeA0FcAA893F0Fdf2494A558D000a8",
-            "lagrangeServiceManagerImp": "0xcf05B442e0aCF712E36ac4E321292D0Ed926646E",
-            "proxyAdmin": "0x87a13F0698a6C28fB4869019bC0FbDfE1DF0C95b"
+            "lagrangeCommittee": "0xE6DC8CDbd1026da821e29E812cb94d79EE04551c",
+            "lagrangeCommitteeImp": "0x0964EC165fF9193eCaAe27E72eDD19B8B5866A89",
+            "lagrangeService": "0x7dDC80f2859842BFe353D623E7dccA713C3C26bA",
+            "lagrangeServiceImp": "0x546BF69B69b3208995a09Baef15935A368B7bb22",
+            "lagrangeServiceManager": "0x411457Ee3AF17af45657ef1DF8943A5b0f381379",
+            "lagrangeServiceManagerImp": "0xDC6b28A98d91134c8C7D4436Ce22c3FF68Ecc630",
+            "proxyAdmin": "0xac83e2aCC530994fc0E1cAe52b1855D2b38935Ca"
         }
     },
     "poseidon": {
-        "1": "0x7bA48aE8d4bE7284c7042Ec3da12CD6a30cf6B09",
-        "2": "0x8cbFb6310b10CD0510cDA02c7419fc7d8F162b48",
-        "3": "0x3A41C5D278cfcddF4AF12e3937B23f5eB1d8a2D1",
-        "4": "0x288AbC1D82aF13d0CEBE4d3582fD31662A8Cb2AC",
-        "5": "0x5C2E5b6d53660D6428dB802021d419B01fCf4a31",
-        "6": "0xC4020c3803a425370ca930306A1C4B6faB19ED07",
-        "undefined": "0x8E5F62D34d1Fe90452BEb80d2b67aD8b148Db5f1"
+        "1": "0x89E5023C841f3001F4E682f3288924caB3EAEE94",
+        "2": "0xe389Bc9C1C99F4cD12f3985839dDD1e6eedF744C",
+        "3": "0x263354A78beEB8014AAcDDAd6809ba6437003566",
+        "4": "0xEfB11EC89b14b91C60e6ec73923076c0D0F119A6",
+        "5": "0x1d53219456fFd60b0b1Ab405De698B46d281A483",
+        "6": "0xd98Ed75fc984E7aEf2f770d65a9262c033979Cb7"
     },
     "mock": {
         "addresses": {
-            "delegationManager": "0x74fF0333bbAA66D2c735C403A45DB483fFEDBfFa",
-            "slasher": "0xADBEa07bdbee311B060dF8083E8ab49C793B7170",
-            "strategy": "0x027D7dC2737068A9308AF32B8Fdb2F2d51A7155C",
-            "strategyManager": "0x2C6720773341a41cEf42171835e8C06B99724a96"
+            "delegationManager": "0xC834375B9Ac9e922b80EA367149aF980714bdc4D",
+            "slasher": "0xdEc46fBfC972178e61908f85D03662392184d19B",
+            "strategy": "0x258457A5F7c025481f73fE1bFc7181Ee209799bd",
+            "strategyManager": "0xE79628427790f120c5cE24245Dc127bf776368c4"
         }
     }
 }
