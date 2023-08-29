@@ -160,7 +160,7 @@ contract Deploy is Script, Test {
             address(lagrangeServiceManagerImp),
             abi.encodeWithSelector(
                 LagrangeServiceManager.initialize.selector,
-                address(lagrangeServiceImp)
+                msg.sender
             )
         );
         proxyAdmin.upgradeAndCall(
