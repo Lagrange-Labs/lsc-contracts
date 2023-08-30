@@ -51,6 +51,11 @@ const serveUntilBlock = 4294967295;
 const operators = require("../../config/operators.json");
 const stake = 100000000;
 
+async function getGas(tx) {
+    p = await tx.wait();
+    return p.gasUsed.toNumber();
+}
+
 describe("LagrangeCommittee", function () {
     let admin, proxy, poseidonAddresses;
 
@@ -63,11 +68,11 @@ describe("LagrangeCommittee", function () {
         const overrides = {
             gasLimit: 5000000,
         };
+        
+        //
+        // Mock Contract Deployments
+        // 
 
-	//const Common = await ethers.getContractFactory("Common");
-	//const common = await Common.deploy();
-	//await common.deployed();
-          
         console.log("Deploying Slasher mock...");
 
         const SlasherFactory = await ethers.getContractFactory("Slasher");
@@ -86,6 +91,10 @@ describe("LagrangeCommittee", function () {
         const SMFactory = await ethers.getContractFactory("StrategyManager");
         const sm = await SMFactory.deploy(dm.address, overrides);
         await sm.deployed();
+        
+        //
+        // Proxy Setup
+        // 
 
         console.log("Deploying empty contract...");
 
@@ -93,7 +102,7 @@ describe("LagrangeCommittee", function () {
         const emptyContract = await EmptyContractFactory.deploy();
         await emptyContract.deployed();
 
-        console.log("Deploying proxy...");
+        console.log("Deploying admin proxy...");
 
         const ProxyAdminFactory = await ethers.getContractFactory("ProxyAdmin");
         const proxyAdmin = await ProxyAdminFactory.deploy();
@@ -118,51 +127,63 @@ describe("LagrangeCommittee", function () {
         TransparentUpgradeableProxyFactory = await ethers.getContractFactory("TransparentUpgradeableProxy");
         lsmproxy = await TransparentUpgradeableProxyFactory.deploy(emptyContract.address, proxyAdmin.address, "0x", overrides);
         await lsmproxy.deployed();
+        console.log("Service manager proxy:",lsmproxy.address);
+
+        //
+        // Implementation Setup
+        // 
+
+        console.log("Deploying Lagrange Committee...");
+        const LagrangeCommitteeFactory = await ethers.getContractFactory("LagrangeCommittee");
+        const committee = await LagrangeCommitteeFactory.deploy(lsproxy.address, lsmproxy.address, sm.address);
+        await committee.deployed();
+        serv = await committee.service();
+        console.log("Committee service:",serv);
 
         console.log("Deploying Lagrange Service Manager...");
-        
         const LSMFactory = await ethers.getContractFactory("LagrangeServiceManager");
         const lsm = await LSMFactory.deploy(slasher.address, lcproxy.address, lsproxy.address, overrides);
         await lsm.deployed();
 
-        console.log("Upgrading proxy...");
+        console.log("Deploying Lagrange Service...");
+        const LSFactory = await ethers.getContractFactory("LagrangeService",{});
+        const lagrangeService = await LSFactory.deploy(lcproxy.address, lsmproxy.address, overrides);
+        await lagrangeService.deployed();
+        
+        lsaddr = lagrangeService.address;
+        lcpaddr = await lagrangeService.committee();
+        console.log("Service committee:",lcpaddr);
+
+        //
+        // Proxy Upgrades
+        // 
+
+        console.log("Upgrading service manager proxy...");
         await proxyAdmin.upgradeAndCall(
             lsmproxy.address,
             lsm.address,
             lsm.interface.encodeFunctionData("initialize", [admin.address])
         )
+        lsmpaddr = lsmproxy.address;
+        lsmproxy = await ethers.getContractAt("LagrangeServiceManager",lsmpaddr);
 
-        console.log("Deploying Lagrange Service...");
-
-        const LSFactory = await ethers.getContractFactory("LagrangeService",{});
-        const lagrangeService = await LSFactory.deploy(lcproxy.address, lsmproxy.address, overrides);
-        await lagrangeService.deployed();
-        lsaddr = lagrangeService.address;
-        lcpaddr = await lagrangeService.committee();
-        console.log("Service committee:",lcpaddr);
-
-        console.log("Upgrading proxy...");
+        console.log("Upgrading service proxy...");
         await proxyAdmin.upgradeAndCall(
             lsproxy.address,
             lagrangeService.address,
             lagrangeService.interface.encodeFunctionData("initialize", [admin.address])
         )
+        lspaddr = lsproxy.address;
+        lsproxy = await ethers.getContractAt("LagrangeService",lspaddr);
         
-        console.log("Deploying Lagrange Committee...");
-
-        const LagrangeCommitteeFactory = await ethers.getContractFactory("LagrangeCommittee");
-        const committee = await LagrangeCommitteeFactory.deploy(lagrangeService.address, lsmproxy.address, sm.address);
-        await committee.deployed();
-        
-        serv = await committee.service();
-        console.log("Committee service:",serv);
-
         console.log("Upgrading proxy...");
         await proxyAdmin.upgradeAndCall(
             lcproxy.address,
             committee.address,
             committee.interface.encodeFunctionData("initialize", [admin.address, poseidonAddresses[1], poseidonAddresses[2], poseidonAddresses[3], poseidonAddresses[4], poseidonAddresses[5], poseidonAddresses[6]])
         )
+        lcpaddr = lcproxy.address;
+        lcproxy = await ethers.getContractAt("LagrangeCommittee",lcpaddr);
 
         const outboxFactory = await ethers.getContractFactory("Outbox");
         const outbox = await outboxFactory.deploy();
@@ -194,9 +215,12 @@ describe("LagrangeCommittee", function () {
         console.log("L2OutputOracle:",l2oo.address);
         console.log("Outbox:",outbox.address);
         
-        await lagrangeService.setOptAddr(opt.address);
-        await lagrangeService.setArbAddr(arb.address);
-        await lagrangeService.setRHVerifier(rhv.address);
+        txOpt = await lagrangeService.setOptAddr(opt.address);
+        console.log(await getGas(txOpt));
+        txArb = await lagrangeService.setArbAddr(arb.address);
+        console.log(await getGas(txArb));
+        txRH = await lagrangeService.setRHVerifier(rhv.address);
+        console.log(await getGas(txRH));
 
         console.log("OptimismVerifier:",opt.address);
         console.log("ArbitrumVerifier:",arb.address);
@@ -218,9 +242,12 @@ describe("LagrangeCommittee", function () {
         const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
         const newPubKey = "0x" + Gx + Gy;
         const address = operators[0].operators[0];
-        await ls.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+        console.log("lsproxy.register()");
+        await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+        //process.exit(1);
         console.log("committee.registerChain()");
-        await committee.registerChain(operators[0].chain_id, 10000, 1000);
+        tx = await committee.registerChain(operators[0].chain_id, 10000, 1000);
+        console.log(getGas(tx));
 
         const chunks = [];
         for (let i = 0; i < 4; i++) {
@@ -261,7 +288,7 @@ describe("LagrangeCommittee", function () {
             const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
             const newPubKey = "0x" + Gx + Gy;
 
-            console.log("lagrangeService.reguster()");
+            console.log("lagrangeService.register()");
             await ls.register(operators[0].chain_id, newPubKey, serveUntilBlock);
         }
         console.log("lagrangeService.register()");
