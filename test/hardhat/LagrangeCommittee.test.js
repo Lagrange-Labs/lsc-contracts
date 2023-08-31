@@ -57,7 +57,7 @@ async function getGas(tx) {
 }
 
 describe("LagrangeCommittee", function () {
-    let admin, proxy, poseidonAddresses;
+    let admin, proxy, poseidonAddresses, lcpaddr;
 
     before(async function () {
         [admin] = await ethers.getSigners();
@@ -236,18 +236,20 @@ describe("LagrangeCommittee", function () {
     it("leaf hash", async function () {
         ls = shared.LagrangeService;
         
-        const committee = await ethers.getContractAt("LagrangeCommittee", lcproxy.address, admin)
+        const committee = await ethers.getContractAt("LagrangeCommittee", lcpaddr, admin)
         const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[0].slice(2));
         const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
         const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
         const newPubKey = "0x" + Gx + Gy;
         const address = operators[0].operators[0];
+
         console.log("lsproxy.register()");
-        await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
-        //process.exit(1);
+        tx = await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+        console.log(await getGas(tx));
+
         console.log("committee.registerChain()");
         tx = await committee.registerChain(operators[0].chain_id, 10000, 1000);
-        console.log(getGas(tx));
+        console.log(await getGas(tx));
 
         const chunks = [];
         for (let i = 0; i < 4; i++) {
@@ -268,8 +270,8 @@ describe("LagrangeCommittee", function () {
         console.log(chunks.map((e) => { return e.toString(16);}), leaf.toString(16));
 
         const leafHash = await committee.committeeLeaves(operators[0].chain_id, 0);
-        const committeeRoot = await committee.getCommittee(operators[0].chain_id, 1000);
         const op = await committee.operators(operators[0].operators[0]);
+        const committeeRoot = await committee.getCommittee(operators[0].chain_id, 1000);
         console.log(op);
         console.log(leafHash);
         expect(leafHash).to.equal(committeeRoot.currentCommittee.root);
@@ -280,7 +282,7 @@ describe("LagrangeCommittee", function () {
     it("merkle root", async function () {
         ls = shared.LagrangeService;
         
-        const committee = await ethers.getContractAt("LagrangeCommittee", lcproxy.address, admin);
+        const committee = await ethers.getContractAt("LagrangeCommittee", lcpaddr, admin)
         for (let i = 0; i < operators[0].operators.length; i++) {
             const op = operators[0].operators[i];
             const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[i].slice(2));
@@ -289,16 +291,23 @@ describe("LagrangeCommittee", function () {
             const newPubKey = "0x" + Gx + Gy;
 
             console.log("lagrangeService.register()");
-            await ls.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+            tx = await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+            console.log(await getGas(tx));
         }
-        console.log("lagrangeService.register()");
-        //await ls.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+        console.log("committee.registerChain()");
+        tx = await committee.registerChain(operators[0].chain_id, 10000, 1000);
+        console.log(await getGas(tx));
+        //console.log("lagrangeService.register()");
+        //await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
 
         console.log("calculating roots...");
+        //console.log(operators);
         const leaves = await Promise.all(operators[0].operators.map(async (op, index) => {
+            console.log(operators[0].chain_id,index)
             const leaf = await committee.committeeLeaves(operators[0].chain_id, index);
             return BigInt(leaf.toHexString());
         }));
+        console.log(leaves)
         const committeeRoot = await committee.getCommittee(operators[0].chain_id, 1000);
         console.log("leaves: ", leaves.map(l => l.toString(16)));
         console.log("current root: ", committeeRoot.currentCommittee.root.toHexString());
