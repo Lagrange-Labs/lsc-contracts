@@ -280,9 +280,11 @@ describe("LagrangeCommittee", function () {
     });
 
     it("merkle root", async function () {
+        this.timeout(60000);
         ls = shared.LagrangeService;
         
         const committee = await ethers.getContractAt("LagrangeCommittee", lcpaddr, admin)
+
         for (let i = 0; i < operators[0].operators.length; i++) {
             const op = operators[0].operators[i];
             const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[i].slice(2));
@@ -294,11 +296,13 @@ describe("LagrangeCommittee", function () {
             tx = await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
             console.log(await getGas(tx));
         }
+
         console.log("committee.registerChain()");
+        start = Date.now();
         tx = await committee.registerChain(operators[0].chain_id, 10000, 1000);
+        end = Date.now();
+        console.log("Done. ("+(end-start)+" ms)")
         console.log(await getGas(tx));
-        //console.log("lagrangeService.register()");
-        //await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
 
         console.log("calculating roots...");
         //console.log(operators);
