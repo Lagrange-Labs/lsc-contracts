@@ -12,14 +12,14 @@ interface IOptimismVerifier {
         bytes memory rlpData,
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
-	bytes memory headerProof,
+        bytes memory headerProof,
         bytes calldata extraData,
         IRecursiveHeaderVerifier RHVerify
     ) external view returns (bool);
-    
+
     function verifyOutputProof(
         uint256 comparisonNumber,
         bytes32 comparisonBlockHash,
         bytes calldata extraData
-    ) external view returns (bool,bytes32);
+    ) external view returns (bool, bytes32);
 }

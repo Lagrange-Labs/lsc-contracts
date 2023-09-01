@@ -114,23 +114,25 @@ contract Deploy is Script, Test {
             lagrangeServiceManager
         );
 
-	// L2 Settlement - Interface
-	
+        // L2 Settlement - Interface
+
         IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
             stdJson.readAddress(configData, ".settlement.opt_l2outputoracle")
         );
-        IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
+        IOutbox arb_Outbox = IOutbox(
+            stdJson.readAddress(configData, ".settlement.arb_outbox")
+        );
 
-	// L2 Settlement - Mock
-	
+        // L2 Settlement - Mock
+
         //Outbox outbox = new Outbox();
         //IOutbox arb_Outbox = IOutbox(outbox.address);
-	
+
         //L2OutputOracle l2oo = new L2OutputOracle();
         //IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
 
         // deploy evidence verifier
-	
+
         arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
         //evidenceVerifier = new EvidenceVerifier();
