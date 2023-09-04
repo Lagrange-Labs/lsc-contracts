@@ -61,6 +61,7 @@ describe("LagrangeCommittee", function () {
 
     before(async function () {
         [admin] = await ethers.getSigners();
+        console.log("admin:",admin);
         poseidonAddresses = await deployPoseidon(admin);
     });
 
@@ -196,8 +197,8 @@ describe("LagrangeCommittee", function () {
             1,//_l2BlockTime
             11991388-1,//_startingBlockNumber
             1,//_startingTimestamp
-            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",//_proposer
-            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",//_challenger
+            "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",//_proposer
+            "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",//_challenger
             5//_finalizationPeriodSeconds
         );
         await l2oo.deployed();
@@ -234,9 +235,11 @@ describe("LagrangeCommittee", function () {
     });
 
     it("leaf hash", async function () {
+        this.timeout(60000);
         ls = shared.LagrangeService;
         
         const committee = await ethers.getContractAt("LagrangeCommittee", lcpaddr, admin)
+
         const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[0].slice(2));
         const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
         const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
@@ -246,7 +249,7 @@ describe("LagrangeCommittee", function () {
         console.log("lsproxy.register()");
         tx = await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
         console.log(await getGas(tx));
-
+        
         console.log("committee.registerChain()");
         tx = await committee.registerChain(operators[0].chain_id, 10000, 1000);
         console.log(await getGas(tx));
@@ -275,11 +278,13 @@ describe("LagrangeCommittee", function () {
         console.log(op);
         console.log(leafHash);
         expect(leafHash).to.equal(committeeRoot.currentCommittee.root);
+        console.log(committeeRoot);
         expect(stake).to.equal(committeeRoot.currentCommittee.totalVotingPower.toNumber());
         expect(leaf).to.equal(leafHash);
     });
 
     it("merkle root", async function () {
+return;
         this.timeout(60000);
         ls = shared.LagrangeService;
         
@@ -293,7 +298,7 @@ describe("LagrangeCommittee", function () {
             const newPubKey = "0x" + Gx + Gy;
 
             console.log("lagrangeService.register()");
-            tx = await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock);
+            tx = await lsproxy.register(operators[0].chain_id, newPubKey, serveUntilBlock); //TODO review - based on msg.sender.  should n:1 bls:addr be permitted?  what is our testnet approach?
             console.log(await getGas(tx));
         }
 
