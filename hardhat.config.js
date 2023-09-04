@@ -40,6 +40,8 @@ module.exports = {
       blockGasLimit: 0x1fffffffffffff, // Set a high block gas limit
       allowUnlimitedContractSize: true, // This option disables the contract size check
     },
-    docker: {},
+    docker: {
+      url: "http://0.0.0.0:8545",
+    },
   },
 };

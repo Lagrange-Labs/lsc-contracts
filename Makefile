@@ -65,7 +65,7 @@ docker-build: stop
 # Test
 test:
 	forge test  -vvvvv
-	npx hardhat test
+	npx hardhat test --network docker
 .PHONY: test
 
 clean: stop
