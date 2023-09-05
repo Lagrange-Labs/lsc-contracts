@@ -16,6 +16,7 @@ import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
 import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
 import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
+import {RecursiveHeaderVerifier} from "src/library/RecursiveHeaderVerifier.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -135,10 +136,7 @@ contract Deploy is Script, Test {
 
         arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
-        //evidenceVerifier = new EvidenceVerifier();
-
-        lagrangeServiceImp.setOptAddr(optimismVerifier);
-        lagrangeServiceImp.setArbAddr(arbitrumVerifier);
+	RecursiveHeaderVerifier rhVerifier = new RecursiveHeaderVerifier();
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -170,7 +168,10 @@ contract Deploy is Script, Test {
             address(lagrangeServiceImp),
             abi.encodeWithSelector(
                 LagrangeService.initialize.selector,
-                msg.sender
+                msg.sender,
+		arbitrumVerifier,
+		optimismVerifier,
+		rhVerifier
             )
         );
 
