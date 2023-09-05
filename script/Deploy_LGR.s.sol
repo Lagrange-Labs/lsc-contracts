@@ -27,8 +27,8 @@ import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath =
-        string(bytes("script/output/deployed_mock.json"));
-    //string(bytes("script/output/M1_deployment_data.json"));
+        //string(bytes("script/output/deployed_mock.json"));
+        string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
         string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath =

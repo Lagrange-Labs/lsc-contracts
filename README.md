@@ -20,8 +20,23 @@ forge install
 ## Local Deployment
 
 The following walks through the necessary steps to deploy the Lagrange contracts, interfacing with mock contracts for EigenLayer, as well as Arbitrum Nitro and Optimism Bedrock settlement mock contracts.
+```bash
+make all-mock
 ```
-bash make all-mock
+
+To deploy using EigenLayer contracts, rather than mock contracts, the following command should be run:
+```bash
+make all
+```
+
+**Note:** *Environmental variable RPC_URL should be exported before running the above commands.*
+
+```bash
+export RPC_URL="http://0.0.0.0:8545"
+```
+or alternately
+```bash
+export RPC_URL="http://127.0.0.1:8545"
 ```
 
 ## Local Deployment
