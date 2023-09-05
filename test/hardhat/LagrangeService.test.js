@@ -40,7 +40,7 @@ async function getSampleEvidence() {
 
 describe("LagrangeService",
  function () {
-     let admin, proxy, lagrangeService, lc, lsm, lsaddr, l2ooAddr, outboxAddr, rhv;
+     let admin, proxy, lagrangeService, lc, lsm, lsaddr, lspaddr, l2ooAddr, outboxAddr, rhv;
 
     before(async function () {
         [admin] = await ethers.getSigners();
@@ -52,11 +52,13 @@ describe("LagrangeService",
         lc = shared.LagrangeCommittee;
         lsm = shared.LagrangeServiceManager;
         ls = shared.LagrangeService;
+        lsproxy = shared.LagrangeServiceProxy;
         
         l2oo = shared.L2OutputOracle;
         outbox = shared.Outbox;
         
         lsaddr = ls.address;
+        lspaddr = lsproxy.address;
         l2ooAddr = l2oo.address;
         outboxAddr = outbox.address;
 
@@ -64,9 +66,9 @@ describe("LagrangeService",
     });
         
      it('Smoke test L2-L1 settlement interfaces', async function() {
-         const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin)
-	 addr1 = await lagrangeService.getArbAddr();
-	 addr2 = await lagrangeService.getOptAddr();
+         const lsproxy = await ethers.getContractAt("LagrangeService", lspaddr, admin)
+	 addr1 = await lsproxy.getArbAddr();
+	 addr2 = await lsproxy.getOptAddr();
 	 console.log(addr1,addr2);
 	 expect(addr1 != "0x0000000000000000000000000000000000000000" && addr2 != "0x0000000000000000000000000000000000000000").to.equal(true);
 	 
@@ -89,8 +91,8 @@ describe("LagrangeService",
     });
     it('Optimism Output Verification', async function() {
         outputRoot = "0x9c7c59dcfc75aa57697ae880a52f82f179150a7e24d208f7f7ad804ea99535cb";
-        const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin);
-        optAddr = await lagrangeService.getOptAddr();
+        const lsproxy = await ethers.getContractAt("LagrangeService", lspaddr, admin);
+        optAddr = await lsproxy.getOptAddr();
         const ov = await ethers.getContractAt("OptimismVerifier", optAddr, admin);
         const l2oo = await ethers.getContractAt("IL2OutputOracle", l2ooAddr, admin);
         //console.log(l2oo);
@@ -143,11 +145,14 @@ describe("LagrangeService",
         }
     });
     it('Arbitrum Verification', async function() {
-        const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin);
-        arbAddr = await lagrangeService.getArbAddr();
+        const lsproxy = await ethers.getContractAt("LagrangeService", lspaddr, admin);
+        arbAddr = await lsproxy.getArbAddr();
         const av = await ethers.getContractAt("ArbitrumVerifier", arbAddr, admin);
+        console.log(arbAddr);
         const ob = await ethers.getContractAt("IOutbox", outboxAddr, admin);
-        // nonexistent root
+
+        console.log("Verifying Arbitrum block (nonexistent root)...");
+
         res = await av.verifyArbBlock(
             "0xf90224a06d44daee2a7d707dcd5cac574cba7ac880605be3d9cb090f8623f99120e13051a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794a4b000000000000000000073657175656e636572a0b1a27641b49b7410f847dd7403cbfc77fb330c4682e4352f297e5733af7356e9a0d55ce2c8b1bc257d8548a011a3ee08512efd3e8d92143c5cf93b57cffacb9f7ba0aa5128dfa53bd7927f53918ddd02e2cf6d088e9fd3c8542dadbf1129d33dcc68b90100000000000000000800000080000000000004000000000100008001001000000000000000800000000000000000401200000000004000240000000000002000000000000000800008020000082000000000000000100000000000000000000000000000000000000c0000000000000000000000000000000000000010200880000000020000000100000000000000000000000004000000000000000000010000020000000000000000000000200040000000000000000000080000800020000000000002000000000000000000000000000000000000000400000000000020000010000000008000002000000080000000000000000000000000000000000000018401f1407d870400000000000083068c058464c9296da089c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4a00000000000009c080000000000901ffe000000000000000a000000000000000088000000000008a7e38405f5e100",
             32587901,
@@ -158,7 +163,9 @@ describe("LagrangeService",
         );
         expect(res).to.equal(false);
         await ob.updateSendRoot("0x89c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4","0x550f72aec7c027aeb9ecb3a219dd7fb5792d246747e611a8c59c9da5f696fba3");
-        // valid root
+
+        console.log("Verifying Arbitrum block (valid root)...");
+
         res = await av.verifyArbBlock(
             "0xf90224a06d44daee2a7d707dcd5cac574cba7ac880605be3d9cb090f8623f99120e13051a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794a4b000000000000000000073657175656e636572a0b1a27641b49b7410f847dd7403cbfc77fb330c4682e4352f297e5733af7356e9a0d55ce2c8b1bc257d8548a011a3ee08512efd3e8d92143c5cf93b57cffacb9f7ba0aa5128dfa53bd7927f53918ddd02e2cf6d088e9fd3c8542dadbf1129d33dcc68b90100000000000000000800000080000000000004000000000100008001001000000000000000800000000000000000401200000000004000240000000000002000000000000000800008020000082000000000000000100000000000000000000000000000000000000c0000000000000000000000000000000000000010200880000000020000000100000000000000000000000004000000000000000000010000020000000000000000000000200040000000000000000000080000800020000000000002000000000000000000000000000000000000000400000000000020000010000000008000002000000080000000000000000000000000000000000000018401f1407d870400000000000083068c058464c9296da089c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4a00000000000009c080000000000901ffe000000000000000a000000000000000088000000000008a7e38405f5e100",
             32587901,
@@ -168,7 +175,9 @@ describe("LagrangeService",
 	    rhv.address
         );
         expect(res).to.equal(true);
-        // invalid hash
+
+        console.log("Verifying Arbitrum block (invalid hash)...");
+
         try {
         res = await av.verifyArbBlock(
             "0xf90224a06d44daee2a7d707dcd5cac574cba7ac880605be3d9cb090f8623f99120e13051a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794a4b000000000000000000073657175656e636572a0b1a27641b49b7410f847dd7403cbfc77fb330c4682e4352f297e5733af7356e9a0d55ce2c8b1bc257d8548a011a3ee08512efd3e8d92143c5cf93b57cffacb9f7ba0aa5128dfa53bd7927f53918ddd02e2cf6d088e9fd3c8542dadbf1129d33dcc68b90100000000000000000800000080000000000004000000000100008001001000000000000000800000000000000000401200000000004000240000000000002000000000000000800008020000082000000000000000100000000000000000000000000000000000000c0000000000000000000000000000000000000010200880000000020000000100000000000000000000000004000000000000000000010000020000000000000000000000200040000000000000000000080000800020000000000002000000000000000000000000000000000000000400000000000020000010000000008000002000000080000000000000000000000000000000000000018401f1407d870400000000000083068c058464c9296da089c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4a00000000000009c080000000000901ffe000000000000000a000000000000000088000000000008a7e38405f5e100",

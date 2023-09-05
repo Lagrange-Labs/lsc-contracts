@@ -61,7 +61,6 @@ describe("LagrangeCommittee", function () {
 
     before(async function () {
         [admin] = await ethers.getSigners();
-        console.log("admin:",admin);
         poseidonAddresses = await deployPoseidon(admin);
     });
 
@@ -155,36 +154,9 @@ describe("LagrangeCommittee", function () {
         lcpaddr = await lagrangeService.committee();
         console.log("Service committee:",lcpaddr);
 
-        //
-        // Proxy Upgrades
-        // 
-
-        console.log("Upgrading service manager proxy...");
-        await proxyAdmin.upgradeAndCall(
-            lsmproxy.address,
-            lsm.address,
-            lsm.interface.encodeFunctionData("initialize", [admin.address])
-        )
-        lsmpaddr = lsmproxy.address;
-        lsmproxy = await ethers.getContractAt("LagrangeServiceManager",lsmpaddr);
-
-        console.log("Upgrading service proxy...");
-        await proxyAdmin.upgradeAndCall(
-            lsproxy.address,
-            lagrangeService.address,
-            lagrangeService.interface.encodeFunctionData("initialize", [admin.address])
-        )
-        lspaddr = lsproxy.address;
-        lsproxy = await ethers.getContractAt("LagrangeService",lspaddr);
-        
-        console.log("Upgrading proxy...");
-        await proxyAdmin.upgradeAndCall(
-            lcproxy.address,
-            committee.address,
-            committee.interface.encodeFunctionData("initialize", [admin.address, poseidonAddresses[1], poseidonAddresses[2], poseidonAddresses[3], poseidonAddresses[4], poseidonAddresses[5], poseidonAddresses[6]])
-        )
-        lcpaddr = lcproxy.address;
-        lcproxy = await ethers.getContractAt("LagrangeCommittee",lcpaddr);
+	//
+	// Verifier Libraries
+	//
 
         const outboxFactory = await ethers.getContractFactory("Outbox");
         const outbox = await outboxFactory.deploy();
@@ -216,18 +188,48 @@ describe("LagrangeCommittee", function () {
         console.log("L2OutputOracle:",l2oo.address);
         console.log("Outbox:",outbox.address);
         
-        txOpt = await lagrangeService.setOptAddr(opt.address);
-        console.log(await getGas(txOpt));
-        txArb = await lagrangeService.setArbAddr(arb.address);
-        console.log(await getGas(txArb));
-        txRH = await lagrangeService.setRHVerifier(rhv.address);
-        console.log(await getGas(txRH));
-
         console.log("OptimismVerifier:",opt.address);
         console.log("ArbitrumVerifier:",arb.address);
+
+        //
+        // Proxy Upgrades
+        // 
+
+        console.log("Upgrading service manager proxy...");
+        await proxyAdmin.upgradeAndCall(
+            lsmproxy.address,
+            lsm.address,
+            lsm.interface.encodeFunctionData("initialize", [admin.address])
+        )
+        lsmpaddr = lsmproxy.address;
+        lsmproxy = await ethers.getContractAt("LagrangeServiceManager",lsmpaddr);
+
+        console.log("Upgrading service proxy...");
+        await proxyAdmin.upgradeAndCall(
+            lsproxy.address,
+            lagrangeService.address,
+            lagrangeService.interface.encodeFunctionData("initialize", [
+		admin.address,
+		arb.address,
+		opt.address,
+		rhv.address
+	    ])
+        )
+        lspaddr = lsproxy.address;
+        lsproxy = await ethers.getContractAt("LagrangeService",lspaddr);
         
+        console.log("Upgrading proxy...");
+        await proxyAdmin.upgradeAndCall(
+            lcproxy.address,
+            committee.address,
+            committee.interface.encodeFunctionData("initialize", [admin.address, poseidonAddresses[1], poseidonAddresses[2], poseidonAddresses[3], poseidonAddresses[4], poseidonAddresses[5], poseidonAddresses[6]])
+        )
+        lcpaddr = lcproxy.address;
+        lcproxy = await ethers.getContractAt("LagrangeCommittee",lcpaddr);
+
         shared.LagrangeCommittee = committee;
         shared.LagrangeService = lagrangeService;
+        shared.LagrangeServiceProxy = lsproxy;
         shared.LagrangeServiceManager = lsm;
         shared.L2OutputOracle = l2oo;
         shared.Outbox = outbox;
@@ -284,7 +286,6 @@ describe("LagrangeCommittee", function () {
     });
 
     it("merkle root", async function () {
-return;
         this.timeout(60000);
         ls = shared.LagrangeService;
         
