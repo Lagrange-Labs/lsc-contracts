@@ -7,6 +7,7 @@ import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
 import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 import {IOptimismVerifier} from "../interfaces/IOptimismVerifier.sol";
+import {IArbitrumVerifier} from "../interfaces/IArbitrumVerifier.sol";
 import {Common} from "./Common.sol";
 
 contract EvidenceVerifier is Common, OwnableUpgradeable {
@@ -37,18 +38,18 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
     IOptimismVerifier OptVerify;
-    ArbitrumVerifier ArbVerify;
+    IArbitrumVerifier ArbVerify;
     IRecursiveHeaderVerifier RHVerify;
 
-    function setArbAddr(ArbitrumVerifier _arb) public onlyOwner {
+    function _setArbAddr(IArbitrumVerifier _arb) internal {
         ArbVerify = _arb;
     }
 
-    function setOptAddr(IOptimismVerifier _opt) public onlyOwner {
+    function _setOptAddr(IOptimismVerifier _opt) internal {
         OptVerify = _opt;
     }
 
-    function setRHVerifier(IRecursiveHeaderVerifier _rhv) public onlyOwner {
+    function _setRHVerifier(IRecursiveHeaderVerifier _rhv) internal {
         RHVerify = _rhv;
     }
 

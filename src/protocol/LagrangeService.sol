@@ -9,6 +9,9 @@ import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
+import {IOptimismVerifier} from "../interfaces/IOptimismVerifier.sol";
+import {IArbitrumVerifier} from "../interfaces/IArbitrumVerifier.sol";
+import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 
 contract LagrangeService is
     Initializable,
@@ -49,7 +52,10 @@ contract LagrangeService is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) external initializer {
+    function initialize(address initialOwner, IArbitrumVerifier _arb, IOptimismVerifier _opt, IRecursiveHeaderVerifier _rhv) external initializer {
+        _setArbAddr(_arb);
+        _setOptAddr(_opt);
+        _setRHVerifier(_rhv);
         _transferOwnership(initialOwner);
     }
 
