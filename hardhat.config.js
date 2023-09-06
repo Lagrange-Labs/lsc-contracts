@@ -62,9 +62,10 @@ module.exports = {
       url: "http://0.0.0.0:8545",
       allowUnlimitedContractSize: true, // This option disables the contract size check
       timeout: 100000000,
-      accounts: [
-        "0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c",
-      ],
+    },
+    devnet: {
+      url: "http://0.0.0.0:8545",
+      allowUnlimitedContractSize: true,
     },
   },
 };
