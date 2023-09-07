@@ -300,6 +300,7 @@ describe("LagrangeCommittee", function () {
     lcproxy = await ethers.getContractAt("LagrangeCommittee", lcpaddr);
 
     shared.LagrangeCommittee = committee;
+    shared.LagrangeCommitteeProxy = lcproxy;
     shared.LagrangeService = lagrangeService;
     shared.LagrangeServiceProxy = lsproxy;
     shared.LagrangeServiceManager = lsm;
