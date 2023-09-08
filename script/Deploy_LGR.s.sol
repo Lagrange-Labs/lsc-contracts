@@ -136,7 +136,7 @@ contract Deploy is Script, Test {
 
         arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
-	RecursiveHeaderVerifier rhVerifier = new RecursiveHeaderVerifier();
+        RecursiveHeaderVerifier rhVerifier = new RecursiveHeaderVerifier();
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -169,9 +169,9 @@ contract Deploy is Script, Test {
             abi.encodeWithSelector(
                 LagrangeService.initialize.selector,
                 msg.sender,
-		arbitrumVerifier,
-		optimismVerifier,
-		rhVerifier
+                arbitrumVerifier,
+                optimismVerifier,
+                rhVerifier
             )
         );
 

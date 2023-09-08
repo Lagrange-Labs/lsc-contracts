@@ -52,7 +52,12 @@ contract LagrangeService is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, IArbitrumVerifier _arb, IOptimismVerifier _opt, IRecursiveHeaderVerifier _rhv) external initializer {
+    function initialize(
+        address initialOwner,
+        IArbitrumVerifier _arb,
+        IOptimismVerifier _opt,
+        IRecursiveHeaderVerifier _rhv
+    ) external initializer {
         _setArbAddr(_arb);
         _setOptAddr(_opt);
         _setRHVerifier(_rhv);

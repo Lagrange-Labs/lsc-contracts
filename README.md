@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Install [Node.js](https://nodejs.org/en/download/) 
+1. Install [Node.js](https://nodejs.org/en/download/)
 2. Install [Docker](https://docs.docker.com/get-docker/)
 3. Install [Docker Compose](https://docs.docker.com/compose/install/)
 4. Install [Foundry](https://book.getfoundry.sh/getting-started/installation)
@@ -20,92 +20,99 @@ forge install
 ## Local Deployment
 
 The following walks through the necessary steps to deploy the Lagrange contracts, interfacing with mock contracts for EigenLayer, as well as Arbitrum Nitro and Optimism Bedrock settlement mock contracts.
+
 ```bash
 make all-mock
 ```
 
 To deploy using EigenLayer contracts, rather than mock contracts, the following command should be run:
+
 ```bash
 make all
 ```
 
-**Note:** *Environmental variable RPC_URL should be exported before running the above commands.*
+**Note:** _Environmental variable RPC_URL should be exported before running the above commands._
 
 ```bash
 export RPC_URL="http://0.0.0.0:8545"
 ```
+
 or alternately
+
 ```bash
 export RPC_URL="http://127.0.0.1:8545"
 ```
 
 ## Local Deployment
 
-**Note**: *The following steps are deprecated as of July 2023.*
+**Note**: _The following steps are deprecated as of July 2023._
 
 1. Eigenlayer Deployment
 
-    - Run the `geth` node using the following command
+   - Run the `geth` node using the following command
 
-        ```bash
-        make run-geth
-        ```
+     ```bash
+     make run-geth
+     ```
 
-    - Execute `make init-accounts` to initialize the accounts
-    
-    - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `script/localnet/M1_deploy.config.json` with the deployed address
+   - Execute `make init-accounts` to initialize the accounts
 
-        ```bash
-        make deploy-weth9
-        ```
-    - Update the `communityMultisig` of `eigenlayer-contracts/script/M1_deploy.config.json` with the first addres of the above list
+   - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `script/localnet/M1_deploy.config.json` with the deployed address
 
-    - Deploy the `Eigenlayer` smart contracts, 
-        ```bash
-        make deploy-eigenlayer
-        ```
+     ```bash
+     make deploy-weth9
+     ```
 
-    - Add the `WETH` strategy to the `Eigenlayer` StrategyManager
+   - Update the `communityMultisig` of `eigenlayer-contracts/script/M1_deploy.config.json` with the first addres of the above list
 
-        ```bash
-        make add-strategy
-        ```
+   - Deploy the `Eigenlayer` smart contracts,
 
-    - Register the `Operator`
+     ```bash
+     make deploy-eigenlayer
+     ```
 
-        ```bash
-        make register-operator 
-        ```
+   - Add the `WETH` strategy to the `Eigenlayer` StrategyManager
+
+     ```bash
+     make add-strategy
+     ```
+
+   - Register the `Operator`
+
+     ```bash
+     make register-operator
+     ```
 
 2. Deploy the `Poseidon` smart contracts
 
-    ```bash
-    make deploy-poseidon
-    ```
+   ```bash
+   make deploy-poseidon
+   ```
 
 3. Deploy the `Lagrange` smart contracts
 
-    ```bash
-    make deploy-lagrange
-    ```
+   ```bash
+   make deploy-lagrange
+   ```
 
 4. Add the quorum to the `Lagrange` smart contracts
 
-    ```bash
-    make add-quorum
-    ```
+   ```bash
+   make add-quorum
+   ```
 
 5. Opt into the `Lagrange` smart contracts
 
-    ```bash
-    make register-lagrange
-    ```
+   ```bash
+   make register-lagrange
+   ```
 
 6. Init the committee
 
-    ```bash
-    make init-committee
-    ``
+   ```bash
+   make init-committee
+   ``
+   ```
 
 ## Build the docker image
 
