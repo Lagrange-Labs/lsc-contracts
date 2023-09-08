@@ -298,10 +298,6 @@ contract LagrangeCommittee is
             if (opUpdate.updateType == UPDATE_TYPE_REGISTER) {
                 _registerOperator(opUpdate.operator);
             } else if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
-                operators[opUpdate.operator].amount = weightOfOperator(
-                    opUpdate.operator,
-                    1
-                );
                 _updateAmount(opUpdate.operator);
             } else if (opUpdate.updateType == UPDATE_TYPE_UNREGISTER) {
                 _unregisterOperator(opUpdate.operator);

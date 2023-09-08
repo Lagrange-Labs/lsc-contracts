@@ -83,8 +83,8 @@ describe("LagrangeService", function () {
       lspaddr,
       admin
     );
-    addr1 = await lsproxy.getArbAddr();
-    addr2 = await lsproxy.getOptAddr();
+    addr1 = await lsproxy.ArbVerify();
+    addr2 = await lsproxy.OptVerify();
     console.log(addr1, addr2);
     expect(
       addr1 != "0x0000000000000000000000000000000000000000" &&
@@ -118,7 +118,7 @@ describe("LagrangeService", function () {
       lspaddr,
       admin
     );
-    optAddr = await lsproxy.getOptAddr();
+    optAddr = await lsproxy.OptVerify();
     const ov = await ethers.getContractAt("OptimismVerifier", optAddr, admin);
     const l2oo = await ethers.getContractAt("IL2OutputOracle", l2ooAddr, admin);
     //console.log(l2oo);
@@ -178,7 +178,7 @@ describe("LagrangeService", function () {
       lspaddr,
       admin
     );
-    arbAddr = await lsproxy.getArbAddr();
+    arbAddr = await lsproxy.ArbVerify();
     const av = await ethers.getContractAt("ArbitrumVerifier", arbAddr, admin);
     console.log(arbAddr);
     const ob = await ethers.getContractAt("IOutbox", outboxAddr, admin);

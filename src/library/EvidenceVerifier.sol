@@ -37,9 +37,9 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     uint public constant CHAIN_ID_BASE = 84531;
     uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
-    IOptimismVerifier OptVerify;
-    IArbitrumVerifier ArbVerify;
-    IRecursiveHeaderVerifier RHVerify;
+    IOptimismVerifier public OptVerify;
+    IArbitrumVerifier public ArbVerify;
+    IRecursiveHeaderVerifier public RHVerify;
 
     function _setArbAddr(IArbitrumVerifier _arb) internal {
         ArbVerify = _arb;
@@ -51,18 +51,6 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
 
     function _setRHVerifier(IRecursiveHeaderVerifier _rhv) internal {
         RHVerify = _rhv;
-    }
-
-    function getArbAddr() public view returns (address) {
-        return address(ArbVerify);
-    }
-
-    function getOptAddr() public view returns (address) {
-        return address(OptVerify);
-    }
-
-    function getRHVerifier() public view returns (address) {
-        return address(RHVerify);
     }
 
     function verifyHeaderProof(
