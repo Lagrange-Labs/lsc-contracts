@@ -13,6 +13,9 @@ import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 
+import {IStaking} from "src/interfaces/IStaking.sol";
+import {Staking} from "src/protocol/Staking.sol";
+
 import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
 import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
 import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
@@ -28,8 +31,8 @@ import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath =
-        //string(bytes("script/output/deployed_mock.json"));
-        string(bytes("script/output/M1_deployment_data.json"));
+        string(bytes("script/output/deployed_mock.json"));
+        //string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
         string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath =
@@ -46,6 +49,8 @@ contract Deploy is Script, Test {
     LagrangeService public lagrangeServiceImp;
     LagrangeServiceManager public lagrangeServiceManager;
     LagrangeServiceManager public lagrangeServiceManagerImp;
+    Staking public staking;
+    Staking public stakingImp;
 
     EmptyContract public emptyContract;
 
@@ -96,13 +101,23 @@ contract Deploy is Script, Test {
                 )
             )
         );
+        staking = Staking(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
 
         // deploy implementation contracts
         string memory poseidonData = vm.readFile(poseidonDataPath);
         lagrangeCommitteeImp = new LagrangeCommittee(
             lagrangeService,
             lagrangeServiceManager,
-            IStrategyManager(strategyManagerAddress)
+            IStrategyManager(strategyManagerAddress),
+            staking
         );
         lagrangeServiceManagerImp = new LagrangeServiceManager(
             ISlasher(slasherAddress),
@@ -114,6 +129,8 @@ contract Deploy is Script, Test {
             lagrangeCommittee,
             lagrangeServiceManager
         );
+        
+        stakingImp = new Staking();
 
         // L2 Settlement - Interface
 
@@ -137,6 +154,9 @@ contract Deploy is Script, Test {
         arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
 	RecursiveHeaderVerifier rhVerifier = new RecursiveHeaderVerifier();
+	
+	// deploy native staking
+	
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -161,6 +181,15 @@ contract Deploy is Script, Test {
             abi.encodeWithSelector(
                 LagrangeServiceManager.initialize.selector,
                 msg.sender
+            )
+        );
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(staking))),
+            address(stakingImp),
+            abi.encodeWithSelector(
+                Staking.initialize.selector,
+                address(lagrangeCommittee),
+                address(0x0000000000000000000000000000000000000001) // mantle erc20 token address
             )
         );
         proxyAdmin.upgradeAndCall(

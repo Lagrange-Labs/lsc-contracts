@@ -8,6 +8,7 @@ import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
+import {Staking} from "src/protocol/Staking.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -24,6 +25,8 @@ contract Deploy is Script, Test {
     LagrangeCommittee public lagrangeCommitteeImp;
     LagrangeService public lagrangeService;
     LagrangeServiceManager public lagrangeServiceManager;
+    Staking public staking;
+    Staking public stakingImp;
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
@@ -58,17 +61,31 @@ contract Deploy is Script, Test {
                 ".lagrange.addresses.lagrangeServiceManager"
             )
         );
+        staking = Staking(
+            stdJson.readAddress(
+                deployData,
+                ".lagrange.addresses.staking"
+            )
+        );
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
             lagrangeService,
             lagrangeServiceManager,
-            IStrategyManager(strategyManagerAddress)
+            IStrategyManager(strategyManagerAddress),
+            staking
         );
+
+        stakingImp = new Staking();
 
         // upgrade proxy contracts
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
             address(lagrangeCommitteeImp)
+        );
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(staking))),
+            address(stakingImp)
         );
 
         vm.stopBroadcast();

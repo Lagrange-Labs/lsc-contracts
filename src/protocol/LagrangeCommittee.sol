@@ -13,6 +13,8 @@ import "../library/EvidenceVerifier.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
 
+import {IStaking} from "../interfaces/IStaking.sol";
+
 contract LagrangeCommittee is
     Initializable,
     OwnableUpgradeable,
@@ -25,6 +27,8 @@ contract LagrangeCommittee is
     uint8 public constant UPDATE_TYPE_UNREGISTER = 3;
 
     ILagrangeService public immutable service;
+
+    IStaking public immutable staking;
 
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
@@ -81,9 +85,11 @@ contract LagrangeCommittee is
     constructor(
         ILagrangeService _service,
         IServiceManager _serviceManager,
-        IStrategyManager _strategyManager
+        IStrategyManager _strategyManager,
+        IStaking _staking
     ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
         service = _service;
+        staking = _staking;
         _disableInitializers();
     }
 
@@ -148,6 +154,7 @@ contract LagrangeCommittee is
 
     function setSlashed(address operator) external onlyService {
         operators[operator].slashed = true;
+        staking.slash(operator);
     }
 
     function getSlashed(address operator) public view returns (bool) {
@@ -267,6 +274,7 @@ contract LagrangeCommittee is
             chainID,
             false
         );
+        staking.register(operator);
     }
 
     function isUpdatable(
@@ -301,6 +309,7 @@ contract LagrangeCommittee is
                 _updateAmount(opUpdate.operator);
             } else if (opUpdate.updateType == UPDATE_TYPE_UNREGISTER) {
                 _unregisterOperator(opUpdate.operator);
+                staking.unstake(opUpdate.operator);
             }
         }
 

@@ -4,25 +4,26 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {INativeStaking} from "../interfaces/INativeStaking.sol";
+import {IStaking} from "../interfaces/IStaking.sol";
 
-contract Staking is Initializable, OwnableUpgradeable, INativeStaking {
+contract Staking is Initializable, OwnableUpgradeable, IStaking {
     address public AUTH;
 
     IERC20 public COLLATERAL_TOKEN;
 
-    uint256 STAKE_AMOUNT;
+    uint256 STAKE_AMOUNT = 32 * (10 ** 18);
 
     mapping(address => Staker) public stakerStatus;
 
     constructor() {
-        STAKE_AMOUNT = 32 * (10 ** 18);
+        _transferOwnership(msg.sender);
+        _disableInitializers();
     }
 
     function initialize(
         address _auth,
         address _collateralToken
-    ) external onlyOwner {
+    ) external initializer {
         AUTH = _auth;
         COLLATERAL_TOKEN = IERC20(_collateralToken);
     }
@@ -30,7 +31,7 @@ contract Staking is Initializable, OwnableUpgradeable, INativeStaking {
     modifier onlyAuth() {
         require(
             msg.sender == AUTH,
-            "NativeStaking: Sender is not authorized to perform this action."
+            "Staking: Sender is not authorized to perform this action."
         );
         _;
     }
@@ -39,7 +40,7 @@ contract Staking is Initializable, OwnableUpgradeable, INativeStaking {
         require(
             stakerStatus[stakerAddr].status == STATUS.STATUS_UNSTAKED ||
                 uint256(stakerStatus[stakerAddr].status) == 0,
-            "NativeStaking: Address is already staked."
+            "Staking: Address is already staked."
         );
         require(
             COLLATERAL_TOKEN.transferFrom(
@@ -47,7 +48,7 @@ contract Staking is Initializable, OwnableUpgradeable, INativeStaking {
                 address(this),
                 STAKE_AMOUNT
             ),
-            "NativeStaking: Failed to transfer token."
+            "Staking: Failed to transfer token."
         );
 
         stakerStatus[stakerAddr] = Staker({
@@ -61,11 +62,11 @@ contract Staking is Initializable, OwnableUpgradeable, INativeStaking {
         require(
             stakerStatus[stakerAddr].status == STATUS.STATUS_UNSTAKED ||
                 uint256(stakerStatus[stakerAddr].status) == 0,
-            "NativeStaking: Address is already staked."
+            "Staking: Address is already staked."
         );
         require(
             COLLATERAL_TOKEN.balanceOf(stakerAddr) >= STAKE_AMOUNT,
-            "NativeStaking: Insufficient collateral"
+            "Staking: Insufficient collateral"
         );
         _deposit(stakerAddr);
         return true;
@@ -74,19 +75,19 @@ contract Staking is Initializable, OwnableUpgradeable, INativeStaking {
     function unstake(address stakerAddr) external onlyAuth {
         require(
             stakerStatus[stakerAddr].status == STATUS.STATUS_ACTIVE,
-            "NativeStaking: Address stake is not active."
+            "Staking: Address stake is not active."
         );
         stakerStatus[stakerAddr].status = STATUS.STATUS_PENDING_WITHDRAWAL;
     }
 
-    function withdraw(address stakerAddr) external onlyAuth {
+    function withdraw(address stakerAddr) external /*onlyAuth*/ {
         require(
             stakerStatus[stakerAddr].status == STATUS.STATUS_PENDING_WITHDRAWAL,
-            "NativeStaking: Address is not pending withdrawal."
+            "Staking: Address is not pending withdrawal."
         );
         require(
             COLLATERAL_TOKEN.transfer(stakerAddr, STAKE_AMOUNT),
-            "NativeStaking: Failed to transfer token."
+            "Staking: Failed to transfer token."
         );
         stakerStatus[stakerAddr].amount = 0;
         stakerStatus[stakerAddr].status = STATUS.STATUS_UNSTAKED;
@@ -95,7 +96,7 @@ contract Staking is Initializable, OwnableUpgradeable, INativeStaking {
     function slash(address stakerAddr) external onlyAuth {
         require(
             stakerStatus[stakerAddr].status == STATUS.STATUS_ACTIVE,
-            "NativeStaking: Address is not active."
+            "Staking: Address is not active."
         );
         stakerStatus[stakerAddr].status = STATUS.STATUS_SLASHED;
     }

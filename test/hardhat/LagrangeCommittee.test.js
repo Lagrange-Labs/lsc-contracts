@@ -148,6 +148,20 @@ describe("LagrangeCommittee", function () {
     TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
       "TransparentUpgradeableProxy"
     );
+    sproxy = await TransparentUpgradeableProxyFactory.deploy(
+      emptyContract.address,
+      proxyAdmin.address,
+      "0x",
+      overrides
+    );
+    await sproxy.deployed();
+    console.log("Staking proxy:", sproxy.address);
+
+    console.log("Deploying transparent proxy...");
+
+    TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
+      "TransparentUpgradeableProxy"
+    );
     lsproxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
       proxyAdmin.address,
@@ -175,6 +189,14 @@ describe("LagrangeCommittee", function () {
     // Implementation Setup
     //
 
+    console.log("Deploying Staking...");
+    const StakingFactory = await ethers.getContractFactory(
+      "Staking"
+    );
+    const staking = await StakingFactory.deploy(
+    );
+    await staking.deployed();
+
     console.log("Deploying Lagrange Committee...");
     const LagrangeCommitteeFactory = await ethers.getContractFactory(
       "LagrangeCommittee"
@@ -182,7 +204,8 @@ describe("LagrangeCommittee", function () {
     const committee = await LagrangeCommitteeFactory.deploy(
       lsproxy.address,
       lsmproxy.address,
-      sm.address
+      sm.address,
+      sproxy.address
     );
     await committee.deployed();
     serv = await committee.service();
@@ -282,7 +305,7 @@ describe("LagrangeCommittee", function () {
     lspaddr = lsproxy.address;
     lsproxy = await ethers.getContractAt("LagrangeService", lspaddr);
 
-    console.log("Upgrading proxy...");
+    console.log("Upgrading committee proxy...");
     await proxyAdmin.upgradeAndCall(
       lcproxy.address,
       committee.address,
@@ -296,6 +319,19 @@ describe("LagrangeCommittee", function () {
         poseidonAddresses[6],
       ])
     );
+    lcpaddr = lcproxy.address;
+    lcproxy = await ethers.getContractAt("LagrangeCommittee", lcpaddr);
+
+    console.log("Upgrading staking proxy...");
+    await proxyAdmin.upgradeAndCall(
+      sproxy.address,
+      staking.address,
+      staking.interface.encodeFunctionData("initialize", [
+        lcproxy.address,
+        "0x0000000000000000000000000000000000000001"
+      ])
+    );
+    
     lcpaddr = lcproxy.address;
     lcproxy = await ethers.getContractAt("LagrangeCommittee", lcpaddr);
 
