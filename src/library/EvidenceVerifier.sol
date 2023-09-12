@@ -41,18 +41,6 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     IArbitrumVerifier public ArbVerify;
     IRecursiveHeaderVerifier public RHVerify;
 
-    function _setArbAddr(IArbitrumVerifier _arb) internal {
-        ArbVerify = _arb;
-    }
-
-    function _setOptAddr(IOptimismVerifier _opt) internal {
-        OptVerify = _opt;
-    }
-
-    function _setRHVerifier(IRecursiveHeaderVerifier _rhv) internal {
-        RHVerify = _rhv;
-    }
-
     function verifyHeaderProof(
         bytes calldata headerProof
     ) public view returns (bool) {

@@ -4,10 +4,6 @@ pragma solidity ^0.8.12;
 import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 
 interface IOptimismVerifier {
-    function getOutputHash(
-        bytes32[4] memory outputProof
-    ) external view returns (bytes32);
-
     function verifyOptBlock(
         bytes memory rlpData,
         uint256 comparisonNumber,

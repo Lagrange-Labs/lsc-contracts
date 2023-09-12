@@ -48,7 +48,6 @@ contract LagrangeService is
     ) {
         committee = _committee;
         serviceManager = _serviceManager;
-        _transferOwnership(msg.sender);
         _disableInitializers();
     }
 
@@ -58,9 +57,9 @@ contract LagrangeService is
         IOptimismVerifier _opt,
         IRecursiveHeaderVerifier _rhv
     ) external initializer {
-        _setArbAddr(_arb);
-        _setOptAddr(_opt);
-        _setRHVerifier(_rhv);
+        ArbVerify = _arb;
+        OptVerify = _opt;
+        RHVerify = _rhv;
         _transferOwnership(initialOwner);
     }
 

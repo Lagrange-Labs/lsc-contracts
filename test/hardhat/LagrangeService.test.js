@@ -132,8 +132,15 @@ describe("LagrangeService", function () {
           "0x061ec88a69acdc6f70289979cdb84d29f9024a09fabf6a48a11d7625078870b8",
         ];
         expect(i).to.equal(1);
-        hash = await ov.getOutputHash(outputProof);
+
+        packed = ethers.utils.solidityPack(
+          ["bytes32", "bytes32", "bytes32", "bytes32"],
+          outputProof
+        );
+
+        const hash = ethers.utils.keccak256(packed);
         expect(hash).to.equal(outputRoot);
+
         res = await ov.verifyOutputProof(
           11991348,
           "0xdd0ababc17fd2e1b37941fe55302df7ee03672b1b8acd738d05eac8c75cddd74",

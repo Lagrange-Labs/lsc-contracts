@@ -22,20 +22,6 @@ contract OptimismVerifier is Common, IOptimismVerifier {
         uint128 l2BlockNumber;
     }
 
-    function getOutputHash(
-        bytes32[4] memory outputProof
-    ) public view returns (bytes32) {
-        bytes32 comparisonProof = keccak256(
-            abi.encode(
-                outputProof[0],
-                outputProof[1],
-                outputProof[2],
-                outputProof[3]
-            )
-        );
-        return comparisonProof;
-    }
-
     function verifyOptBlock(
         bytes memory rlpData,
         uint256 comparisonNumber,
@@ -78,7 +64,7 @@ contract OptimismVerifier is Common, IOptimismVerifier {
         // 2. Derive output root from result
         bytes32 outputRoot = outputProposal.outputRoot;
         // 3. Verify independently generated proof
-        bytes32 comparisonProof = getOutputHash(outputProofBytes32);
+        bytes32 comparisonProof = keccak256(extraData);
         bool res = outputRoot == comparisonProof;
         return (res, outputProof.latestBlockhash);
     }
