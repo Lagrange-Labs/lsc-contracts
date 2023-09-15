@@ -109,6 +109,7 @@ describe("LagrangeService", function () {
       await lagrangeService.uploadEvidence(evidence);
       expect(false).to.equal(false);
     } catch (error) {}
+    
   });
   it("Optimism Output Verification", async function () {
     outputRoot =
@@ -276,16 +277,21 @@ describe("LagrangeService", function () {
       ),
     };
   });
-  /*
     it('Registration', async function() {
-        const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin);
         // Register
         blsKey = await genBLSKey();
         priv = blsKey.serializeToHexStr();
         pub = blsKey.getPublicKey();
-        res = await lagrangeService.register(420,pub.serialize(),5);
+        pubhex = '0x'+pub.serializeToHexStr();
+        res = await lsproxy.register(420,pubhex,5);
+        operator = await lcproxy.operators(admin.address);
+        
+        // Verify operator attributes
+        expect(operator.blsPubKey).to.equal(pubhex);
+        expect(operator.serveUntilBlock).to.equal(5);
+        expect(operator.chainID).to.equal(420);
+        expect(operator.slashed).to.equal(false);
     });
-    */
   /*
         frozenStatus = await lsm.slasher.isFrozen("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
         try {
