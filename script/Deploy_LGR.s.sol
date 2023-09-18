@@ -13,6 +13,11 @@ import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 
+import {IStakeManager} from "src/interfaces/IStakeManager.sol";
+import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
+
+import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
+import {StakeManager} from "src/library/StakeManager.sol";
 import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
 import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
 import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
@@ -45,6 +50,10 @@ contract Deploy is Script, Test {
     LagrangeService public lagrangeServiceImp;
     LagrangeServiceManager public lagrangeServiceManager;
     LagrangeServiceManager public lagrangeServiceManagerImp;
+    StakeManager public stakeManager;
+    StakeManager public stakeManagerImp;
+    VoteWeigherBaseMock public voteWeigher;
+    VoteWeigherBaseMock public voteWeigherImp;
 
     EmptyContract public emptyContract;
 
@@ -58,11 +67,19 @@ contract Deploy is Script, Test {
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
         string memory configData = vm.readFile(serviceDataPath);
-        slasherAddress = stdJson.readAddress(deployData, ".addresses.slasher");
-        strategyManagerAddress = stdJson.readAddress(
-            deployData,
-            ".addresses.strategyManager"
-        );
+
+        bool isNative = stdJson.readBool(configData, ".isNative");
+
+        if (!isNative) {
+            slasherAddress = stdJson.readAddress(
+                deployData,
+                ".addresses.slasher"
+            );
+            strategyManagerAddress = stdJson.readAddress(
+                deployData,
+                ".addresses.strategyManager"
+            );
+        }
 
         vm.startBroadcast(msg.sender);
 
@@ -98,20 +115,58 @@ contract Deploy is Script, Test {
                 )
             )
         );
-
+        if (isNative) {
+            stakeManager = StakeManager(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
+                )
+            );
+        } else {
+            voteWeigher = VoteWeigherBaseMock(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
+                )
+            );
+        }
         // deploy implementation contracts
         string memory poseidonData = vm.readFile(poseidonDataPath);
-        lagrangeCommitteeImp = new LagrangeCommittee(
-            lagrangeService,
-            lagrangeServiceManager,
-            IStrategyManager(strategyManagerAddress)
-        );
-        lagrangeServiceManagerImp = new LagrangeServiceManager(
-            ISlasher(slasherAddress),
-            lagrangeCommittee,
-            lagrangeService
-        );
-
+        if (isNative) {
+            lagrangeCommitteeImp = new LagrangeCommittee(
+                lagrangeService,
+                IVoteWeigher(stakeManager)
+            );
+            lagrangeServiceManagerImp = new LagrangeServiceManager(
+                IStakeManager(stakeManager),
+                lagrangeCommittee,
+                lagrangeService
+            );
+            stakeManagerImp = new StakeManager(
+                address(lagrangeServiceManager),
+                5
+            );
+        } else {
+            lagrangeCommitteeImp = new LagrangeCommittee(
+                lagrangeService,
+                IVoteWeigher(address(voteWeigher))
+            );
+            lagrangeServiceManagerImp = new LagrangeServiceManager(
+                IStakeManager(slasherAddress),
+                lagrangeCommittee,
+                lagrangeService
+            );
+            voteWeigherImp = new VoteWeigherBaseMock(
+                IServiceManager(lagrangeServiceManager),
+                IStrategyManager(strategyManagerAddress)
+            );
+        }
         lagrangeServiceImp = new LagrangeService(
             lagrangeCommittee,
             lagrangeServiceManager
@@ -167,11 +222,31 @@ contract Deploy is Script, Test {
                 msg.sender
             )
         );
+        if (isNative) {
+            proxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(stakeManager))),
+                address(stakeManagerImp),
+                abi.encodeWithSelector(
+                    StakeManager.initialize.selector,
+                    msg.sender
+                )
+            );
+        } else {
+            proxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(voteWeigher))),
+                address(voteWeigherImp),
+                abi.encodeWithSelector(
+                    VoteWeigherBaseMock.initialize.selector,
+                    msg.sender
+                )
+            );
 
-        // opt into the lagrange service manager
-        ISlasher(slasherAddress).optIntoSlashing(
-            address(lagrangeServiceManager)
-        );
+            // opt into the lagrange service manager
+            ISlasher(slasherAddress).optIntoSlashing(
+                address(lagrangeServiceManager)
+            );
+        }
+
         vm.stopBroadcast();
 
         // write deployment data to file
@@ -207,6 +282,29 @@ contract Deploy is Script, Test {
             "lagrangeServiceManagerImp",
             address(lagrangeServiceManagerImp)
         );
+        if (isNative) {
+            vm.serializeAddress(
+                deployed_addresses,
+                "stakeManager",
+                address(stakeManager)
+            );
+            vm.serializeAddress(
+                deployed_addresses,
+                "stakeManagerImp",
+                address(stakeManagerImp)
+            );
+        } else {
+            vm.serializeAddress(
+                deployed_addresses,
+                "voteWeigher",
+                address(voteWeigher)
+            );
+            vm.serializeAddress(
+                deployed_addresses,
+                "voteWeigherImp",
+                address(voteWeigherImp)
+            );
+        }
         string memory deployed_output = vm.serializeAddress(
             deployed_addresses,
             "lagrangeServiceManager",

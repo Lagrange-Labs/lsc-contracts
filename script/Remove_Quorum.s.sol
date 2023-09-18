@@ -9,7 +9,7 @@ import {VoteWeigherBaseStorage} from "eigenlayer-contracts/middleware/VoteWeighe
 
 import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
-import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
+import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
 
 contract RemoveQuorum is Script, Test {
     string public deployedLGRPath =
@@ -20,15 +20,15 @@ contract RemoveQuorum is Script, Test {
 
         string memory deployLGRData = vm.readFile(deployedLGRPath);
 
-        LagrangeCommittee committee = LagrangeCommittee(
-            stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee")
+        VoteWeigherBaseMock weigher = VoteWeigherBaseMock(
+            stdJson.readAddress(deployLGRData, ".addresses.voteWeigher")
         );
 
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(0x91E333A3d61862B1FE976351cf0F3b30aff1D202);
         uint256[] memory indexes = new uint256[](1);
         indexes[0] = 0;
-        committee.removeStrategiesConsideredAndMultipliers(
+        weigher.removeStrategiesConsideredAndMultipliers(
             1,
             strategies,
             indexes

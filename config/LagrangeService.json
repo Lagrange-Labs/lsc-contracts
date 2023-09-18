@@ -1,14 +1,21 @@
 {
     "strategies": [
         {
-            "strategy_address": "0x91E333A3d61862B1FE976351cf0F3b30aff1D202",
+            "strategy_address": "0xF2740f6A6333c7B405aD7EfC68c74adAd83cC30D",
             "strategy_name": "Wrapped Ether",
+            "multiplier": 1000000000
+        }
+    ],
+    "tokens": [
+        {
+            "token_name": "mantle",
+            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
             "multiplier": 1000000000
         }
     ],
     "chains": [
         {
-            "chain_name": "arbitrum",
+            "chain_name": "mantle",
             "chain_id": 1337,
             "epoch_period": 5,
             "freeze_duration": 2
@@ -23,5 +30,7 @@
     "settlement": {
         "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
         "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
-    }
+    },
+    "isNative": true,
+    "isMock": true
 }

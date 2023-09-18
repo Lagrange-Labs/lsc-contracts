@@ -39,7 +39,10 @@ add-quorum:
 init-committee:
 	forge script script/Init_Committee.s.sol:InitCommittee --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
-.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator register-lagrange deploy-poseidon deploy-lagrange add-quorum init-committee
+deposit-stake:
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deposit-stake.js
+
+.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator register-lagrange deploy-poseidon deploy-lagrange add-quorum init-committee deposit-stake
 
 deploy-register:
 	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deploy-register.js
@@ -75,4 +78,6 @@ all: run-geth init-accounts deploy-weth9 deploy-eigenlayer add-strategy register
 
 all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deploy-register init-committee	
 
-.PHONY: all clean all-mock
+all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deposit-stake deploy-register init-committee	
+
+.PHONY: all clean all-mock all-native
