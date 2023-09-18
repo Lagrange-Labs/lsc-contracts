@@ -26,5 +26,27 @@
             "strategy": "0x027D7dC2737068A9308AF32B8Fdb2F2d51A7155C",
             "strategyManager": "0x2C6720773341a41cEf42171835e8C06B99724a96"
         }
+    },
+    "mantle": {
+        "addresses": {
+            "lagrangeCommittee": "0xB62a9097DAdAaD531FdBB6E8697A68c52bF9d415",
+            "lagrangeCommitteeImp": "0x6BB9C9b6297ca15f1ff43864ffB688b7369b3fac",
+            "lagrangeService": "0xec71a506e7D717855589e299eb1A70FefE28E659",
+            "lagrangeServiceImp": "0x58Ef22A3C194450d06A5913a78714E428E51aed1",
+            "lagrangeServiceManager": "0x21fdDB5c3Bcf8997A6a0Dbe858c54Fa216fbeCA9",
+            "lagrangeServiceManagerImp": "0x7bfF1895e6330C82d63087e63672f93D266FDE0d",
+            "proxyAdmin": "0x449F084BFBeBB19E618dEBE3dB6bb26e1C26C69f",
+            "stakeManager": "0x640af24E375933bcc208C27E7e7bc7C31F3116BC",
+            "stakeManagerImp": "0x15b2A2498bF840c5aEa020805f87292F48715dA7"
+        },
+        "poseidon": {
+            "1": "0x60de90199Ac0d5ABb016eDFF5Df60524fd850C86",
+            "2": "0x84D88Af7245802de4aD9bAdc8e9E9c0151eb6034",
+            "3": "0x0A7921fB31dFeaC5e7F1C5D40aba98E2DF8352a8",
+            "4": "0x014ed8bF5d85cAb88af723D668aa5fbdeAFb6fe2",
+            "5": "0x26b9fC478E4CC33b3CBeDA979BCa1fDe5b88885c",
+            "6": "0x2C47938A0263c248c44bc6e20C898C7F9215A610"
+        },
+        "weth9": "0x90157fE18534999a46CA52a2595fc92CA987A0Bd"
     }
 }

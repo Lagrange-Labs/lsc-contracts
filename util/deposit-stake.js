@@ -1,7 +1,10 @@
 const { exec } = require('child_process');
 const fs = require('fs');
+require('dotenv').config();
 
 const accountsPath = './config/accounts.json';
+
+const rpcURL = process.env.RPC_URL;
 
 fs.readFile(accountsPath, 'utf8', (err, data) => {
     if (err) {
@@ -11,9 +14,9 @@ fs.readFile(accountsPath, 'utf8', (err, data) => {
 
     try {
         const accounts = JSON.parse(data);
-        Object.keys(accounts).splice(0, 20).forEach((address) => {
+        Object.keys(accounts).splice(0, 10).forEach((address) => {
             console.log("Starting to register operator for address: ", address);
-            const command = `forge script script/localnet/Deposit_Stake.s.sol:DepositStake --rpc-url http://localhost:8545 --private-key ${accounts[address]} --broadcast -vvvvv`
+            const command = `forge script script/localnet/Deposit_Stake.s.sol:DepositStake --rpc-url ${rpcURL} --private-key ${accounts[address]} --broadcast -vvvvv`
             exec(command, (error, stdout, stderr) => {
                 console.log(`Command output: ${stdout}`);
                 if (error) {
