@@ -8,6 +8,7 @@ import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
 import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 import {IOptimismVerifier} from "../interfaces/IOptimismVerifier.sol";
 import {IArbitrumVerifier} from "../interfaces/IArbitrumVerifier.sol";
+import {IMantleVerifier} from "../interfaces/IMantleVerifier.sol";
 import {Common} from "./Common.sol";
 
 contract EvidenceVerifier is Common, OwnableUpgradeable {
@@ -36,9 +37,11 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     uint public constant CHAIN_ID_OPTIMISM_BEDROCK = 420;
     uint public constant CHAIN_ID_BASE = 84531;
     uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
+    uint public constant CHAIN_ID_MANTLE_TESTNET = 5001;
 
     IOptimismVerifier public OptVerify;
     IArbitrumVerifier public ArbVerify;
+    IMantleVerifier   public MntVerify;
     IRecursiveHeaderVerifier public RHVerify;
 
     function verifyHeaderProof(
@@ -90,6 +93,16 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
                 rlpData,
                 comparisonNumber,
                 comparisonBlockHash,
+                headerProof,
+                extraData,
+                RHVerify
+            );
+        } else if (chainID == CHAIN_ID_MANTLE_TESTNET) {
+            bytes memory checkpointRLP; // TODO
+            res = MntVerify.verifyMntBlock(
+                rlpData,
+                comparisonBlockHash,
+                checkpointRLP,
                 headerProof,
                 extraData,
                 RHVerify

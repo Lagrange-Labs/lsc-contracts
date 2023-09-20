@@ -11,6 +11,7 @@ import "../interfaces/ILagrangeService.sol";
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 import {IOptimismVerifier} from "../interfaces/IOptimismVerifier.sol";
 import {IArbitrumVerifier} from "../interfaces/IArbitrumVerifier.sol";
+import {IMantleVerifier} from "../interfaces/IMantleVerifier.sol";
 import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 
 contract LagrangeService is
@@ -55,10 +56,12 @@ contract LagrangeService is
         address initialOwner,
         IArbitrumVerifier _arb,
         IOptimismVerifier _opt,
+        IMantleVerifier _mnt,
         IRecursiveHeaderVerifier _rhv
     ) external initializer {
         ArbVerify = _arb;
         OptVerify = _opt;
+        MntVerify = _mnt;
         RHVerify = _rhv;
         _transferOwnership(initialOwner);
     }

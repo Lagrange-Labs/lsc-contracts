@@ -9,6 +9,7 @@ contract Common {
     using RLPReader for bytes;
 
     uint public constant BLOCK_HEADER_NUMBER_INDEX = 8;
+    uint public constant BLOCK_HEADER_STATEROOT_INDEX = 3;
     uint public constant BLOCK_HEADER_EXTRADATA_INDEX = 12;
 
     function checkAndDecodeRLP(
@@ -61,5 +62,21 @@ contract Common {
         uint number = blockNumberItem.toUint();
         bool res = number == comparisonNumber;
         return res;
+    }
+
+    function _getBlockStateRoot(
+        bytes memory rlpData,
+        bytes32 comparisonBlockHash
+    ) internal view returns (bytes32) {
+        // Verify Block Number
+        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(
+            rlpData,
+            comparisonBlockHash
+        );
+        RLPReader.RLPItem memory blockStateRootItem = decoded[
+            Common.BLOCK_HEADER_STATEROOT_INDEX
+        ];
+        bytes32 root = bytes32(blockStateRootItem.toUint());
+        return root;
     }
 }

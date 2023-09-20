@@ -16,6 +16,7 @@ import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
 import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
 import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
+import {MantleVerifier} from "src/library/MantleVerifier.sol";
 import {RecursiveHeaderVerifier} from "src/library/RecursiveHeaderVerifier.sol";
 
 import "forge-std/Script.sol";
@@ -25,11 +26,13 @@ import {IOutbox} from "src/mock/arbitrum/IOutbox.sol";
 import {Outbox} from "src/mock/arbitrum/Outbox.sol";
 import {L2OutputOracle} from "src/mock/optimism/L2OutputOracle.sol";
 import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
+import {IStateCommitmentChain} from "src/mock/mantle/IStateCommitmentChain.sol";
+import {IChainStorageContainer} from "src/mock/mantle/IChainStorageContainer.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath =
-        //string(bytes("script/output/deployed_mock.json"));
-        string(bytes("script/output/M1_deployment_data.json"));
+        string(bytes("script/output/deployed_mock.json"));
+        //string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath =
         string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath =
@@ -52,6 +55,42 @@ contract Deploy is Script, Test {
     EvidenceVerifier public evidenceVerifier;
     OptimismVerifier public optimismVerifier;
     ArbitrumVerifier public arbitrumVerifier;
+    MantleVerifier public mantleVerifier;
+    RecursiveHeaderVerifier public rhVerifier;
+    
+    function deploy_verifiers() public {
+        string memory configData = vm.readFile(serviceDataPath);
+
+        // L2 Settlement - Interface
+
+        IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
+            stdJson.readAddress(configData, ".settlement.opt_l2outputoracle")
+        );
+        IOutbox arb_Outbox = IOutbox(
+            stdJson.readAddress(configData, ".settlement.arb_outbox")
+        );
+        IStateCommitmentChain mnt_SCChain = IStateCommitmentChain(
+            stdJson.readAddress(configData, ".settlement.mnt_scchain")
+        );
+        IChainStorageContainer mnt_CSContainer = IChainStorageContainer(
+            stdJson.readAddress(configData, ".settlement.mnt_cscontainer")
+        );
+
+        // L2 Settlement - Mock
+
+        //Outbox outbox = new Outbox();
+        //IOutbox arb_Outbox = IOutbox(outbox.address);
+
+        //L2OutputOracle l2oo = new L2OutputOracle();
+        //IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
+
+        // deploy evidence verifier
+
+        arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
+        optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
+        mantleVerifier = new MantleVerifier(mnt_SCChain, mnt_CSContainer);
+        rhVerifier = new RecursiveHeaderVerifier();
+    }
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
@@ -115,29 +154,6 @@ contract Deploy is Script, Test {
             lagrangeServiceManager
         );
 
-        // L2 Settlement - Interface
-
-        IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
-            stdJson.readAddress(configData, ".settlement.opt_l2outputoracle")
-        );
-        IOutbox arb_Outbox = IOutbox(
-            stdJson.readAddress(configData, ".settlement.arb_outbox")
-        );
-
-        // L2 Settlement - Mock
-
-        //Outbox outbox = new Outbox();
-        //IOutbox arb_Outbox = IOutbox(outbox.address);
-
-        //L2OutputOracle l2oo = new L2OutputOracle();
-        //IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
-
-        // deploy evidence verifier
-
-        arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
-        optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
-        RecursiveHeaderVerifier rhVerifier = new RecursiveHeaderVerifier();
-
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
@@ -171,6 +187,7 @@ contract Deploy is Script, Test {
                 msg.sender,
                 arbitrumVerifier,
                 optimismVerifier,
+                mantleVerifier,
                 rhVerifier
             )
         );

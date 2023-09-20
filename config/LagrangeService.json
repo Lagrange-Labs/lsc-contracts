@@ -18,10 +18,18 @@
             "chain_id": 420,
             "epoch_period": 43200,
             "freeze_duration": 6000
+        },
+        {
+            "chain_name": "mantle",
+            "chain_id": 5001,
+            "epoch_period": 43200,
+            "freeze_duration": 6000
         }
     ],
     "settlement": {
         "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
-        "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
+        "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049",
+        "mnt_scchain": "0x91a5d806ba73d0aa4bfa9b318126dde60582e92a",
+        "mnt_cscontainer": "0x5AECf975b8e63EA7FD1941d04D1aE68785fBB0E5"
     }
 }
