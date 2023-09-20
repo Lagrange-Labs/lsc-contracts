@@ -28,6 +28,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
         uint32 chainID;
         bool status;
         bytes correctRawHeader;
+        bytes checkpointRawHeader;
         bytes32 checkpointBlockHash;
         bytes headerProof;
         bytes extraData;
@@ -63,6 +64,7 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
     function verifyBlock(
         uint comparisonNumber,
         bytes memory rlpData,
+        bytes memory checkpointRLP,
         bytes32 comparisonBlockHash,
         bytes calldata headerProof,
         bytes calldata extraData,
@@ -98,7 +100,6 @@ contract EvidenceVerifier is Common, OwnableUpgradeable {
                 RHVerify
             );
         } else if (chainID == CHAIN_ID_MANTLE_TESTNET) {
-            bytes memory checkpointRLP; // TODO
             res = MntVerify.verifyMntBlock(
                 rlpData,
                 comparisonBlockHash,

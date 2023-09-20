@@ -107,6 +107,7 @@ contract LagrangeService is
             !_checkBlockHash(
                 evidence.blockNumber,
                 evidence.correctRawHeader,
+                evidence.checkpointRawHeader,
                 evidence.blockHash,
                 evidence.headerProof,
                 evidence.extraData,
@@ -148,6 +149,7 @@ contract LagrangeService is
     function _checkBlockHash(
         uint comparisonNumber,
         bytes memory rlpData,
+        bytes memory checkpointRLP,
         bytes32 comparisonBlockHash,
         bytes calldata headerProof,
         bytes calldata extraData,
@@ -157,6 +159,7 @@ contract LagrangeService is
             verifyBlock(
                 comparisonNumber,
                 rlpData,
+                checkpointRLP,
                 comparisonBlockHash,
                 headerProof,
                 extraData,
