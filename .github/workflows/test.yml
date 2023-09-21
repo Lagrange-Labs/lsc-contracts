@@ -51,9 +51,14 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-        id: build
+        id: forge-build
 
       - name: Run Forge tests
         run: |
           forge test -vvv
-        id: test
+        id: forge-test
+
+      - name: Run Hardhat tests
+        run: |
+          npx hardhat test
+        id: hardhat-test
