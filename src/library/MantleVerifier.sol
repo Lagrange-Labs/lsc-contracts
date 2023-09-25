@@ -7,80 +7,58 @@ import {IMantleVerifier} from "../interfaces/IMantleVerifier.sol";
 import {IStateCommitmentChain} from "../mock/mantle/IStateCommitmentChain.sol";
 import {IChainStorageContainer} from "../mock/mantle/IChainStorageContainer.sol";
 import {Lib_MerkleTree} from "../mock/mantle/Lib_MerkleTree.sol";
+import "solidity-rlp/contracts/Helper.sol";
 
 contract MantleVerifier is Common, IMantleVerifier {
 
-    IStateCommitmentChain public SCChain;
-    IChainStorageContainer public CSContainer;
+    IRollup public Rollup;
+    AssertionMap public Assertions;
 
-    struct ChainInclusionProof {
-        uint256 index;
-        bytes32[] siblings;
+    constructor(IRollup _rollup, AssertionMap _assertions) {
+        Rollup = _rollup;
+        Assertions = _assertions;
+    }
+
+    struct AssertionSummary {
+        uint256 assertionID;
+        bytes32 root;
+	uint256 l2blocknum;
     }
     
-    // Must be computed offchain
-    struct SCCPayload {
-        // inclusion proof
-        uint256 index;
-        bytes32[] siblings;
-        // merkle proof
-        uint256 length;
-        // batch header proof
-        uint256 batchIndex;
-        bytes32 batchRoot;
-        uint256 batchSize;
-        uint256 prevTotalElements;
-        bytes signature;
-        bytes extraData;        
-    }
-        
-    constructor(IStateCommitmentChain _scc, IChainStorageContainer _csc) {
-        SCChain = _scc;
-        CSContainer = _csc;
-    }
-    
-    function _verifyInclusion(bytes32 stateRoot, bytes calldata extraData) internal view returns (bool) {
-        SCCPayload memory proof = abi.decode(extraData,(SCCPayload));
-        return Lib_MerkleTree.verify(
-            proof.batchRoot,
-            stateRoot,
-            proof.index,
-            proof.siblings,
-            proof.length
-        );
-    }
-
-    function _verifyBatch(bytes calldata extraData) internal view returns (bool) {
-        SCCPayload memory proof = abi.decode(extraData,(SCCPayload));
-        bytes32 batch = CSContainer.get(proof.index);
-        require(batch == keccak256(abi.encode(
-            proof.batchRoot,
-            proof.batchSize,
-            proof.prevTotalElements,
-            proof.signature,
-            proof.extraData
-        )), "Batch does not match header");
-    }
-
     function verifyMntBlock(
         bytes calldata rlpData,
         bytes32 attestHash,
         bytes calldata checkpointRLP,
         bytes calldata headerProof,
-        bytes calldata extraData, //SCCPayload
+        bytes calldata extraData, // bytes32+uint256
         IRecursiveHeaderVerifier RHVerify
     ) public view returns (bool) {
         // 0. Construct proofs offchain
         
         // 1. Parse RLP
-        bytes32 stateRoot = _getBlockStateRoot(checkpointRLP, keccak256(checkpointRLP));
-        
-        // 2. Verify inclusion of checkpoint block's stateroot against provided proof
-        require(_verifyInclusion(stateRoot, extraData), "Failed to verify checkpoint block inclusion.");
-        
-        // 3. Retrieve batch from StateCommitmentChain, verify proof provided against it
-        bool res = _verifyBatch(extraData);
+        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(
+            checkpointRLP,
+            keccak256(checkpointRLP)
+        );
+	
+        RLPReader.RLPItem memory blockStateRootItem = decoded[
+            Common.BLOCK_HEADER_STATEROOT_INDEX
+        ];
+        bytes32 stateRoot = bytes32(blockStateRootItem.toUint());
 
+        RLPReader.RLPItem memory blockNumberItem = decoded[
+            Common.BLOCK_HEADER_NUMBER_INDEX
+        ];
+        uint256 blockNumber = uint256(blockStateRootItem.toUint());
+
+        // 2. Verify assertion summary and checkpoint RLP against mantle contracts
+	AssertionSummary memory proof = abi.decode(extradata,(AssertionSummary));
+	Assertion memory mntAssertion = Assertions.assertions(proof.assertionID); // are only confirmed assertions present beyond a particular window?  TODO
+	require(assertion.inboxSize == proof.l2blocknum, "MantleVerifier: L2 block number doesn't match");
+	require(assertion.stateHash == proof.root, "MantleVerifier: State root doesn't match");
+	require(stateRoot == proof.root, "MantleVerifier: State root doesn't match");
+	require(blockNumber == proof.l2blocknum, "MantleVerifier: L2 block number doesn't match");
+	
         // 4. Recursively verify attested hash in checkpoint block header
         bytes32 l2hash = keccak256(checkpointRLP);
         return RHVerify.verifyProof(rlpData, headerProof, l2hash);

@@ -69,11 +69,11 @@ contract Deploy is Script, Test {
         IOutbox arb_Outbox = IOutbox(
             stdJson.readAddress(configData, ".settlement.arb_outbox")
         );
-        IStateCommitmentChain mnt_SCChain = IStateCommitmentChain(
-            stdJson.readAddress(configData, ".settlement.mnt_scchain")
+        IStateCommitmentChain mnt_Rollup = IRollup(
+            stdJson.readAddress(configData, ".settlement.mnt_rollup")
         );
-        IChainStorageContainer mnt_CSContainer = IChainStorageContainer(
-            stdJson.readAddress(configData, ".settlement.mnt_cscontainer")
+        AssertionMap mnt_AssertionMap = AssertionMap(
+            stdJson.readAddress(configData, ".settlement.mnt_assertionmap")
         );
 
         // L2 Settlement - Mock
@@ -88,7 +88,7 @@ contract Deploy is Script, Test {
 
         arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
-        mantleVerifier = new MantleVerifier(mnt_SCChain, mnt_CSContainer);
+        mantleVerifier = new MantleVerifier(mnt_Rollup, mnt_AssertionMap);
         rhVerifier = new RecursiveHeaderVerifier();
     }
 
