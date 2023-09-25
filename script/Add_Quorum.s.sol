@@ -10,6 +10,8 @@ import {VoteWeigherBaseStorage} from "eigenlayer-contracts/middleware/VoteWeighe
 import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
+import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
+import {StakeManager} from "src/library/StakeManager.sol";
 
 contract AddQuorum is Script, Test {
     string public deployedLGRPath =
@@ -22,40 +24,68 @@ contract AddQuorum is Script, Test {
         string strategyName;
     }
 
+    struct TokenConfig {
+        uint96 multiplier;
+        address tokenAddress;
+        string tokenName;
+    }
+
     function run() public {
         vm.startBroadcast(msg.sender);
 
         string memory deployLGRData = vm.readFile(deployedLGRPath);
         string memory configData = vm.readFile(configPath);
 
-        LagrangeCommittee committee = LagrangeCommittee(
-            stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee")
-        );
+        bool isNative = stdJson.readBool(configData, ".isNative");
 
-        // add strategy multipliers to lagrange service
-        StrategyConfig[] memory strategies;
-        bytes memory strategiesRaw = stdJson.parseRaw(
-            configData,
-            ".strategies"
-        );
-        strategies = abi.decode(strategiesRaw, (StrategyConfig[]));
-        VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[]
-            memory newStrategiesConsideredAndMultipliers = new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](
-                strategies.length
+        if (isNative) {
+            StakeManager stakeManager = StakeManager(
+                stdJson.readAddress(deployLGRData, ".addresses.stakeManager")
             );
 
-        for (uint256 i = 0; i < strategies.length; i++) {
-            newStrategiesConsideredAndMultipliers[i] = VoteWeigherBaseStorage
-                .StrategyAndWeightingMultiplier({
+            // add token multipliers to stake manager
+            TokenConfig[] memory tokens;
+            bytes memory tokensRaw = stdJson.parseRaw(configData, ".tokens");
+            tokens = abi.decode(tokensRaw, (TokenConfig[]));
+            for (uint256 i = 0; i < tokens.length; i++) {
+                stakeManager.setTokenMultiplier(
+                    tokens[i].tokenAddress,
+                    tokens[i].multiplier
+                );
+            }
+            uint8[] memory quorumIndexes = new uint8[](1);
+            quorumIndexes[0] = 0;
+            stakeManager.setQuorumIndexes(1, quorumIndexes);
+        } else {
+            VoteWeigherBaseMock voteWeigher = VoteWeigherBaseMock(
+                stdJson.readAddress(deployLGRData, ".addresses.voteWeigher")
+            );
+
+            // add strategy multipliers to lagrange service
+            StrategyConfig[] memory strategies;
+            bytes memory strategiesRaw = stdJson.parseRaw(
+                configData,
+                ".strategies"
+            );
+            strategies = abi.decode(strategiesRaw, (StrategyConfig[]));
+            VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[]
+                memory newStrategiesConsideredAndMultipliers = new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](
+                    strategies.length
+                );
+
+            for (uint256 i = 0; i < strategies.length; i++) {
+                newStrategiesConsideredAndMultipliers[
+                    i
+                ] = VoteWeigherBaseStorage.StrategyAndWeightingMultiplier({
                     strategy: IStrategy(strategies[i].strategyAddress),
                     multiplier: strategies[i].multiplier
                 });
+            }
+            voteWeigher.addStrategiesConsideredAndMultipliers(
+                1,
+                newStrategiesConsideredAndMultipliers
+            );
         }
-
-        committee.addStrategiesConsideredAndMultipliers(
-            1,
-            newStrategiesConsideredAndMultipliers
-        );
 
         vm.stopBroadcast();
     }

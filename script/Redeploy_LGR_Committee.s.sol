@@ -7,7 +7,7 @@ import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager
 
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 import {LagrangeService} from "src/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
+import {StakeManager} from "src/library/StakeManager.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -23,16 +23,11 @@ contract Deploy is Script, Test {
     LagrangeCommittee public lagrangeCommittee;
     LagrangeCommittee public lagrangeCommitteeImp;
     LagrangeService public lagrangeService;
-    LagrangeServiceManager public lagrangeServiceManager;
+    StakeManager public stakeManager;
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
         string memory mockData = vm.readFile(mockDataPath);
-
-        address strategyManagerAddress = stdJson.readAddress(
-            mockData,
-            ".addresses.strategyManager"
-        );
 
         vm.startBroadcast(msg.sender);
 
@@ -52,17 +47,13 @@ contract Deploy is Script, Test {
                 ".lagrange.addresses.lagrangeCommittee"
             )
         );
-        lagrangeServiceManager = LagrangeServiceManager(
-            stdJson.readAddress(
-                deployData,
-                ".lagrange.addresses.lagrangeServiceManager"
-            )
+        stakeManager = StakeManager(
+            stdJson.readAddress(deployData, ".lagrange.addresses.stakeManager")
         );
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
             lagrangeService,
-            lagrangeServiceManager,
-            IStrategyManager(strategyManagerAddress)
+            stakeManager
         );
 
         // upgrade proxy contracts
