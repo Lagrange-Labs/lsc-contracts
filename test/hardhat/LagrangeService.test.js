@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const shared = require("./shared");
+const common = require("./common");
 const rlp = require("rlp");
 const Big = require("big.js");
 const sha3 = require("js-sha3");
@@ -278,26 +279,31 @@ describe("LagrangeService", function () {
     };
   });
     it('Registration', async function() {
-        // Register
+        console.log("Redeploy for clean slate");
+        await common.redeploy(admin);
+        lsproxy = shared.LagrangeServiceProxy;
+        lcproxy = shared.LagrangeCommitteeProxy;
+        console.log("Register Operator");
         blsKey = await genBLSKey();
         priv = blsKey.serializeToHexStr();
         pub = blsKey.getPublicKey();
         pubhex = '0x'+pub.serializeToHexStr();
-        res = await lsproxy.register(420,pubhex,5);
+        res = await lsproxy.register(420,pubhex,1000000);
         operator = await lcproxy.operators(admin.address);
-        
-        // Verify operator attributes
+        console.log("Verify Operator Attributes");
         expect(operator.blsPubKey).to.equal(pubhex);
-        expect(operator.serveUntilBlock).to.equal(5);
+        expect(operator.serveUntilBlock).to.equal(1000000);
         expect(operator.chainID).to.equal(420);
         expect(operator.slashed).to.equal(false);
+        console.log("Register Chain");
+//        uo = await lcproxy.updatedOperators(420,0);
+        await lcproxy.registerChain(420,10000,5000);
     });
-  /*
-        frozenStatus = await lsm.slasher.isFrozen("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
-        try {
-            await lagrangeService.freezeOperator("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
-        } catch(error) {
-	    freezeException = true;
-        }
-        */
+    it('Frozen Status', async function() {
+        // Default
+        slasherAddr = await lsmproxy.slasher();
+        slasher = await ethers.getContractAt("Slasher",slasherAddr);
+        frozenStatus = await slasher.isFrozen("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
+        expect(frozenStatus).to.equal(false);
+    });
 });

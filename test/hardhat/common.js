@@ -1,6 +1,7 @@
 const shared = require("./shared");
 const { poseidon } = require("circomlib");
 const poseidonUnit = require("circomlibjs").poseidonContract;
+const bls = require("@noble/bls12-381");
 
 const sponge = 0;
 
@@ -46,10 +47,11 @@ const deployPoseidon = async (signerNode) => {
   );
   console.log("Done.");
 
+  shared.poseidonAddresses = poseidonAddrs;
   return poseidonAddrs;
 };
 
-async function redeploy(admin,poseidonAddresses) {
+async function redeploy(admin) {
     const overrides = {
       gasLimit: 5000000,
     };
@@ -253,12 +255,12 @@ async function redeploy(admin,poseidonAddresses) {
       committee.address,
       committee.interface.encodeFunctionData("initialize", [
         admin.address,
-        poseidonAddresses[1],
-        poseidonAddresses[2],
-        poseidonAddresses[3],
-        poseidonAddresses[4],
-        poseidonAddresses[5],
-        poseidonAddresses[6],
+        shared.poseidonAddresses[1],
+        shared.poseidonAddresses[2],
+        shared.poseidonAddresses[3],
+        shared.poseidonAddresses[4],
+        shared.poseidonAddresses[5],
+        shared.poseidonAddresses[6],
       ])
     );
     lcpaddr = lcproxy.address;
@@ -272,6 +274,8 @@ async function redeploy(admin,poseidonAddresses) {
     shared.L2OutputOracle = l2oo;
     shared.Outbox = outbox;
     shared.RecursiveHeaderVerifier = rhv;
+    shared.ServiceCommittee = lcpaddr;
+    console.log("Deployment complete.");
 }
 
 async function getPubKeyByOperator(operator, index) {
@@ -280,14 +284,14 @@ async function getPubKeyByOperator(operator, index) {
     const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, "0");
     const newPubKey = "0x" + Gx + Gy;
     const address = operator.operators[index];
-    return {newPubKey:newPubKey, address:address};
+    return {newPubKey:newPubKey, address:address, Gx:Gx, Gy:Gy};
 }
 
-async function register(operator, index, lsproxy, serveUntilBlock) {
-    const pkData = await getPubKeyByOperator(operator);
+async function register(operator, index, serveUntilBlock) {
+    const pkData = await getPubKeyByOperator(operator, index);
     
     console.log("lsproxy.register()");
-    tx = await lsproxy.register(
+    tx = await shared.LagrangeServiceProxy.register(
       operator.chain_id,
       pkData.newPubKey,
       serveUntilBlock
@@ -299,14 +303,19 @@ async function register(operator, index, lsproxy, serveUntilBlock) {
 
 async function registerChain(operator, index) {
     console.log("committee.registerChain()");
-    tx = await committee.registerChain(operator.chain_id, 10000, 1000);
+    tx = await shared.LagrangeCommitteeProxy.registerChain(operator.chain_id, 10000, 1000);
     console.log(await getGas(tx));
 }
 
-async function registerOperatorAndChain(operator, index, lsproxy, serveUntilBlock) {
-    data = await register(operator, lsproxy, serveUntilBlock);
+async function registerOperatorAndChain(operator, index, serveUntilBlock) {
+    data = await register(operator, index, serveUntilBlock);
     await registerChain(operator);
     return data;
+}
+
+async function getGas(tx) {
+  p = await tx.wait();
+  return p.gasUsed.toNumber();
 }
 
 module.exports = {
@@ -315,4 +324,5 @@ module.exports = {
     getPubKeyByOperator:getPubKeyByOperator,
     register:register,
     registerChain:registerChain,
+    registerOperatorAndChain:registerOperatorAndChain,
 };

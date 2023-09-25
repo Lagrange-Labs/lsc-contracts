@@ -1,35 +1,30 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const bls = require("@noble/bls12-381");
 const shared = require("./shared");
 const common = require("./common");
+const { poseidon } = require("circomlib");
 
 const serveUntilBlock = 4294967295;
 const operators = require("../../config/operators.json");
 const stake = 100000000;
-
-async function getGas(tx) {
-  p = await tx.wait();
-  return p.gasUsed.toNumber();
-}
 
 describe("LagrangeCommittee", function () {
   let admin, proxy, poseidonAddresses, lcpaddr;
 
   before(async function () {
     [admin] = await ethers.getSigners();
-
-    poseidonAddresses = await common.deployPoseidon(admin);
+    await common.deployPoseidon(admin);
   });
 
   beforeEach(async function () {
-      await common.redeploy(admin,poseidonAddresses);
+      await common.redeploy(admin);
+      lcpaddr = shared.ServiceCommittee;
   });
 
   it("leaf hash", async function () {
   return;
     this.timeout(60000);
-    ls = common.LagrangeService;
+    ls = shared.LagrangeService;
 
     const committee = await ethers.getContractAt(
       "LagrangeCommittee",
@@ -37,8 +32,10 @@ describe("LagrangeCommittee", function () {
       admin
     );
     
-    const data = await common.registerOperatorAndChain(operator, 0, lsproxy, serveUntilBlock);
+    const data = await common.registerOperatorAndChain(operators[0], 0, serveUntilBlock);
     address = data.address;
+    Gx = data.Gx;
+    Gy = data.Gy;
     
     const chunks = [];
     for (let i = 0; i < 4; i++) {
@@ -92,11 +89,11 @@ describe("LagrangeCommittee", function () {
 
     for (let i = 0; i < operators[0].operators.length; i++) {
       const op = operators[0].operators[i];
-      const data = await common.register(operator, i, lsproxy, serveUntilBlock);
+      const data = await common.register(operators[0], i, serveUntilBlock);
     }
 
     start = Date.now();
-    await common.registerChain(operators[0],null);
+    await common.registerChain(operators[0],0);
     end = Date.now();
     console.log("Done. (" + (end - start) + " ms)");
 
