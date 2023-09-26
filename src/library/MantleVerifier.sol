@@ -4,18 +4,17 @@ pragma solidity ^0.8.12;
 import {Common} from "./Common.sol";
 import {IRecursiveHeaderVerifier} from "../interfaces/IRecursiveHeaderVerifier.sol";
 import {IMantleVerifier} from "../interfaces/IMantleVerifier.sol";
-import {IStateCommitmentChain} from "../mock/mantle/IStateCommitmentChain.sol";
-import {IChainStorageContainer} from "../mock/mantle/IChainStorageContainer.sol";
-import {Lib_MerkleTree} from "../mock/mantle/Lib_MerkleTree.sol";
+import {IAssertionMap} from "../mock/mantle/IAssertionMap.sol";
 import "solidity-rlp/contracts/Helper.sol";
 
 contract MantleVerifier is Common, IMantleVerifier {
+    using RLPReader for RLPReader.RLPItem;
+    using RLPReader for RLPReader.Iterator;
+    using RLPReader for bytes;
 
-    IRollup public Rollup;
-    AssertionMap public Assertions;
+    IAssertionMap public Assertions;
 
-    constructor(IRollup _rollup, AssertionMap _assertions) {
-        Rollup = _rollup;
+    constructor(IAssertionMap _assertions) {
         Assertions = _assertions;
     }
 
@@ -36,31 +35,37 @@ contract MantleVerifier is Common, IMantleVerifier {
         // 0. Construct proofs offchain
         
         // 1. Parse RLP
+	(bytes32 stateRoot, uint256 blockNumber) = _parseRootAndBlock(checkpointRLP);
+
+        // 2. Verify assertion summary and checkpoint RLP against mantle contracts
+	AssertionSummary memory proof = abi.decode(extraData,(AssertionSummary));
+
+	require(Assertions.getInboxSize(proof.assertionID) == proof.l2blocknum, "MantleVerifier: L2 block number doesn't match");
+	require(Assertions.getStateHash(proof.assertionID) == proof.root, "MantleVerifier: State root doesn't match");
+	require(stateRoot == proof.root, "MantleVerifier: State root doesn't match");
+	require(blockNumber == proof.l2blocknum, "MantleVerifier: L2 block number doesn't match");
+	
+        // 4. Recursively verify attested hash in checkpoint block header
+	return _verifyProof(RHVerify, rlpData, keccak256(checkpointRLP), headerProof);
+    }
+
+    function _parseRootAndBlock(bytes calldata checkpointRLP) internal view returns (bytes32, uint256) {
         RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(
             checkpointRLP,
             keccak256(checkpointRLP)
         );
 	
-        RLPReader.RLPItem memory blockStateRootItem = decoded[
+	bytes32 stateRoot = bytes32(decoded[
             Common.BLOCK_HEADER_STATEROOT_INDEX
-        ];
-        bytes32 stateRoot = bytes32(blockStateRootItem.toUint());
+        ].toUint());
 
-        RLPReader.RLPItem memory blockNumberItem = decoded[
+	uint256 blockNumber = uint256(decoded[
             Common.BLOCK_HEADER_NUMBER_INDEX
-        ];
-        uint256 blockNumber = uint256(blockStateRootItem.toUint());
+        ].toUint());
+	return (stateRoot, blockNumber);
+    }
 
-        // 2. Verify assertion summary and checkpoint RLP against mantle contracts
-	AssertionSummary memory proof = abi.decode(extradata,(AssertionSummary));
-	Assertion memory mntAssertion = Assertions.assertions(proof.assertionID); // are only confirmed assertions present beyond a particular window?  TODO
-	require(assertion.inboxSize == proof.l2blocknum, "MantleVerifier: L2 block number doesn't match");
-	require(assertion.stateHash == proof.root, "MantleVerifier: State root doesn't match");
-	require(stateRoot == proof.root, "MantleVerifier: State root doesn't match");
-	require(blockNumber == proof.l2blocknum, "MantleVerifier: L2 block number doesn't match");
-	
-        // 4. Recursively verify attested hash in checkpoint block header
-        bytes32 l2hash = keccak256(checkpointRLP);
+    function _verifyProof(IRecursiveHeaderVerifier RHVerify, bytes calldata rlpData, bytes32 l2hash, bytes calldata headerProof) internal view returns (bool) {
         return RHVerify.verifyProof(rlpData, headerProof, l2hash);
     }
 }

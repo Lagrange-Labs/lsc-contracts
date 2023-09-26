@@ -31,8 +31,7 @@ import {IOutbox} from "src/mock/arbitrum/IOutbox.sol";
 import {Outbox} from "src/mock/arbitrum/Outbox.sol";
 import {L2OutputOracle} from "src/mock/optimism/L2OutputOracle.sol";
 import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
-import {IStateCommitmentChain} from "src/mock/mantle/IStateCommitmentChain.sol";
-import {IChainStorageContainer} from "src/mock/mantle/IChainStorageContainer.sol";
+import {IAssertionMap} from "src/mock/mantle/IAssertionMap.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath =
@@ -78,10 +77,7 @@ contract Deploy is Script, Test {
         IOutbox arb_Outbox = IOutbox(
             stdJson.readAddress(configData, ".settlement.arb_outbox")
         );
-        IStateCommitmentChain mnt_Rollup = IRollup(
-            stdJson.readAddress(configData, ".settlement.mnt_rollup")
-        );
-        AssertionMap mnt_AssertionMap = AssertionMap(
+        IAssertionMap mnt_AssertionMap = IAssertionMap(
             stdJson.readAddress(configData, ".settlement.mnt_assertionmap")
         );
 
@@ -97,7 +93,7 @@ contract Deploy is Script, Test {
 
         arbitrumVerifier = new ArbitrumVerifier(arb_Outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
-        mantleVerifier = new MantleVerifier(mnt_Rollup, mnt_AssertionMap);
+        mantleVerifier = new MantleVerifier(mnt_AssertionMap);
         rhVerifier = new RecursiveHeaderVerifier();
     }
 
