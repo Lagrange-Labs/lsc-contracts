@@ -4,20 +4,16 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
-import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
-
 import "../library/HermezHelpers.sol";
 import "../library/EvidenceVerifier.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
+import "../interfaces/IVoteWeigher.sol";
 
 contract LagrangeCommittee is
     Initializable,
     OwnableUpgradeable,
     HermezHelpers,
-    VoteWeigherBase,
     ILagrangeCommittee
 {
     uint8 public constant UPDATE_TYPE_REGISTER = 1;
@@ -25,6 +21,7 @@ contract LagrangeCommittee is
     uint8 public constant UPDATE_TYPE_UNREGISTER = 3;
 
     ILagrangeService public immutable service;
+    IVoteWeigher public immutable voteWeigher;
 
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
@@ -72,18 +69,15 @@ contract LagrangeCommittee is
 
     modifier onlyServiceManager() {
         require(
-            msg.sender == address(serviceManager),
+            msg.sender == voteWeigher.serviceManager(),
             "LagrangeCommittee: Only Lagrange service manager can call this function."
         );
         _;
     }
 
-    constructor(
-        ILagrangeService _service,
-        IServiceManager _serviceManager,
-        IStrategyManager _strategyManager
-    ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
+    constructor(ILagrangeService _service, IVoteWeigher _voteWeigher) {
         service = _service;
+        voteWeigher = _voteWeigher;
         _disableInitializers();
     }
 
@@ -138,7 +132,7 @@ contract LagrangeCommittee is
         OperatorUpdate memory opUpdate
     ) external onlyServiceManager {
         if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
-            operators[opUpdate.operator].amount = weightOfOperator(
+            operators[opUpdate.operator].amount = voteWeigher.weightOfOperator(
                 opUpdate.operator,
                 1
             );
@@ -259,7 +253,7 @@ contract LagrangeCommittee is
         uint32 chainID,
         uint32 serveUntilBlock
     ) public onlyService {
-        uint96 stakeAmount = weightOfOperator(operator, 1);
+        uint96 stakeAmount = voteWeigher.weightOfOperator(operator, 1);
         operators[operator] = OperatorStatus(
             stakeAmount,
             blsPubKey,
