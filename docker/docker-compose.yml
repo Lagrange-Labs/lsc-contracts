@@ -1,11 +1,11 @@
-version: "3.3"
+version: '3.3'
 services:
   geth:
     image: ethereum/client-go
     environment:
       - DEV_PERIOD
     ports:
-      - "8545:8545"
+      - '8545:8545'
     volumes:
       - ./geth_db:/geth_db
     entrypoint:
@@ -13,7 +13,7 @@ services:
       - --rpc.allow-unprotected-txs
       - --http
       - --http.addr
-      - "0.0.0.0"
+      - '0.0.0.0'
       - --dev
       - --dev.period
       - $DEV_PERIOD
