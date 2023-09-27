@@ -13,10 +13,8 @@ import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
 contract Deploy is Script, Test {
-    string public deployDataPath =
-        string(bytes("script/output/deployed_goerli.json"));
-    string public mockDataPath =
-        string(bytes("script/output/deployed_mock.json"));
+    string public deployDataPath = string(bytes("script/output/deployed_goerli.json"));
+    string public mockDataPath = string(bytes("script/output/deployed_mock.json"));
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;
@@ -32,24 +30,10 @@ contract Deploy is Script, Test {
         vm.startBroadcast(msg.sender);
 
         // deploy proxy admin for ability to upgrade proxy contracts
-        proxyAdmin = ProxyAdmin(
-            stdJson.readAddress(deployData, ".lagrange.addresses.proxyAdmin")
-        );
-        lagrangeService = LagrangeService(
-            stdJson.readAddress(
-                deployData,
-                ".lagrange.addresses.lagrangeService"
-            )
-        );
-        lagrangeCommittee = LagrangeCommittee(
-            stdJson.readAddress(
-                deployData,
-                ".lagrange.addresses.lagrangeCommittee"
-            )
-        );
-        stakeManager = StakeManager(
-            stdJson.readAddress(deployData, ".lagrange.addresses.stakeManager")
-        );
+        proxyAdmin = ProxyAdmin(stdJson.readAddress(deployData, ".lagrange.addresses.proxyAdmin"));
+        lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeService"));
+        lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeCommittee"));
+        stakeManager = StakeManager(stdJson.readAddress(deployData, ".lagrange.addresses.stakeManager"));
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
             lagrangeService,
@@ -58,8 +42,7 @@ contract Deploy is Script, Test {
 
         // upgrade proxy contracts
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
-            address(lagrangeCommitteeImp)
+            TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
         );
 
         vm.stopBroadcast();

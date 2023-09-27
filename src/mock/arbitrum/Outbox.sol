@@ -11,7 +11,7 @@ error SimulationOnlyEntrypoint();
 
 contract Outbox is IOutbox {
     mapping(bytes32 => bytes32) public roots; // maps root hashes => L2 block hash
-    
+
     function updateSendRoot(bytes32 root, bytes32 l2BlockHash) public {
         roots[root] = l2BlockHash;
     }

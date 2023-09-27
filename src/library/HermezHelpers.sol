@@ -50,26 +50,20 @@ contract HermezHelpers {
 
     // bytes32 public constant EIP712DOMAIN_HASH =
     //      keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
-    bytes32 public constant EIP712DOMAIN_HASH =
-        0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+    bytes32 public constant EIP712DOMAIN_HASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
     // bytes32 public constant NAME_HASH =
     //      keccak256("Hermez Network")
-    bytes32 public constant NAME_HASH =
-        0xbe287413178bfeddef8d9753ad4be825ae998706a6dabff23978b59dccaea0ad;
+    bytes32 public constant NAME_HASH = 0xbe287413178bfeddef8d9753ad4be825ae998706a6dabff23978b59dccaea0ad;
     // bytes32 public constant VERSION_HASH =
     //      keccak256("1")
-    bytes32 public constant VERSION_HASH =
-        0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6;
+    bytes32 public constant VERSION_HASH = 0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6;
     // bytes32 public constant AUTHORISE_TYPEHASH =
     //      keccak256("Authorise(string Provider,string Authorisation,bytes32 BJJKey)");
-    bytes32 public constant AUTHORISE_TYPEHASH =
-        0xafd642c6a37a2e6887dc4ad5142f84197828a904e53d3204ecb1100329231eaa;
+    bytes32 public constant AUTHORISE_TYPEHASH = 0xafd642c6a37a2e6887dc4ad5142f84197828a904e53d3204ecb1100329231eaa;
     // bytes32 public constant HERMEZ_NETWORK_HASH = keccak256(bytes("Hermez Network")),
-    bytes32 public constant HERMEZ_NETWORK_HASH =
-        0xbe287413178bfeddef8d9753ad4be825ae998706a6dabff23978b59dccaea0ad;
+    bytes32 public constant HERMEZ_NETWORK_HASH = 0xbe287413178bfeddef8d9753ad4be825ae998706a6dabff23978b59dccaea0ad;
     // bytes32 public constant ACCOUNT_CREATION_HASH = keccak256(bytes("Account creation")),
-    bytes32 public constant ACCOUNT_CREATION_HASH =
-        0xff946cf82975b1a2b6e6d28c9a76a4b8d7a1fd0592b785cb92771933310f9ee7;
+    bytes32 public constant ACCOUNT_CREATION_HASH = 0xff946cf82975b1a2b6e6d28c9a76a4b8d7a1fd0592b785cb92771933310f9ee7;
 
     /**
      * @dev Load poseidon smart contract
@@ -93,9 +87,7 @@ contract HermezHelpers {
         _insPoseidonUnit6 = PoseidonUnit6(_poseidon6Elements);
     }
 
-    function _hash1Elements(
-        uint256[1] memory inputs
-    ) internal view returns (uint256) {
+    function _hash1Elements(uint256[1] memory inputs) internal view returns (uint256) {
         return _insPoseidonUnit1.poseidon(inputs);
     }
 
@@ -104,9 +96,7 @@ contract HermezHelpers {
      * @param inputs Poseidon input array of 2 elements
      * @return Poseidon hash
      */
-    function _hash2Elements(
-        uint256[2] memory inputs
-    ) internal view returns (uint256) {
+    function _hash2Elements(uint256[2] memory inputs) internal view returns (uint256) {
         return _insPoseidonUnit2.poseidon(inputs);
     }
 
@@ -115,9 +105,7 @@ contract HermezHelpers {
      * @param inputs Poseidon input array of 3 elements
      * @return Poseidon hash
      */
-    function _hash3Elements(
-        uint256[3] memory inputs
-    ) internal view returns (uint256) {
+    function _hash3Elements(uint256[3] memory inputs) internal view returns (uint256) {
         return _insPoseidonUnit3.poseidon(inputs);
     }
 
@@ -126,21 +114,15 @@ contract HermezHelpers {
      * @param inputs Poseidon input array of 4 elements
      * @return Poseidon hash
      */
-    function _hash4Elements(
-        uint256[4] memory inputs
-    ) internal view returns (uint256) {
+    function _hash4Elements(uint256[4] memory inputs) internal view returns (uint256) {
         return _insPoseidonUnit4.poseidon(inputs);
     }
 
-    function _hash5Elements(
-        uint256[5] memory inputs
-    ) internal view returns (uint256) {
+    function _hash5Elements(uint256[5] memory inputs) internal view returns (uint256) {
         return _insPoseidonUnit5.poseidon(inputs);
     }
 
-    function _hash6Elements(
-        uint256[6] memory inputs
-    ) internal view returns (uint256) {
+    function _hash6Elements(uint256[6] memory inputs) internal view returns (uint256) {
         return _insPoseidonUnit6.poseidon(inputs);
     }
 
@@ -150,10 +132,7 @@ contract HermezHelpers {
      * @param right Input element array
      * @return Poseidon hash
      */
-    function _hashNode(
-        uint256 left,
-        uint256 right
-    ) internal view returns (uint256) {
+    function _hashNode(uint256 left, uint256 right) internal view returns (uint256) {
         uint256[2] memory inputs;
         inputs[0] = left;
         inputs[1] = right;
@@ -166,10 +145,7 @@ contract HermezHelpers {
      * @param value Input element array
      * @return Poseidon hash1
      */
-    function _hashFinalNode(
-        uint256 key,
-        uint256 value
-    ) internal view returns (uint256) {
+    function _hashFinalNode(uint256 key, uint256 value) internal view returns (uint256) {
         uint256[3] memory inputs;
         inputs[0] = key;
         inputs[1] = value;
@@ -185,12 +161,11 @@ contract HermezHelpers {
      * @param value Value to verify
      * @return True if verification is correct, false otherwise
      */
-    function _smtVerifier(
-        uint256 root,
-        uint256[] memory siblings,
-        uint256 key,
-        uint256 value
-    ) internal view returns (bool) {
+    function _smtVerifier(uint256 root, uint256[] memory siblings, uint256 key, uint256 value)
+        internal
+        view
+        returns (bool)
+    {
         // Step 2: Calcuate root
         uint256 nextHash = _hashFinalNode(key, value);
         uint256 siblingTmp;
@@ -198,9 +173,7 @@ contract HermezHelpers {
             siblingTmp = siblings[uint256(i)];
             //bool leftRight = (uint8(key >> i) & 0x01) == 1;
             bool leftRight = (uint8(key >> uint256(i)) & 0x01) == 1;
-            nextHash = leftRight
-                ? _hashNode(siblingTmp, nextHash)
-                : _hashNode(nextHash, siblingTmp);
+            nextHash = leftRight ? _hashNode(siblingTmp, nextHash) : _hashNode(nextHash, siblingTmp);
         }
 
         // Step 3: Check root
@@ -216,13 +189,11 @@ contract HermezHelpers {
      * @param ethAddress Ethereum address
      * @return uint256 array with the state variables
      */
-    function _buildTreeState(
-        uint32 token,
-        uint48 nonce,
-        uint256 balance,
-        uint256 ay,
-        address ethAddress
-    ) internal pure returns (uint256[4] memory) {
+    function _buildTreeState(uint32 token, uint48 nonce, uint256 balance, uint256 ay, address ethAddress)
+        internal
+        pure
+        returns (uint256[4] memory)
+    {
         uint256[4] memory stateArray;
 
         stateArray[0] = token;
@@ -263,16 +234,7 @@ contract HermezHelpers {
      * @return domainSeparator hash used for sign messages
      */
     function DOMAIN_SEPARATOR() public view returns (bytes32 domainSeparator) {
-        return
-            keccak256(
-                abi.encode(
-                    EIP712DOMAIN_HASH,
-                    NAME_HASH,
-                    VERSION_HASH,
-                    getChainId(),
-                    address(this)
-                )
-            );
+        return keccak256(abi.encode(EIP712DOMAIN_HASH, NAME_HASH, VERSION_HASH, getChainId(), address(this)));
     }
 
     /**
@@ -292,12 +254,7 @@ contract HermezHelpers {
      * @param v Signature parameter
      * @return Ethereum address recovered from the signature
      */
-    function _checkSig(
-        bytes32 babyjub,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    ) internal view returns (address) {
+    function _checkSig(bytes32 babyjub, bytes32 r, bytes32 s, uint8 v) internal view returns (address) {
         // from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol#L46
         // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
         // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
@@ -309,30 +266,18 @@ contract HermezHelpers {
         // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
         // these malleable signatures as well.
         require(
-            uint256(s) <=
-                0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+            uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
             "HermezHelpers::_checkSig: INVALID_S_VALUE"
         );
 
-        bytes32 encodeData = keccak256(
-            abi.encode(
-                AUTHORISE_TYPEHASH,
-                HERMEZ_NETWORK_HASH,
-                ACCOUNT_CREATION_HASH,
-                babyjub
-            )
-        );
+        bytes32 encodeData =
+            keccak256(abi.encode(AUTHORISE_TYPEHASH, HERMEZ_NETWORK_HASH, ACCOUNT_CREATION_HASH, babyjub));
 
-        bytes32 messageDigest = keccak256(
-            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), encodeData)
-        );
+        bytes32 messageDigest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), encodeData));
 
         address ethAddress = ecrecover(messageDigest, v, r, s);
 
-        require(
-            ethAddress != address(0),
-            "HermezHelpers::_checkSig: INVALID_SIGNATURE"
-        );
+        require(ethAddress != address(0), "HermezHelpers::_checkSig: INVALID_SIGNATURE");
 
         return ethAddress;
     }
@@ -343,9 +288,7 @@ contract HermezHelpers {
      * @return ptr ptr to the call data position where the actual data starts
      * @return len Length of the data
      */
-    function _getCallData(
-        uint256 posParam
-    ) internal pure returns (uint256 ptr, uint256 len) {
+    function _getCallData(uint256 posParam) internal pure returns (uint256 ptr, uint256 len) {
         assembly {
             let pos := add(4, mul(posParam, 32))
             ptr := add(calldataload(pos), 4)
@@ -363,13 +306,7 @@ contract HermezHelpers {
         assembly {
             let ptrTo := ptr
             ptr := add(ptr, len)
-            for {
-
-            } lt(ptrTo, ptr) {
-                ptrTo := add(ptrTo, 32)
-            } {
-                mstore(ptrTo, 0)
-            }
+            for {} lt(ptrTo, ptr) { ptrTo := add(ptrTo, 32) } { mstore(ptrTo, 0) }
         }
     }
 
@@ -379,10 +316,7 @@ contract HermezHelpers {
      * @param _preBytes bytes storage
      * @param _postBytes Bytes array memory
      */
-    function _concatStorage(
-        bytes storage _preBytes,
-        bytes memory _postBytes
-    ) internal {
+    function _concatStorage(bytes storage _preBytes, bytes memory _postBytes) internal {
         assembly {
             // Read the first 32 bytes of _preBytes storage, which is the length
             // of the array. (We don't need to use the offset into the slot
@@ -395,10 +329,7 @@ contract HermezHelpers {
             // If the slot is even, bitwise and the slot with 255 and divide by
             // two to get the length. If the slot is odd, bitwise and the slot
             // with -1 and divide by two.
-            let slength := div(
-                and(fslot, sub(mul(0x100, iszero(and(fslot, 1))), 1)),
-                2
-            )
+            let slength := div(and(fslot, sub(mul(0x100, iszero(and(fslot, 1))), 1)), 2)
             let mlength := mload(_postBytes)
             let newlength := add(slength, mlength)
             // slength can contain both the length and contents of the array
@@ -463,10 +394,7 @@ contract HermezHelpers {
                 sstore(
                     sc,
                     add(
-                        and(
-                            fslot,
-                            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00
-                        ),
+                        and(fslot, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00),
                         and(mload(mc), mask)
                     )
                 )
@@ -477,9 +405,7 @@ contract HermezHelpers {
                 } lt(mc, end) {
                     sc := add(sc, 1)
                     mc := add(mc, 0x20)
-                } {
-                    sstore(sc, mload(mc))
-                }
+                } { sstore(sc, mload(mc)) }
 
                 mask := exp(0x100, sub(mc, end))
 
@@ -511,9 +437,7 @@ contract HermezHelpers {
                 } lt(mc, end) {
                     sc := add(sc, 1)
                     mc := add(mc, 0x20)
-                } {
-                    sstore(sc, mload(mc))
-                }
+                } { sstore(sc, mload(mc)) }
 
                 mask := exp(0x100, sub(mc, end))
 

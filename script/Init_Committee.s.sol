@@ -12,8 +12,7 @@ import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
 
 contract InitCommittee is Script, Test {
-    string public deployedLGRPath =
-        string(bytes("script/output/deployed_lgr.json"));
+    string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
     string public configPath = string(bytes("config/LagrangeService.json"));
 
     struct InitialChains {
@@ -29,22 +28,16 @@ contract InitCommittee is Script, Test {
         string memory deployLGRData = vm.readFile(deployedLGRPath);
         string memory configData = vm.readFile(configPath);
 
-        LagrangeCommittee lagrangeCommittee = LagrangeCommittee(
-            stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee")
-        );
+        LagrangeCommittee lagrangeCommittee =
+            LagrangeCommittee(stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee"));
 
         // initialize the lagrange committee
         bytes memory initChains = stdJson.parseRaw(configData, ".chains");
-        InitialChains[] memory initialChains = abi.decode(
-            initChains,
-            (InitialChains[])
-        );
+        InitialChains[] memory initialChains = abi.decode(initChains, (InitialChains[]));
 
         for (uint256 i = 0; i < initialChains.length; i++) {
             lagrangeCommittee.registerChain(
-                initialChains[i].chainId,
-                initialChains[i].epochPeriod,
-                initialChains[i].freezeDuration
+                initialChains[i].chainId, initialChains[i].epochPeriod, initialChains[i].freezeDuration
             );
         }
 

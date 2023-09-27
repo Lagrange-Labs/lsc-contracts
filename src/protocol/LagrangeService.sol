@@ -10,12 +10,7 @@ import "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
-contract LagrangeService is
-    Initializable,
-    OwnableUpgradeable,
-    ILagrangeService,
-    EvidenceVerifier
-{
+contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService, EvidenceVerifier {
     uint256 public constant UPDATE_TYPE_REGISTER = 1;
     uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
     uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
@@ -39,10 +34,7 @@ contract LagrangeService is
         uint32 chainID
     );
 
-    constructor(
-        ILagrangeCommittee _committee,
-        IServiceManager _serviceManager
-    ) {
+    constructor(ILagrangeCommittee _committee, IServiceManager _serviceManager) {
         committee = _committee;
         serviceManager = _serviceManager;
         _disableInitializers();
@@ -54,11 +46,7 @@ contract LagrangeService is
 
     /// Add the operator to the service.
     // Only unfractinalized WETH strategy shares assumed for stake amount
-    function register(
-        uint32 chainID,
-        bytes memory _blsPubKey,
-        uint32 serveUntilBlock
-    ) external {
+    function register(uint32 chainID, bytes memory _blsPubKey, uint32 serveUntilBlock) external {
         // NOTE: Please ensure that the order of the following two lines remains unchanged
         committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
@@ -69,21 +57,12 @@ contract LagrangeService is
     /// upload the evidence to punish the operator.
     function uploadEvidence(Evidence calldata evidence) external {
         // check the operator is registered or not
-        require(
-            committee.getServeUntilBlock(evidence.operator) > 0,
-            "The operator is not registered"
-        );
+        require(committee.getServeUntilBlock(evidence.operator) > 0, "The operator is not registered");
 
         // check the operator is slashed or not
-        require(
-            !committee.getSlashed(evidence.operator),
-            "The operator is slashed"
-        );
+        require(!committee.getSlashed(evidence.operator), "The operator is slashed");
 
-        require(
-            checkCommitSignature(evidence),
-            "The commit signature is not correct"
-        );
+        require(checkCommitSignature(evidence), "The commit signature is not correct");
 
         // if (!_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
         //     _freezeOperator(evidence.operator);
@@ -138,19 +117,14 @@ contract LagrangeService is
         uint256 chainID
     ) internal pure returns (bool) {
         return
-            verifyBlockNumber(
-                blockNumber,
-                rawBlockHeader,
-                correctBlockHash,
-                chainID
-            ) && blockHash == correctBlockHash;
+            verifyBlockNumber(blockNumber, rawBlockHeader, correctBlockHash, chainID) && blockHash == correctBlockHash;
     }
 
     /*
     function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
         return _verifyRawHeaderSequence(latestHash, sequence);
     }
-*/
+    */
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,
@@ -160,22 +134,15 @@ contract LagrangeService is
         uint256 blockNumber,
         uint32 chainID
     ) internal returns (bool) {
-        (
-            ILagrangeCommittee.CommitteeData memory currentCommittee,
-            uint256 nextRoot
-        ) = committee.getCommittee(chainID, blockNumber);
+        (ILagrangeCommittee.CommitteeData memory currentCommittee, uint256 nextRoot) =
+            committee.getCommittee(chainID, blockNumber);
         require(
             correctCurrentCommitteeRoot == bytes32(currentCommittee.root),
             "Reference current committee roots do not match."
         );
-        require(
-            correctNextCommitteeRoot == bytes32(nextRoot),
-            "Reference next committee roots do not match."
-        );
+        require(correctNextCommitteeRoot == bytes32(nextRoot), "Reference next committee roots do not match.");
 
-        return
-            (currentCommitteeRoot == correctCurrentCommitteeRoot) &&
-            (nextCommitteeRoot == correctNextCommitteeRoot);
+        return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
     }
 
     /// Slash the given operator
@@ -186,12 +153,7 @@ contract LagrangeService is
         emit OperatorSlashed(operator);
     }
 
-    function owner()
-        public
-        view
-        override(OwnableUpgradeable, ILagrangeService)
-        returns (address)
-    {
+    function owner() public view override(OwnableUpgradeable, ILagrangeService) returns (address) {
         return OwnableUpgradeable.owner();
     }
 }

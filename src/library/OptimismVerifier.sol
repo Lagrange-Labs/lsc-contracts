@@ -20,25 +20,12 @@ contract OptimismVerifier is Common {
         uint128 l2BlockNumber;
     }
 
-    function getOutputHash(
-        bytes32[4] calldata outputProof
-    ) public view returns (bytes32) {
-        bytes32 comparisonProof = keccak256(
-            abi.encode(
-                outputProof[0],
-                outputProof[1],
-                outputProof[2],
-                outputProof[3]
-            )
-        );
+    function getOutputHash(bytes32[4] calldata outputProof) public view returns (bytes32) {
+        bytes32 comparisonProof = keccak256(abi.encode(outputProof[0], outputProof[1], outputProof[2], outputProof[3]));
         return comparisonProof;
     }
 
-    function verifyOutputProof(
-        uint256 comparisonNumber,
-        bytes32 comparisonBlockHash,
-        bytes32[4] calldata outputProof
-    )
+    function verifyOutputProof(uint256 comparisonNumber, bytes32 comparisonBlockHash, bytes32[4] calldata outputProof)
         external
         view
         returns (
@@ -47,8 +34,7 @@ contract OptimismVerifier is Common {
         )
     {
         // 1. get next output root
-        Types.OutputProposal memory outputProposal = L2OutputOracle
-            .getL2OutputAfter(comparisonNumber);
+        Types.OutputProposal memory outputProposal = L2OutputOracle.getL2OutputAfter(comparisonNumber);
         // 2. Derive output root from result
         bytes32 outputRoot = outputProposal.outputRoot;
         // 3. Verify independently generated proof against

@@ -23,17 +23,10 @@ contract ArbitrumVerifier is Common {
         bytes calldata headerProof,
         uint256 chainID
     ) external view returns (bool) {
-        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(
-            rlpData,
-            comparisonBlockHash
-        );
-        RLPReader.RLPItem memory extraDataItem = decoded[
-            Common.BLOCK_HEADER_EXTRADATA_INDEX
-        ];
-        RLPReader.RLPItem memory blockNumberItem = decoded[
-            Common.BLOCK_HEADER_NUMBER_INDEX
-        ];
-        uint number = blockNumberItem.toUint();
+        RLPReader.RLPItem[] memory decoded = checkAndDecodeRLP(rlpData, comparisonBlockHash);
+        RLPReader.RLPItem memory extraDataItem = decoded[Common.BLOCK_HEADER_EXTRADATA_INDEX];
+        RLPReader.RLPItem memory blockNumberItem = decoded[Common.BLOCK_HEADER_NUMBER_INDEX];
+        uint256 number = blockNumberItem.toUint();
 
         bytes32 extraData = bytes32(extraDataItem.toUintStrict()); //TODO Maybe toUint() - please test this specifically with several cases.
         bytes32 l2Hash = ArbOutbox.roots(extraData);
