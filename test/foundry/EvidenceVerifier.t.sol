@@ -18,8 +18,10 @@ contract EvidenceVerifierTest is Test {
         evidence.chainID = 1337;
         evidence.blockNumber = 0x3;
         evidence.epochBlockNumber = 0x1;
-        evidence.blockSignature = hex"b3ad75be8554f25871e395268a2aec2d1d65003e70d4cd5b1560f37a85c7917fb82d66e22829c333043b4d6c3434151b13fb6b60d06f150132390f177c7891e97213c34cc843937f5e372035dcbb8be32ba6bf61a1545bdc2aafabd0fb60c5a4";
-        evidence.commitSignature = hex"92111f5796ebde2f4b56c3765eaa55a3b6e239831ac08ebbdf62b1319545d6cf5399fc2d00b0f8dc7249483db038c62a67a992e005f7964968ae987c62c8613b1c";
+        evidence.blockSignature =
+            hex"b3ad75be8554f25871e395268a2aec2d1d65003e70d4cd5b1560f37a85c7917fb82d66e22829c333043b4d6c3434151b13fb6b60d06f150132390f177c7891e97213c34cc843937f5e372035dcbb8be32ba6bf61a1545bdc2aafabd0fb60c5a4";
+        evidence.commitSignature =
+            hex"92111f5796ebde2f4b56c3765eaa55a3b6e239831ac08ebbdf62b1319545d6cf5399fc2d00b0f8dc7249483db038c62a67a992e005f7964968ae987c62c8613b1c";
     }
 
     function testGetCommitHash() public {

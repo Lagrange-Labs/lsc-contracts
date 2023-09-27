@@ -15,11 +15,7 @@ contract StrategyManager is IStrategyManager {
         delegationManager = _delegation;
     }
 
-    function depositIntoStrategy(
-        IStrategy strategy,
-        IERC20 token,
-        uint256 amount
-    ) external returns (uint256 shares) {
+    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 shares) {
         return 0;
     }
 
@@ -42,22 +38,15 @@ contract StrategyManager is IStrategyManager {
         return 0;
     }
 
-    function stakerStrategyShares(
-        address user,
-        IStrategy strategy
-    ) external view returns (uint256 shares) {
+    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {
         return 0;
     }
 
-    function getDeposits(
-        address depositor
-    ) external view returns (IStrategy[] memory, uint256[] memory) {
+    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {
         return (new IStrategy[](0), new uint256[](0));
     }
 
-    function stakerStrategyListLength(
-        address staker
-    ) external view returns (uint256) {
+    function stakerStrategyListLength(address staker) external view returns (uint256) {
         return 0;
     }
 
@@ -101,19 +90,13 @@ contract StrategyManager is IStrategyManager {
         uint256[] calldata indicesToSkip
     ) external {}
 
-    function calculateWithdrawalRoot(
-        QueuedWithdrawal memory queuedWithdrawal
-    ) external pure returns (bytes32) {
+    function calculateWithdrawalRoot(QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {
         return 0;
     }
 
-    function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist
-    ) external {}
+    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external {}
 
-    function removeStrategiesFromDepositWhitelist(
-        IStrategy[] calldata strategiesToRemoveFromWhitelist
-    ) external {}
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external {}
 
     function delegation() external view returns (IDelegationManager) {
         return delegationManager;

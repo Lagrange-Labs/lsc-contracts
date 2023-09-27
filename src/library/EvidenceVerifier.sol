@@ -24,10 +24,10 @@ contract EvidenceVerifier is Common {
         bytes rawBlockHeader;
     }
 
-    uint public constant CHAIN_ID_MAINNET = 1;
-    uint public constant CHAIN_ID_OPTIMISM_BEDROCK = 420;
-    uint public constant CHAIN_ID_BASE = 84531;
-    uint public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
+    uint256 public constant CHAIN_ID_MAINNET = 1;
+    uint256 public constant CHAIN_ID_OPTIMISM_BEDROCK = 420;
+    uint256 public constant CHAIN_ID_BASE = 84531;
+    uint256 public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
@@ -40,33 +40,26 @@ contract EvidenceVerifier is Common {
         OptVerify = _opt;
     }
 
-    function getArbAddr() public view returns (address) /*onlyOwner*/ {
+    function getArbAddr() public view returns (address /*onlyOwner*/ ) {
         return address(ArbVerify);
     }
 
-    function getOptAddr() public view returns (address) /*onlyOwner*/ {
+    function getOptAddr() public view returns (address /*onlyOwner*/ ) {
         return address(OptVerify);
     }
 
-    function calculateBlockHash(
-        bytes memory rlpData
-    ) public pure returns (bytes32) {
+    function calculateBlockHash(bytes memory rlpData) public pure returns (bytes32) {
         return keccak256(rlpData);
     }
 
     // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
     function verifyBlockNumber(
-        uint comparisonNumber,
+        uint256 comparisonNumber,
         bytes memory rlpData,
         bytes32 comparisonBlockHash,
         uint256 chainID
     ) public pure returns (bool) {
-        bool res = _verifyBlockNumber(
-            comparisonNumber,
-            rlpData,
-            comparisonBlockHash,
-            chainID
-        );
+        bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
         bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
             //            (success, checkpoint) = verifyArbBlock();
@@ -77,41 +70,33 @@ contract EvidenceVerifier is Common {
         return res;
     }
 
-    function toUint(bytes memory src) internal pure returns (uint) {
-        uint value;
-        for (uint i = 0; i < src.length; i++) {
-            value = value * 256 + uint(uint8(src[i]));
+    function toUint(bytes memory src) internal pure returns (uint256) {
+        uint256 value;
+        for (uint256 i = 0; i < src.length; i++) {
+            value = value * 256 + uint256(uint8(src[i]));
         }
         return value;
     }
 
     // check the evidence identity and the ECDSA signature
-    function checkCommitSignature(
-        Evidence calldata evidence
-    ) public pure returns (bool) {
+    function checkCommitSignature(Evidence calldata evidence) public pure returns (bool) {
         bytes32 commitHash = getCommitHash(evidence);
-        address recoveredAddress = ECDSA.recover(
-            commitHash,
-            evidence.commitSignature
-        );
+        address recoveredAddress = ECDSA.recover(commitHash, evidence.commitSignature);
         return recoveredAddress == evidence.operator;
     }
 
     // get the hash of the commit request
-    function getCommitHash(
-        Evidence calldata evidence
-    ) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    evidence.blockHash,
-                    evidence.currentCommitteeRoot,
-                    evidence.nextCommitteeRoot,
-                    evidence.blockNumber,
-                    evidence.epochBlockNumber,
-                    evidence.blockSignature,
-                    evidence.chainID
-                )
-            );
+    function getCommitHash(Evidence calldata evidence) public pure returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(
+                evidence.blockHash,
+                evidence.currentCommitteeRoot,
+                evidence.nextCommitteeRoot,
+                evidence.blockNumber,
+                evidence.epochBlockNumber,
+                evidence.blockSignature,
+                evidence.chainID
+            )
+        );
     }
 }

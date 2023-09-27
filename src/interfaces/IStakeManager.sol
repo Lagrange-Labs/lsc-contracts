@@ -6,22 +6,12 @@ interface IStakeManager {
 
     function resetFrozenStatus(address[] calldata frozenAddresses) external;
 
-    function recordFirstStakeUpdate(
-        address operator,
-        uint32 serveUntilBlock
-    ) external;
+    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external;
 
-    function recordStakeUpdate(
-        address operator,
-        uint32 updateBlock,
-        uint32 serveUntilBlock,
-        uint256 insertAfter
-    ) external;
+    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 insertAfter)
+        external;
 
-    function recordLastStakeUpdateAndRevokeSlashingAbility(
-        address operator,
-        uint32 serveUntilBlock
-    ) external;
+    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external;
 
     function isFrozen(address staker) external view returns (bool);
 }

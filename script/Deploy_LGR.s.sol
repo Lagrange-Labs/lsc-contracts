@@ -31,13 +31,10 @@ import {L2OutputOracle} from "src/mock/optimism/L2OutputOracle.sol";
 import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
-    string public deployDataPath =
-        string(bytes("script/output/deployed_mock.json"));
+    string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
     //string(bytes("script/output/M1_deployment_data.json"));
-    string public poseidonDataPath =
-        string(bytes("script/output/deployed_poseidon.json"));
-    string public serviceDataPath =
-        string(bytes("config/LagrangeService.json"));
+    string public poseidonDataPath = string(bytes("script/output/deployed_poseidon.json"));
+    string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
     address slasherAddress;
     address strategyManagerAddress;
@@ -71,14 +68,8 @@ contract Deploy is Script, Test {
         bool isNative = stdJson.readBool(configData, ".isNative");
 
         if (!isNative) {
-            slasherAddress = stdJson.readAddress(
-                deployData,
-                ".addresses.slasher"
-            );
-            strategyManagerAddress = stdJson.readAddress(
-                deployData,
-                ".addresses.strategyManager"
-            );
+            slasherAddress = stdJson.readAddress(deployData, ".addresses.slasher");
+            strategyManagerAddress = stdJson.readAddress(deployData, ".addresses.strategyManager");
         }
 
         vm.startBroadcast(msg.sender);
@@ -173,9 +164,8 @@ contract Deploy is Script, Test {
         );
 
         outbox = new Outbox();
-        IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
-            stdJson.readAddress(configData, ".settlement.opt_l2outputoracle")
-        );
+        IL2OutputOracle opt_L2OutputOracle =
+            IL2OutputOracle(stdJson.readAddress(configData, ".settlement.opt_l2outputoracle"));
         //L2OutputOracle l2oo = new L2OutputOracle();
         //IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
         //IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
@@ -205,46 +195,30 @@ contract Deploy is Script, Test {
             )
         );
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(
-                payable(address(lagrangeServiceManager))
-            ),
+            TransparentUpgradeableProxy(payable(address(lagrangeServiceManager))),
             address(lagrangeServiceManagerImp),
-            abi.encodeWithSelector(
-                LagrangeServiceManager.initialize.selector,
-                msg.sender
-            )
+            abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, msg.sender)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(
-                LagrangeService.initialize.selector,
-                msg.sender
-            )
+            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender)
         );
         if (isNative) {
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(stakeManager))),
                 address(stakeManagerImp),
-                abi.encodeWithSelector(
-                    StakeManager.initialize.selector,
-                    msg.sender
-                )
+                abi.encodeWithSelector(StakeManager.initialize.selector, msg.sender)
             );
         } else {
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(voteWeigher))),
                 address(voteWeigherImp),
-                abi.encodeWithSelector(
-                    VoteWeigherBaseMock.initialize.selector,
-                    msg.sender
-                )
+                abi.encodeWithSelector(VoteWeigherBaseMock.initialize.selector, msg.sender)
             );
 
             // opt into the lagrange service manager
-            ISlasher(slasherAddress).optIntoSlashing(
-                address(lagrangeServiceManager)
-            );
+            ISlasher(slasherAddress).optIntoSlashing(address(lagrangeServiceManager));
         }
 
         vm.stopBroadcast();
@@ -252,69 +226,22 @@ contract Deploy is Script, Test {
         // write deployment data to file
         string memory parent_object = "parent object";
         string memory deployed_addresses = "addresses";
-        vm.serializeAddress(
-            deployed_addresses,
-            "proxyAdmin",
-            address(proxyAdmin)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "lagrangeCommitteeImp",
-            address(lagrangeCommitteeImp)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "lagrangeCommittee",
-            address(lagrangeCommittee)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "lagrangeServiceImp",
-            address(lagrangeServiceImp)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "lagrangeService",
-            address(lagrangeService)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "lagrangeServiceManagerImp",
-            address(lagrangeServiceManagerImp)
-        );
+        vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
+        vm.serializeAddress(deployed_addresses, "lagrangeCommitteeImp", address(lagrangeCommitteeImp));
+        vm.serializeAddress(deployed_addresses, "lagrangeCommittee", address(lagrangeCommittee));
+        vm.serializeAddress(deployed_addresses, "lagrangeServiceImp", address(lagrangeServiceImp));
+        vm.serializeAddress(deployed_addresses, "lagrangeService", address(lagrangeService));
+        vm.serializeAddress(deployed_addresses, "lagrangeServiceManagerImp", address(lagrangeServiceManagerImp));
         if (isNative) {
-            vm.serializeAddress(
-                deployed_addresses,
-                "stakeManager",
-                address(stakeManager)
-            );
-            vm.serializeAddress(
-                deployed_addresses,
-                "stakeManagerImp",
-                address(stakeManagerImp)
-            );
+            vm.serializeAddress(deployed_addresses, "stakeManager", address(stakeManager));
+            vm.serializeAddress(deployed_addresses, "stakeManagerImp", address(stakeManagerImp));
         } else {
-            vm.serializeAddress(
-                deployed_addresses,
-                "voteWeigher",
-                address(voteWeigher)
-            );
-            vm.serializeAddress(
-                deployed_addresses,
-                "voteWeigherImp",
-                address(voteWeigherImp)
-            );
+            vm.serializeAddress(deployed_addresses, "voteWeigher", address(voteWeigher));
+            vm.serializeAddress(deployed_addresses, "voteWeigherImp", address(voteWeigherImp));
         }
-        string memory deployed_output = vm.serializeAddress(
-            deployed_addresses,
-            "lagrangeServiceManager",
-            address(lagrangeServiceManager)
-        );
-        string memory finalJson = vm.serializeString(
-            parent_object,
-            deployed_addresses,
-            deployed_output
-        );
+        string memory deployed_output =
+            vm.serializeAddress(deployed_addresses, "lagrangeServiceManager", address(lagrangeServiceManager));
+        string memory finalJson = vm.serializeString(parent_object, deployed_addresses, deployed_output);
         vm.writeJson(finalJson, "script/output/deployed_lgr.json");
     }
 }

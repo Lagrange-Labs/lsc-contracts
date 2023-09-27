@@ -8,15 +8,10 @@ import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager
 import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
 import {VoteWeigherBase} from "eigenlayer-contracts/middleware/VoteWeigherBase.sol";
 
-contract VoteWeigherBaseMock is
-    Initializable,
-    OwnableUpgradeable,
-    VoteWeigherBase
-{
-    constructor(
-        IServiceManager _serviceManager,
-        IStrategyManager _strategyManager
-    ) VoteWeigherBase(_strategyManager, _serviceManager, 5) {
+contract VoteWeigherBaseMock is Initializable, OwnableUpgradeable, VoteWeigherBase {
+    constructor(IServiceManager _serviceManager, IStrategyManager _strategyManager)
+        VoteWeigherBase(_strategyManager, _serviceManager, 5)
+    {
         _disableInitializers();
     }
 

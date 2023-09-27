@@ -12,27 +12,20 @@ import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
 
 contract RemoveQuorum is Script, Test {
-    string public deployedLGRPath =
-        string(bytes("script/output/deployed_lgr.json"));
+    string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
 
     function run() public {
         vm.startBroadcast(msg.sender);
 
         string memory deployLGRData = vm.readFile(deployedLGRPath);
 
-        VoteWeigherBaseMock weigher = VoteWeigherBaseMock(
-            stdJson.readAddress(deployLGRData, ".addresses.voteWeigher")
-        );
+        VoteWeigherBaseMock weigher = VoteWeigherBaseMock(stdJson.readAddress(deployLGRData, ".addresses.voteWeigher"));
 
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(0x91E333A3d61862B1FE976351cf0F3b30aff1D202);
         uint256[] memory indexes = new uint256[](1);
         indexes[0] = 0;
-        weigher.removeStrategiesConsideredAndMultipliers(
-            1,
-            strategies,
-            indexes
-        );
+        weigher.removeStrategiesConsideredAndMultipliers(1, strategies, indexes);
 
         vm.stopBroadcast();
     }
