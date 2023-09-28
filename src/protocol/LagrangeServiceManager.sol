@@ -4,8 +4,7 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {ILagrangeCommittee, OperatorUpdate} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 import {IStakeManager} from "../interfaces/IStakeManager.sol";
