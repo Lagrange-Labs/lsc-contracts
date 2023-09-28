@@ -4,7 +4,8 @@ pragma solidity ^0.8.12;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
-import {IVerifierWrapper} from "../interfaces/IVerifierWrapper.sol";
+import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
+import {ISlashingAggregate16VerifierTriage} from "../interfaces/ISlashingAggregate16VerifierTriage.sol";
 import {Common} from "./Common.sol";
 
 contract EvidenceVerifier is Common {
@@ -36,7 +37,7 @@ contract EvidenceVerifier is Common {
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
     
-    ISlashingSimpleVerifierTriage SigVerify;
+    ISlashingSingleVerifierTriage SigVerify;
     ISlashingAggregate16VerifierTriage AggVerify;
 
     function setArbAddr(ArbitrumVerifier _arb) public {

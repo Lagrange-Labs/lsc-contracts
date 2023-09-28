@@ -161,6 +161,7 @@ contract LagrangeCommittee is
         uint256 nextEpoch = getEpochNumber(chainID, blockNumber + 1);
         currentCommittee = committees[chainID][epochNumber];
         nextRoot = committees[chainID][nextEpoch].root;
+        return (currentCommittee, nextRoot);
     }
 
     // Computes and returns "next" committee root.
