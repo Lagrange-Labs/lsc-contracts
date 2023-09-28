@@ -213,10 +213,18 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         operators[operator] = OperatorStatus(stakeAmount, blsPubKey, serveUntilBlock, chainID, false);
     }
 
+    // Checks if a chain's committee is updatable at a given block
     function isUpdatable(uint32 chainID, uint256 epochNumber) public view returns (bool) {
         uint256 epochEnd = epochNumber * committeeParams[chainID].duration + committeeParams[chainID].startBlock;
         uint256 freezeDuration = committeeParams[chainID].freezeDuration;
         return block.number > epochEnd - freezeDuration;
+    }
+
+    // Checks if a chain's committee is locked at a given block
+    function isLocked(uint32 chainID) public view returns (bool, uint256) {
+        uint256 epochNumber = getEpochNumber(chainID, block.number);
+        uint256 epochEnd = epochNumber * committeeParams[chainID].duration + committeeParams[chainID].startBlock;
+        return (block.number > epochEnd - committeeParams[chainID].freezeDuration, epochEnd);
     }
 
     // If applicable, updates committee based on staking, unstaking, and slashing.

@@ -37,6 +37,8 @@ interface ILagrangeCommittee {
 
     function addOperator(address operator, bytes memory blsPubKey, uint32 chainID, uint32 serveUntilBlock) external;
 
+    function isLocked(uint32 chainID) external returns (bool, uint256);
+
     function updateOperator(OperatorUpdate memory opUpdate) external;
 
     function update(uint32 chainID, uint256 epochNumber) external;

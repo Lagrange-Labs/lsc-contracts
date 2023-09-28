@@ -154,7 +154,7 @@ contract Deploy is Script, Test {
                 lagrangeService
             );
             voteWeigherImp = new VoteWeigherBaseMock(
-                IServiceManager(lagrangeServiceManager),
+                IServiceManager(address(lagrangeServiceManager)),
                 IStrategyManager(strategyManagerAddress)
             );
         }

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
-import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "../interfaces/ILagrangeCommittee.sol";
-import "../interfaces/ILagrangeService.sol";
+
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
+import {ILagrangeCommittee} from "../interfaces/ILagrangeCommittee.sol";
+import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
@@ -48,10 +48,21 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
     // Only unfractinalized WETH strategy shares assumed for stake amount
     function register(uint32 chainID, bytes memory _blsPubKey, uint32 serveUntilBlock) external {
         // NOTE: Please ensure that the order of the following two lines remains unchanged
+        (bool locked,) = committee.isLocked(chainID);
+        require(!locked, "The related chain is in the freeze period");
+
         committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
+    }
+
+    /// deregister the operator from the service.
+    function deregister(uint32 chainID) external {
+        (bool locked, uint256 epochEnd) = committee.isLocked(chainID);
+        require(!locked, "The related chain is in the freeze period");
+
+        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(msg.sender, uint32(epochEnd));
     }
 
     /// upload the evidence to punish the operator.
