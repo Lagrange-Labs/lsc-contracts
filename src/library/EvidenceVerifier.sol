@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
+import {IVerifierWrapper} from "../interfaces/IVerifierWrapper.sol";
 import {Common} from "./Common.sol";
 
 contract EvidenceVerifier is Common {
@@ -21,7 +22,10 @@ contract EvidenceVerifier is Common {
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
-        bytes rawBlockHeader;
+        bytes attestBlockHeader;
+        //bytes checkpointBlockHeader;
+        bytes sigProof;
+        bytes aggProof;
     }
 
     uint public constant CHAIN_ID_MAINNET = 1;
@@ -31,6 +35,9 @@ contract EvidenceVerifier is Common {
 
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
+    
+    ISlashingSimpleVerifierTriage SigVerify;
+    ISlashingAggregate16VerifierTriage AggVerify;
 
     function setArbAddr(ArbitrumVerifier _arb) public {
         ArbVerify = _arb;

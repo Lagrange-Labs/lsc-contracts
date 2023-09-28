@@ -85,11 +85,11 @@ contract LagrangeService is
             "The commit signature is not correct"
         );
 
-        // if (!_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
-        //     _freezeOperator(evidence.operator);
-        // }
-
-        if (
+       if (!_checkBlockSignature(evidence)) {
+           _freezeOperator(evidence.operator);
+       }
+       
+       if (
             !_checkBlockHash(
                 evidence.correctBlockHash,
                 evidence.blockHash,
@@ -125,8 +125,31 @@ contract LagrangeService is
             evidence.epochBlockNumber,
             evidence.blockSignature,
             evidence.commitSignature,
-            evidence.chainID
+            evidence.chainID//,
+            //evidence.sigProof,
+            //evidence.aggProof
         );
+    }
+
+    function _checkBlockSignature(
+        Evidence memory _evidence
+        /*
+        address operator,
+        bytes   calldata blockSignature,
+        bytes32 blockHash,
+        bytes32 currentCommitteeRoot,
+        bytes32 nextCommitteeRoot,
+        uint32 chainID,
+        bytes   calldata commitSignature,
+        bytes   calldata sigProof,
+        bytes   calldata aggProof
+        */
+    ) internal view returns (bool) {
+        (bool sigVerify, uint[75] memory svInput) = SigVerify.verifyProofWithInput(_evidence.sigProof);
+        (bool aggVerify, uint[6] memory avInput) = AggVerify.verifyProofWithInput(_evidence.aggProof);
+        // process input results
+        
+        return (sigVerify && aggVerify);
     }
 
     // Slashing condition.  Returns veriifcation of block hash and number for a given chain.
@@ -134,16 +157,19 @@ contract LagrangeService is
         bytes32 correctBlockHash,
         bytes32 blockHash,
         uint256 blockNumber,
-        bytes calldata rawBlockHeader,
+        bytes calldata attestBlockHeader,
         uint256 chainID
     ) internal pure returns (bool) {
+          return correctBlockHash == blockHash;
+    /*
         return
             verifyBlockNumber(
                 blockNumber,
-                rawBlockHeader,
+                attestBlockHeader,
                 correctBlockHash,
                 chainID
             ) && blockHash == correctBlockHash;
+    */
     }
 
     /*
