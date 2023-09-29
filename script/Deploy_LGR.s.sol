@@ -22,6 +22,9 @@ import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
 import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
 import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
 
+import {SlashingSingleVerifierTriage} from "src/library/SlashingSingleVerifierTriage.sol";
+import {SlashingAggregate16VerifierTriage} from "src/library/SlashingAggregate16VerifierTriage.sol";
+
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
@@ -61,6 +64,11 @@ contract Deploy is Script, Test {
     OptimismVerifier public optimismVerifier;
     ArbitrumVerifier public arbitrumVerifier;
 
+    SlashingSingleVerifierTriage public SigVerify;
+    SlashingSingleVerifierTriage public SigVerifyImp;
+    SlashingAggregate16VerifierTriage public AggVerify;
+    SlashingAggregate16VerifierTriage public AggVerifyImp;
+    
     Outbox public outbox;
     L2OutputOracle public l2oo;
 
@@ -115,6 +123,27 @@ contract Deploy is Script, Test {
                 )
             )
         );
+
+        SigVerify = SlashingSingleVerifierTriage(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+
+        AggVerify = SlashingAggregate16VerifierTriage(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+
         if (isNative) {
             stakeManager = StakeManager(
                 address(
@@ -172,6 +201,9 @@ contract Deploy is Script, Test {
             lagrangeServiceManager
         );
 
+        SigVerifyImp = new SlashingSingleVerifierTriage();
+        AggVerifyImp = new SlashingAggregate16VerifierTriage();
+
         outbox = new Outbox();
         IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
             stdJson.readAddress(configData, ".settlement.opt_l2outputoracle")
@@ -214,12 +246,37 @@ contract Deploy is Script, Test {
                 msg.sender
             )
         );
+
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(
+                payable(address(SigVerify))
+            ),
+            address(SigVerifyImp),
+            abi.encodeWithSelector(
+                SlashingSingleVerifierTriage.initialize.selector,
+                msg.sender
+            )
+        );
+
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(
+                payable(address(AggVerify))
+            ),
+            address(AggVerifyImp),
+            abi.encodeWithSelector(
+                SlashingAggregate16VerifierTriage.initialize.selector,
+                msg.sender
+            )
+        );
+        
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
             abi.encodeWithSelector(
                 LagrangeService.initialize.selector,
-                msg.sender
+                msg.sender,
+                SigVerify,
+                AggVerify
             )
         );
         if (isNative) {
@@ -282,6 +339,29 @@ contract Deploy is Script, Test {
             "lagrangeServiceManagerImp",
             address(lagrangeServiceManagerImp)
         );
+
+        vm.serializeAddress(
+            deployed_addresses,
+            "SigVerify",
+            address(SigVerify)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "SigVerifyImp",
+            address(SigVerifyImp)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "AggVerify",
+            address(AggVerify)
+        );
+        vm.serializeAddress(
+            deployed_addresses,
+            "AggVerifyImp",
+            address(AggVerifyImp)
+        );
+
+
         if (isNative) {
             vm.serializeAddress(
                 deployed_addresses,
