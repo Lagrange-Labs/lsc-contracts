@@ -147,7 +147,7 @@ contract LagrangeService is
     ) internal returns (bool) {
         (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) = committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
         (bool sigVerify, uint[75] memory svInput) = SigVerify.verify(_evidence.sigProof, cdata.height);
-        (bool aggVerify, uint[6] memory avInput) = AggVerify.verify(_evidence.aggProof, cdata.height);
+        (bool aggVerify, uint[5] memory avInput) = AggVerify.verify(_evidence.aggProof, cdata.height);
         // process input results
         
         return (sigVerify && aggVerify);

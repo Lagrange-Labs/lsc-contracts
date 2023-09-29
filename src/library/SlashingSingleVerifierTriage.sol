@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
-import {ISlashingAggregate16VerifierTriage} from "../interfaces/ISlashingAggregate16VerifierTriage.sol";
-import {Verifier} from "./slashing_aggregate_16/verifier.sol";
+import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
+import {Verifier} from "./slashing_single/verifier.sol";
 
-contract SlashingAggregate16VerifierTriage is ISlashingAggregate16VerifierTriage {
+contract SlashingSingleVerifierTriage is ISlashingSingleVerifierTriage {
     
     mapping(uint256 => address) public verifiers;
 
@@ -12,14 +12,14 @@ contract SlashingAggregate16VerifierTriage is ISlashingAggregate16VerifierTriage
         uint[2] a;
         uint[2][2] b;
         uint[2] c;
-        uint[5] input;
+        uint[75] input;
     }
     
     function setRoute(uint256 routeIndex, address verifierAddress) external {
         verifiers[routeIndex] = verifierAddress;
     }
-
-    function verify(bytes calldata proof, uint256 committeeSize) external override returns (bool,uint[5] memory) {
+    
+    function verify(bytes calldata proof, uint256 committeeSize) external override returns (bool,uint[75] memory) {
         uint256 routeIndex = computeRouteIndex(committeeSize);
         address verifierAddress = verifiers[routeIndex];
        
@@ -33,7 +33,7 @@ contract SlashingAggregate16VerifierTriage is ISlashingAggregate16VerifierTriage
     }
     
     function computeRouteIndex(uint256 committeeSize) public pure returns (uint256) {
-        uint256 routeIndex = 16;
+        uint256 routeIndex = 1;
         while (routeIndex < committeeSize) {
             routeIndex = routeIndex * 2;
         }
