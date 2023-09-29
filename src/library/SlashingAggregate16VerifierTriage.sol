@@ -5,6 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ISlashingAggregate16VerifierTriage} from "../interfaces/ISlashingAggregate16VerifierTriage.sol";
 import {Verifier} from "./slashing_aggregate_16/verifier.sol";
+import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
 contract SlashingAggregate16VerifierTriage is
     ISlashingAggregate16VerifierTriage,
@@ -32,8 +33,25 @@ contract SlashingAggregate16VerifierTriage is
     function setRoute(uint256 routeIndex, address verifierAddress) external onlyOwner {
         verifiers[routeIndex] = verifierAddress;
     }
+    
+    function _getChainHeader(EvidenceVerifier.Evidence calldata _evidence) internal returns (uint,uint) {
+        bytes memory chainHeader = abi.encode(
+            _evidence.blockHash,
+            uint256(_evidence.blockNumber),
+            uint32(_evidence.chainID)
+        );
+        
+        bytes32 chHash = keccak256(chainHeader);
+        bytes16 ch1 = bytes16(chHash);
+        bytes16 ch2 = bytes16(chHash << 128);
+        uint _chainHeader1 = uint(bytes32(ch1));
+        uint _chainHeader2 = uint(bytes32(ch2));
+        return (_chainHeader1, _chainHeader2);
+    }
 
-    function verify(bytes calldata proof, uint256 committeeSize) external override returns (bool,uint[5] memory) {
+    function verify(EvidenceVerifier.Evidence calldata _evidence, uint256 committeeSize) external returns (bool) {
+        bytes calldata proof = _evidence.aggProof;
+        
         uint256 routeIndex = _computeRouteIndex(committeeSize);
         address verifierAddress = verifiers[routeIndex];
        
@@ -41,9 +59,20 @@ contract SlashingAggregate16VerifierTriage is
         
         Verifier verifier = Verifier(verifierAddress);
         proofParams memory params = abi.decode(proof,(proofParams));
-        bool result = verifier.verifyProof(params.a, params.b, params.c, params.input);
         
-        return (result,params.input);
+        (uint _chainHeader1, uint _chainHeader2) = _getChainHeader(_evidence);
+        
+        uint[5] memory input = [
+            1,
+            uint(_evidence.currentCommitteeRoot),
+            uint(_evidence.nextCommitteeRoot),
+            _chainHeader1,
+            _chainHeader2
+        ];
+
+        bool result = verifier.verifyProof(params.a, params.b, params.c, input);
+        
+        return result;
     }
     
     function _computeRouteIndex(uint256 committeeSize) internal pure returns (uint256) {

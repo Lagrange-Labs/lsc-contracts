@@ -137,7 +137,7 @@ contract LagrangeService is
         // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) = committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
         (bool sigVerify, uint[75] memory svInput) = SigVerify.verify(_evidence.sigProof, cdata.height);
-        (bool aggVerify, uint[5] memory avInput) = AggVerify.verify(_evidence.aggProof, cdata.height);
+        bool aggVerify = AggVerify.verify(_evidence, cdata.height);
 
         // isolate pubkey
         bytes memory pub = new bytes(48); // TODO what are the dimensions of pub (_pubKeyLength) and how are the public inputs converted
