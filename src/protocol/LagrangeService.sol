@@ -9,6 +9,8 @@ import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
+import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
+import {ISlashingAggregate16VerifierTriage} from "../interfaces/ISlashingAggregate16VerifierTriage.sol";
 
 contract LagrangeService is
     Initializable,
@@ -48,8 +50,14 @@ contract LagrangeService is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) external initializer {
+    function initialize(
+      address initialOwner,
+      ISlashingSingleVerifierTriage _SigVerify,
+      ISlashingAggregate16VerifierTriage _AggVerify
+    ) external initializer {
         _transferOwnership(initialOwner);
+        SigVerify = _SigVerify;
+        AggVerify = _AggVerify;
     }
 
     /// Add the operator to the service.
@@ -89,15 +97,7 @@ contract LagrangeService is
            _freezeOperator(evidence.operator);
        }
        
-       if (
-            !_checkBlockHash(
-                evidence.correctBlockHash,
-                evidence.blockHash,
-                evidence.blockNumber,
-                evidence.attestBlockHeader,
-                evidence.chainID
-            )
-        ) {
+       if (evidence.correctBlockHash == evidence.blockHash) {
             _freezeOperator(evidence.operator);
         }
 
@@ -133,51 +133,45 @@ contract LagrangeService is
 
     function _checkBlockSignature(
         Evidence memory _evidence
-        /*
-        address operator,
-        bytes   calldata blockSignature,
-        bytes32 blockHash,
-        bytes32 currentCommitteeRoot,
-        bytes32 nextCommitteeRoot,
-        uint32 chainID,
-        bytes   calldata commitSignature,
-        bytes   calldata sigProof,
-        bytes   calldata aggProof
-        */
     ) internal returns (bool) {
+        // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) = committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
         (bool sigVerify, uint[75] memory svInput) = SigVerify.verify(_evidence.sigProof, cdata.height);
         (bool aggVerify, uint[5] memory avInput) = AggVerify.verify(_evidence.aggProof, cdata.height);
-        // process input results
+
+        // isolate pubkey
+        bytes memory pub = new bytes(48); // TODO what are the dimensions of pub (_pubKeyLength) and how are the public inputs converted
+        for (uint i = 1; i <= 14; i++) {
+            // construct BLS public key
+        }
         
-        return (sigVerify && aggVerify);
+        OperatorStatus memory op = committee.getOperator(_evidence.operator);
+        require(keccak256(op.blsPubKey) == keccak256(pub), "BLS public key associated with evidence address does not match BLS public key in proof.");
+        
+        // isolate signingroot
+        bytes32 signingRoot;
+        bytes memory tmp = new bytes(32);
+        for (uint i = 43; i <= 74; i++) {
+            require(svInput[i] < 256, "LagrangeService: signingRoot array contains value in excess of 255");
+            tmp[i-43] = bytes1(uint8(svInput[i]));
+        }
+        signingRoot = abi.decode(tmp,(bytes32));
+
+        // compare signingroot to evidence, extract values - TODO crossreference/confirm
+        bytes32 reconstructedSigningRoot = keccak256(abi.encodePacked(
+            _evidence.currentCommitteeRoot,
+            _evidence.nextCommitteeRoot,
+            _evidence.blockNumber,
+            _evidence.blockHash
+        ));
+
+        require(signingRoot == reconstructedSigningRoot, "LagrangeService: Reconstructed signing root does not match evidence.");
+
+        // derive blocknumber, blockhash, committee roots from agg inputs, crossreference with committee state data TODO
+        
+        return (sigVerify);
     }
 
-    // Slashing condition.  Returns veriifcation of block hash and number for a given chain.
-    function _checkBlockHash(
-        bytes32 correctBlockHash,
-        bytes32 blockHash,
-        uint256 blockNumber,
-        bytes calldata attestBlockHeader,
-        uint256 chainID
-    ) internal pure returns (bool) {
-          return correctBlockHash == blockHash;
-    /*
-        return
-            verifyBlockNumber(
-                blockNumber,
-                attestBlockHeader,
-                correctBlockHash,
-                chainID
-            ) && blockHash == correctBlockHash;
-    */
-    }
-
-    /*
-    function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
-        return _verifyRawHeaderSequence(latestHash, sequence);
-    }
-*/
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,

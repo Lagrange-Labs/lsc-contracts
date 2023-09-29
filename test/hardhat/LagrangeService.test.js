@@ -122,6 +122,8 @@ describe("LagrangeService",
 
             console.log("OptimismVerifier:", opt.address);
             console.log("ArbitrumVerifier:", arb.address);
+            
+            shared.LagrangeService = lagrangeService;
         });
 
         it('Smoke test L2-L1 settlement interfaces', async function () {

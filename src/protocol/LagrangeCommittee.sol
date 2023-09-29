@@ -408,4 +408,8 @@ contract LagrangeCommittee is
                 ]
             );
     }
+
+    function getOperator(address operator) external returns (OperatorStatus memory) {
+        return operators[operator];
+    }
 }

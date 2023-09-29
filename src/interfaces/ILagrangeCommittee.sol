@@ -27,6 +27,8 @@ interface ILagrangeCommittee {
         uint256 totalVotingPower;
     }
 
+    function getOperator(address operator) external returns (OperatorStatus memory);
+
     function getServeUntilBlock(address operator) external returns (uint32);
 
     function setSlashed(address operator) external;

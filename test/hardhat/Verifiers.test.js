@@ -30,6 +30,28 @@ describe("Lagrange Verifiers", function () {
     });
 
     beforeEach(async function () {
+        console.log("Deploying empty contract...");
+
+        const EmptyContractFactory = await ethers.getContractFactory("EmptyContract");
+        const emptyContract = await EmptyContractFactory.deploy();
+        await emptyContract.deployed();
+        
+        console.log("Deploying proxy...");
+
+        const ProxyAdminFactory = await ethers.getContractFactory("ProxyAdmin");
+        const proxyAdmin = await ProxyAdminFactory.deploy();
+        await proxyAdmin.deployed();
+
+        console.log("Deploying transparent proxy...");
+
+        TransparentUpgradeableProxyFactory = await ethers.getContractFactory("TransparentUpgradeableProxy");
+        tsProxy = await TransparentUpgradeableProxyFactory.deploy(emptyContract.address, proxyAdmin.address, "0x");
+        await tsProxy.deployed();
+
+        TransparentUpgradeableProxyFactory = await ethers.getContractFactory("TransparentUpgradeableProxy");
+        taProxy = await TransparentUpgradeableProxyFactory.deploy(emptyContract.address, proxyAdmin.address, "0x");
+        await taProxy.deployed();
+
         console.log("Deploying verifier contracts...");
         
         const verSigFactory = await ethers.getContractFactory("src/library/slashing_single/verifier.sol:Verifier");
@@ -50,26 +72,43 @@ describe("Lagrange Verifiers", function () {
         tx2 = await verAgg.deployed();
         tx3 = await triSig.deployed();
         tx4 = await triAgg.deployed();
+
+        console.log("Upgrading proxy...");
+
+        await proxyAdmin.upgradeAndCall(
+            tsProxy.address,
+            triSig.address,
+            triSig.interface.encodeFunctionData("initialize", [admin.address])
+        )
+
+        await proxyAdmin.upgradeAndCall(
+            taProxy.address,
+            triSig.address,
+            triSig.interface.encodeFunctionData("initialize", [admin.address])
+        )
         
         console.log("signature verifier:",verSig.address);
         console.log("aggregate verifier:",verAgg.address);
-        console.log("signature triage:",triSig.address);
-        console.log("aggregate triage:",triAgg.address);
+        console.log("signature triage:",tsProxy.address);
+        console.log("aggregate triage:",taProxy.address);
         
         console.log("Linking verifier triage contracts to verifier contracts...");
-
-        await triSig.setRoute(1,verSig.address);
         
-        await triAgg.setRoute(1,verAgg.address);
-        await triAgg.setRoute(2,verAgg.address);
-        await triAgg.setRoute(4,verAgg.address);
-        await triAgg.setRoute(8,verAgg.address);
-        await triAgg.setRoute(16,verAgg.address);
+        tsProxy = await ethers.getContractAt("SlashingSingleVerifierTriage",tsProxy.address);
+        taProxy = await ethers.getContractAt("SlashingAggregate16VerifierTriage",taProxy.address);
+
+        await tsProxy.setRoute(1,verSig.address);
+        
+        await taProxy.setRoute(1,verAgg.address);
+        await taProxy.setRoute(2,verAgg.address);
+        await taProxy.setRoute(4,verAgg.address);
+        await taProxy.setRoute(8,verAgg.address);
+        await taProxy.setRoute(16,verAgg.address);
         
         shared.SSV = verSig;
         shared.SAV = verAgg;
-        shared.SSVT = triSig;
-        shared.SAVT = triAgg;
+        shared.SSVT = tsProxy;
+        shared.SAVT = taProxy;
     });
 
     it("slashing_single verifier", async function () {

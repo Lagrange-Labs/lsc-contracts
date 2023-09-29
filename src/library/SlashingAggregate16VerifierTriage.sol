@@ -1,12 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ISlashingAggregate16VerifierTriage} from "../interfaces/ISlashingAggregate16VerifierTriage.sol";
 import {Verifier} from "./slashing_aggregate_16/verifier.sol";
 
-contract SlashingAggregate16VerifierTriage is ISlashingAggregate16VerifierTriage {
+contract SlashingAggregate16VerifierTriage is
+    ISlashingAggregate16VerifierTriage,
+    Initializable,
+    OwnableUpgradeable
+{
     
     mapping(uint256 => address) public verifiers;
+
+    constructor() {}
+
+    function initialize(
+      address initialOwner
+    ) external initializer {
+        _transferOwnership(initialOwner);
+    }
 
     struct proofParams {
         uint[2] a;
@@ -15,12 +29,12 @@ contract SlashingAggregate16VerifierTriage is ISlashingAggregate16VerifierTriage
         uint[5] input;
     }
     
-    function setRoute(uint256 routeIndex, address verifierAddress) external {
+    function setRoute(uint256 routeIndex, address verifierAddress) external onlyOwner {
         verifiers[routeIndex] = verifierAddress;
     }
 
     function verify(bytes calldata proof, uint256 committeeSize) external override returns (bool,uint[5] memory) {
-        uint256 routeIndex = computeRouteIndex(committeeSize);
+        uint256 routeIndex = _computeRouteIndex(committeeSize);
         address verifierAddress = verifiers[routeIndex];
        
         require(verifierAddress != address(0), "SlashingSingleVerifierTriage: Verifier address not set for committee size specified.");
@@ -32,8 +46,8 @@ contract SlashingAggregate16VerifierTriage is ISlashingAggregate16VerifierTriage
         return (result,params.input);
     }
     
-    function computeRouteIndex(uint256 committeeSize) public pure returns (uint256) {
-        uint256 routeIndex = 16;
+    function _computeRouteIndex(uint256 committeeSize) internal pure returns (uint256) {
+        uint256 routeIndex = 1;
         while (routeIndex < committeeSize) {
             routeIndex = routeIndex * 2;
         }
