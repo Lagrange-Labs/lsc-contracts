@@ -222,6 +222,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     // Checks if a chain's committee is locked at a given block
     function isLocked(uint32 chainID) public view returns (bool, uint256) {
+        if (committeeParams[chainID].duration == 0) {
+            return (false, 0);
+        }
         uint256 epochNumber = getEpochNumber(chainID, block.number);
         uint256 epochEnd = epochNumber * committeeParams[chainID].duration + committeeParams[chainID].startBlock;
         return (block.number > epochEnd - committeeParams[chainID].freezeDuration, epochEnd);
