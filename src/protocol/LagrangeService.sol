@@ -10,7 +10,7 @@ import "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
-import {ISlashingAggregate16VerifierTriage} from "../interfaces/ISlashingAggregate16VerifierTriage.sol";
+import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 
 contract LagrangeService is
     Initializable,
@@ -53,7 +53,7 @@ contract LagrangeService is
     function initialize(
       address initialOwner,
       ISlashingSingleVerifierTriage _SigVerify,
-      ISlashingAggregate16VerifierTriage _AggVerify
+      ISlashingAggregateVerifierTriage _AggVerify
     ) external initializer {
         _transferOwnership(initialOwner);
         SigVerify = _SigVerify;
@@ -137,7 +137,15 @@ contract LagrangeService is
         // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) = committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
         (bool sigVerify, uint[75] memory svInput) = SigVerify.verify(_evidence.sigProof, cdata.height);
-        bool aggVerify = AggVerify.verify(_evidence, cdata.height);
+        bool aggVerify = AggVerify.verify(
+          _evidence.aggProof,
+          _evidence.currentCommitteeRoot,
+          _evidence.nextCommitteeRoot,
+          _evidence.blockHash,
+          _evidence.blockNumber,
+          _evidence.chainID,
+          cdata.height
+        );
 
         // isolate pubkey
         bytes memory pub = new bytes(48); // TODO what are the dimensions of pub (_pubKeyLength) and how are the public inputs converted

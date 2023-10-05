@@ -23,7 +23,7 @@ import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
 import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
 
 import {SlashingSingleVerifierTriage} from "src/library/SlashingSingleVerifierTriage.sol";
-import {SlashingAggregate16VerifierTriage} from "src/library/SlashingAggregate16VerifierTriage.sol";
+import {SlashingAggregateVerifierTriage} from "src/library/SlashingAggregateVerifierTriage.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -66,8 +66,8 @@ contract Deploy is Script, Test {
 
     SlashingSingleVerifierTriage public SigVerify;
     SlashingSingleVerifierTriage public SigVerifyImp;
-    SlashingAggregate16VerifierTriage public AggVerify;
-    SlashingAggregate16VerifierTriage public AggVerifyImp;
+    SlashingAggregateVerifierTriage public AggVerify;
+    SlashingAggregateVerifierTriage public AggVerifyImp;
     
     Outbox public outbox;
     L2OutputOracle public l2oo;
@@ -134,7 +134,7 @@ contract Deploy is Script, Test {
             )
         );
 
-        AggVerify = SlashingAggregate16VerifierTriage(
+        AggVerify = SlashingAggregateVerifierTriage(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -202,7 +202,7 @@ contract Deploy is Script, Test {
         );
 
         SigVerifyImp = new SlashingSingleVerifierTriage();
-        AggVerifyImp = new SlashingAggregate16VerifierTriage();
+        AggVerifyImp = new SlashingAggregateVerifierTriage();
 
         outbox = new Outbox();
         IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(
@@ -264,7 +264,7 @@ contract Deploy is Script, Test {
             ),
             address(AggVerifyImp),
             abi.encodeWithSelector(
-                SlashingAggregate16VerifierTriage.initialize.selector,
+                SlashingAggregateVerifierTriage.initialize.selector,
                 msg.sender
             )
         );

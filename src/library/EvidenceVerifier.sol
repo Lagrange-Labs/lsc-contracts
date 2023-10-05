@@ -5,7 +5,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OptimismVerifier} from "./OptimismVerifier.sol";
 import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
 import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
-import {ISlashingAggregate16VerifierTriage} from "../interfaces/ISlashingAggregate16VerifierTriage.sol";
+import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 import {Common} from "./Common.sol";
 
 contract EvidenceVerifier is Common {
@@ -38,7 +38,7 @@ contract EvidenceVerifier is Common {
     ArbitrumVerifier ArbVerify;
     
     ISlashingSingleVerifierTriage SigVerify;
-    ISlashingAggregate16VerifierTriage AggVerify;
+    ISlashingAggregateVerifierTriage AggVerify;
 
     function setArbAddr(ArbitrumVerifier _arb) public {
         ArbVerify = _arb;

@@ -33,6 +33,9 @@ deploy-poseidon:
 deploy-lagrange:
 	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
+deploy-verifiers:
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && npx hardhat run util/deploy-verifiers.js
+
 add-quorum:
 	forge script script/Add_Quorum.s.sol:AddQuorum --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
@@ -78,6 +81,6 @@ all: run-geth init-accounts deploy-weth9 deploy-eigenlayer add-strategy register
 
 all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deploy-register init-committee	
 
-all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deposit-stake deploy-register init-committee	
+all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee	
 
 .PHONY: all clean all-mock all-native
