@@ -1,19 +1,19 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("hardhat-preprocessor");
-const fs = require("fs");
+require('@nomicfoundation/hardhat-toolbox');
+require('hardhat-preprocessor');
+const fs = require('fs');
 
 function getRemappings() {
   return fs
-    .readFileSync("remappings.txt", "utf8")
-    .split("\n")
+    .readFileSync('remappings.txt', 'utf8')
+    .split('\n')
     .filter(Boolean) // remove empty lines
-    .filter((line) => !line.includes("node_modules")) // remove node_modules remappings
-    .map((line) => line.trim().split("="));
+    .filter((line) => !line.includes('node_modules')) // remove node_modules remappings
+    .map((line) => line.trim().split('='));
 }
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.12",
+  solidity: '0.8.12',
   preprocess: {
     eachLine: (hre) => ({
       transform: (line) => {
@@ -30,8 +30,8 @@ module.exports = {
     }),
   },
   paths: {
-    sources: "./src",
-    cache: "./cache_hardhat",
-    tests: "./test/hardhat",
-  }
+    sources: './src',
+    cache: './cache_hardhat',
+    tests: './test/hardhat',
+  },
 };

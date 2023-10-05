@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategy.sol";
 
@@ -10,21 +10,13 @@ contract Strategy is IStrategy {
         return 0;
     }
 
-    function withdraw(
-        address depositor,
-        IERC20 token,
-        uint256 amountShares
-    ) external {}
+    function withdraw(address depositor, IERC20 token, uint256 amountShares) external {}
 
-    function sharesToUnderlying(
-        uint256 amountShares
-    ) external returns (uint256) {
+    function sharesToUnderlying(uint256 amountShares) external returns (uint256) {
         return amountShares;
     }
 
-    function underlyingToShares(
-        uint256 amountUnderlying
-    ) external returns (uint256) {
+    function underlyingToShares(uint256 amountUnderlying) external returns (uint256) {
         return amountUnderlying;
     }
 
@@ -32,15 +24,11 @@ contract Strategy is IStrategy {
         return 0;
     }
 
-    function sharesToUnderlyingView(
-        uint256 amountShares
-    ) external view returns (uint256) {
+    function sharesToUnderlyingView(uint256 amountShares) external view returns (uint256) {
         return amountShares;
     }
 
-    function underlyingToSharesView(
-        uint256 amountUnderlying
-    ) external view returns (uint256) {
+    function underlyingToSharesView(uint256 amountUnderlying) external view returns (uint256) {
         return amountUnderlying;
     }
 

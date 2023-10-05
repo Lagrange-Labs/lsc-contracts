@@ -1,16 +1,20 @@
 {
   "dependencies": {
+    "@noble/bls12-381": "^1.4.0",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "big.js": "^6.2.1",
     "bls-eth-wasm": "^1.0.6",
     "circomlibjs": "^0.1.7",
     "dotenv": "^16.3.1",
+    "hardhat": "^2.14.0",
+    "hardhat-preprocessor": "^0.1.5",
     "hermez-contracts": "github:hermeznetwork/contracts",
     "js-sha3": "^0.8.0",
     "rlp": "^3.0.0",
-    "solidity-rlp": "github:hamdiallam/Solidity-RLP",
-    "@noble/bls12-381": "^1.4.0",
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "hardhat": "^2.14.0",
-    "hardhat-preprocessor": "^0.1.5"
+    "solidity-rlp": "github:hamdiallam/Solidity-RLP"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.3",
+    "solhint": "^3.6.2"
   }
 }

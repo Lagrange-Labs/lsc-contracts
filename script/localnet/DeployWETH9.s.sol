@@ -14,11 +14,7 @@ contract DeployWETH9 is Script, Test {
 
         // write deployment data to file
         string memory parent_object = "parent object";
-        string memory final_json = vm.serializeAddress(
-            parent_object,
-            "WETH9",
-            address(weth9)
-        );
+        string memory final_json = vm.serializeAddress(parent_object, "WETH9", address(weth9));
         vm.writeFile("script/output/deployed_weth9.json", final_json);
     }
 }

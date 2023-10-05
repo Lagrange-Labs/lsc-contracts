@@ -9,7 +9,7 @@ import {DelegationManager} from "eigenlayer-contracts/core/DelegationManager.sol
 
 contract AddStrategy is Script, Test {
     string public deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
-    
+
     address WETHStractegyAddress;
 
     function run() public {

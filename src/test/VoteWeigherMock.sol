@@ -10,10 +10,7 @@ contract VoteWeigherMock is IVoteWeigher {
         serviceManager = _serviceManager;
     }
 
-    function weightOfOperator(
-        address operator,
-        uint256 quorumNumber
-    ) external override returns (uint96) {
+    function weightOfOperator(address operator, uint256 quorumNumber) external override returns (uint96) {
         return uint96(100000000);
     }
 }

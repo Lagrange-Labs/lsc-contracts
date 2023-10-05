@@ -11,22 +11,24 @@ fs.readFile(accountsPath, 'utf8', (err, data) => {
 
   try {
     const accounts = JSON.parse(data);
-    Object.keys(accounts).splice(0, 20).forEach((address) => {
-      console.log("Starting to register operator for address: ", address);
-      const command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url http://localhost:8545 --private-key ${accounts[address]} --broadcast -vvvvv`
-      exec(command, (error, stdout, stderr) => {
-        console.log(`Command output: ${stdout}`);
-        if (error) {
-          console.error(`Error executing command: ${error.message}`);
-          return;
-        }
+    Object.keys(accounts)
+      .splice(0, 20)
+      .forEach((address) => {
+        console.log('Starting to register operator for address: ', address);
+        const command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url http://localhost:8545 --private-key ${accounts[address]} --broadcast -vvvvv`;
+        exec(command, (error, stdout, stderr) => {
+          console.log(`Command output: ${stdout}`);
+          if (error) {
+            console.error(`Error executing command: ${error.message}`);
+            return;
+          }
 
-        if (stderr) {
-          console.error(`Command stderr: ${stderr}`);
-          return;
-        }
+          if (stderr) {
+            console.error(`Command stderr: ${stderr}`);
+            return;
+          }
+        });
       });
-    });
   } catch (err) {
     console.error('Error parsing JSON string:', err);
   }

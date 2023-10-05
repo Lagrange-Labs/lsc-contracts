@@ -12,8 +12,7 @@ import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
 import {StakeManager} from "src/library/StakeManager.sol";
 
 contract DepositStake is Script, Test {
-    string public deployedLGRPath =
-        string(bytes("script/output/deployed_lgr.json"));
+    string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
     string public configPath = string(bytes("config/LagrangeService.json"));
 
     function run() public {
@@ -24,14 +23,8 @@ contract DepositStake is Script, Test {
 
         vm.startBroadcast(msg.sender);
         if (isNative) {
-            StakeManager stakeManager = StakeManager(
-                stdJson.readAddress(deployLGRData, ".addresses.stakeManager")
-            );
-            WETH9 token = WETH9(
-                payable(
-                    stdJson.readAddress(configData, ".tokens.[0].token_address")
-                )
-            );
+            StakeManager stakeManager = StakeManager(stdJson.readAddress(deployLGRData, ".addresses.stakeManager"));
+            WETH9 token = WETH9(payable(stdJson.readAddress(configData, ".tokens.[0].token_address")));
             token.deposit{value: 1e15}();
             token.approve(address(stakeManager), 1e15);
             stakeManager.deposit(address(token), 1e15);

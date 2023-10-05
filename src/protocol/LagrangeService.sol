@@ -1,23 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
-import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "../interfaces/ILagrangeCommittee.sol";
-import "../interfaces/ILagrangeService.sol";
+
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
+import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommittee.sol";
+import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
 import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 
-contract LagrangeService is
-    Initializable,
-    OwnableUpgradeable,
-    ILagrangeService,
-    EvidenceVerifier
-{
+contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService, EvidenceVerifier {
     uint256 public constant UPDATE_TYPE_REGISTER = 1;
     uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
     uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
@@ -41,10 +36,7 @@ contract LagrangeService is
         uint32 chainID
     );
 
-    constructor(
-        ILagrangeCommittee _committee,
-        IServiceManager _serviceManager
-    ) {
+    constructor(ILagrangeCommittee _committee, IServiceManager _serviceManager) {
         committee = _committee;
         serviceManager = _serviceManager;
         _disableInitializers();
@@ -62,36 +54,34 @@ contract LagrangeService is
 
     /// Add the operator to the service.
     // Only unfractinalized WETH strategy shares assumed for stake amount
-    function register(
-        uint32 chainID,
-        bytes memory _blsPubKey,
-        uint32 serveUntilBlock
-    ) external {
+    function register(uint32 chainID, bytes memory _blsPubKey, uint32 serveUntilBlock) external {
         // NOTE: Please ensure that the order of the following two lines remains unchanged
+        (bool locked,) = committee.isLocked(chainID);
+        require(!locked, "The related chain is in the freeze period");
+
         committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
 
+    /// deregister the operator from the service.
+    function deregister(uint32 chainID) external {
+        (bool locked, uint256 epochEnd) = committee.isLocked(chainID);
+        require(!locked, "The related chain is in the freeze period");
+
+        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(msg.sender, uint32(epochEnd));
+    }
+
     /// upload the evidence to punish the operator.
     function uploadEvidence(Evidence calldata evidence) external {
         // check the operator is registered or not
-        require(
-            committee.getServeUntilBlock(evidence.operator) > 0,
-            "The operator is not registered"
-        );
+        require(committee.getServeUntilBlock(evidence.operator) > 0, "The operator is not registered");
 
         // check the operator is slashed or not
-        require(
-            !committee.getSlashed(evidence.operator),
-            "The operator is slashed"
-        );
+        require(!committee.getSlashed(evidence.operator), "The operator is slashed");
 
-        require(
-            checkCommitSignature(evidence),
-            "The commit signature is not correct"
-        );
+        require(checkCommitSignature(evidence), "The commit signature is not correct");
 
        if (!_checkBlockSignature(evidence)) {
            _freezeOperator(evidence.operator);
@@ -179,7 +169,7 @@ contract LagrangeService is
         
         return (sigVerify);
     }
-
+        
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,
@@ -189,22 +179,15 @@ contract LagrangeService is
         uint256 blockNumber,
         uint32 chainID
     ) internal returns (bool) {
-        (
-            ILagrangeCommittee.CommitteeData memory currentCommittee,
-            uint256 nextRoot
-        ) = committee.getCommittee(chainID, blockNumber);
+        (ILagrangeCommittee.CommitteeData memory currentCommittee, uint256 nextRoot) =
+            committee.getCommittee(chainID, blockNumber);
         require(
             correctCurrentCommitteeRoot == bytes32(currentCommittee.root),
             "Reference current committee roots do not match."
         );
-        require(
-            correctNextCommitteeRoot == bytes32(nextRoot),
-            "Reference next committee roots do not match."
-        );
+        require(correctNextCommitteeRoot == bytes32(nextRoot), "Reference next committee roots do not match.");
 
-        return
-            (currentCommitteeRoot == correctCurrentCommitteeRoot) &&
-            (nextCommitteeRoot == correctNextCommitteeRoot);
+        return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
     }
 
     /// Slash the given operator
@@ -215,12 +198,7 @@ contract LagrangeService is
         emit OperatorSlashed(operator);
     }
 
-    function owner()
-        public
-        view
-        override(OwnableUpgradeable, ILagrangeService)
-        returns (address)
-    {
+    function owner() public view override(OwnableUpgradeable, ILagrangeService) returns (address) {
         return OwnableUpgradeable.owner();
     }
 }

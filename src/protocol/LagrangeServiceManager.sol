@@ -4,17 +4,12 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {ILagrangeCommittee, OperatorUpdate} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 import {IStakeManager} from "../interfaces/IStakeManager.sol";
 
-contract LagrangeServiceManager is
-    Initializable,
-    OwnableUpgradeable,
-    IServiceManager
-{
+contract LagrangeServiceManager is Initializable, OwnableUpgradeable, IServiceManager {
     uint8 public constant UPDATE_TYPE_REGISTER = 1;
     uint8 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
     uint8 public constant UPDATE_TYPE_UNREGISTER = 3;
@@ -27,18 +22,11 @@ contract LagrangeServiceManager is
     uint32 public latestServeUntilBlock = 0;
 
     modifier onlyService() {
-        require(
-            msg.sender == address(service),
-            "Only Lagrange service can call this function."
-        );
+        require(msg.sender == address(service), "Only Lagrange service can call this function.");
         _;
     }
 
-    constructor(
-        IStakeManager _slasher,
-        ILagrangeCommittee _committee,
-        ILagrangeService _service
-    ) {
+    constructor(IStakeManager _slasher, ILagrangeCommittee _committee, ILagrangeService _service) {
         slasher = _slasher;
         committee = _committee;
         service = _service;
@@ -51,70 +39,31 @@ contract LagrangeServiceManager is
 
     // slash the given operator
     function freezeOperator(address operator) external onlyService {
-        committee.updateOperator(
-            OperatorUpdate({
-                operator: operator,
-                updateType: UPDATE_TYPE_UNREGISTER
-            })
-        );
+        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_UNREGISTER}));
         slasher.freezeOperator(operator);
     }
 
-    function recordFirstStakeUpdate(
-        address operator,
-        uint32 serveUntilBlock
-    ) external onlyService {
-        committee.updateOperator(
-            OperatorUpdate({
-                operator: operator,
-                updateType: UPDATE_TYPE_REGISTER
-            })
-        );
+    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external onlyService {
+        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_REGISTER}));
         slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
     }
 
-    function recordStakeUpdate(
-        address operator,
-        uint32 updateBlock,
-        uint32 serveUntilBlock,
-        uint256 prevElement
-    ) external {
-        committee.updateOperator(
-            OperatorUpdate({
-                operator: operator,
-                updateType: UPDATE_TYPE_AMOUNT_CHANGE
-            })
-        );
-        slasher.recordStakeUpdate(
-            operator,
-            updateBlock,
-            serveUntilBlock,
-            prevElement
-        );
-    }
-
-    function recordLastStakeUpdateAndRevokeSlashingAbility(
-        address operator,
-        uint32 serveUntilBlock
-    ) external onlyService {
-        committee.updateOperator(
-            OperatorUpdate({
-                operator: operator,
-                updateType: UPDATE_TYPE_UNREGISTER
-            })
-        );
-        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(
-            operator,
-            serveUntilBlock
-        );
-    }
-
-    function owner()
-        public
-        view
-        override(OwnableUpgradeable, IServiceManager)
-        returns (address)
+    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement)
+        external
     {
+        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_AMOUNT_CHANGE}));
+        slasher.recordStakeUpdate(operator, updateBlock, serveUntilBlock, prevElement);
+    }
+
+    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock)
+        external
+        onlyService
+    {
+        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_UNREGISTER}));
+        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntilBlock);
+    }
+
+    function owner() public view override(OwnableUpgradeable, IServiceManager) returns (address) {
         return OwnableUpgradeable.owner();
     }
 }

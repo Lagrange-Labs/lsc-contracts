@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/interfaces/IDelegationManager.sol";
 import {IDelegationTerms} from "eigenlayer-contracts/interfaces/IDelegationTerms.sol";
@@ -28,18 +28,13 @@ contract DelegationManager is IDelegationManager {
         require(owner() == msg.sender, "Ownable: caller is not the owner");
     }
 
-    function registerAsOperator(IDelegationTerms dt) onlyOwner external {
+    function registerAsOperator(IDelegationTerms dt) external onlyOwner {
         _operatorShares[address(dt)] = 100000000000000000;
     }
 
     function delegateTo(address operator) external {}
 
-    function delegateToBySignature(
-        address staker,
-        address operator,
-        uint256 expiry,
-        bytes memory signature
-    ) external {}
+    function delegateToBySignature(address staker, address operator, uint256 expiry, bytes memory signature) external {}
 
     function undelegate(address staker) external {}
 
@@ -47,30 +42,19 @@ contract DelegationManager is IDelegationManager {
         return address(0);
     }
 
-    function delegationTerms(
-        address operator
-    ) external view returns (IDelegationTerms) {
+    function delegationTerms(address operator) external view returns (IDelegationTerms) {
         return IDelegationTerms(address(0));
     }
 
-    function operatorShares(
-        address operator,
-        IStrategy strategy
-    ) external view returns (uint256) {
+    function operatorShares(address operator, IStrategy strategy) external view returns (uint256) {
         return _operatorShares[operator];
     }
 
-    function increaseDelegatedShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares
-    ) external {}
+    function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function decreaseDelegatedShares(
-        address staker,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares
-    ) external {}
+    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
+        external
+    {}
 
     function isDelegated(address staker) external view returns (bool) {
         return false;
