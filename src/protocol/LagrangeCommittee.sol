@@ -93,7 +93,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
         committeeParams[chainID] = CommitteeDef(block.number, _duration, freezeDuration);
         committees[chainID][0] = CommitteeData(0, 0, 0);
-        committeeLeaves[chainID] = new uint256[](0);
 
         emit InitCommittee(chainID, _duration, freezeDuration);
     }
@@ -105,16 +104,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     function updateOperator(OperatorUpdate memory opUpdate) external onlyServiceManager {
         if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
             operators[opUpdate.operator].amount = voteWeigher.weightOfOperator(opUpdate.operator, 1);
+            _updateAmount(opUpdate.operator);
+        } else if (opUpdate.updateType == UPDATE_TYPE_REGISTER) {
+            _registerOperator(opUpdate.operator);
+        } else if (opUpdate.updateType == UPDATE_TYPE_UNREGISTER) {
+            _unregisterOperator(opUpdate.operator);
         }
-        /*
-            if (opUpdate.updateType == UPDATE_TYPE_REGISTER) {
-                _registerOperator(opUpdate.operator);
-            } else if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
-                _updateAmount(opUpdate.operator);
-            } else if (opUpdate.updateType == UPDATE_TYPE_UNREGISTER) {
-                _unregisterOperator(opUpdate.operator);
-            }
-            */
         updatedOperators[operators[opUpdate.operator].chainID].push(opUpdate);
     }
 
@@ -139,7 +134,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
     
 ////////////////////////////////////////////////////////////////////////////////
-    // ChainID => Distance from Root => Node Hash
+    // ChainID => Distance from Leaves-row => Index => Node Hash
     mapping(uint32 => mapping(uint256 => mapping(uint256 => uint256))) public committeeNodes;
 
     // trie height => index value
@@ -150,8 +145,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     //
     
     // Logarithmic trie update mechanism
-    function _compLogCommitteeRootFromIndex(uint32 chainID, uint256 epochNumber, uint256 leafIndex) internal {
+    function _compLogCommitteeRootFromIndex(uint32 chainID, uint256 leafIndex) internal {
         uint256 nextRoot; //return value placeholder - flux next committee root
+        
+        uint256 epochNumber;
+        if (committeeParams[chainID].startBlock > 0) {
+            epochNumber = getEpochNumber(chainID, block.number);
+        } else {
+            epochNumber = 1;
+        }
         
         assert(heightIndices[0] == uint256(0));
         
@@ -343,17 +345,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
 
     function _update(uint32 chainID, uint256 epochNumber) internal {
-        for (uint256 i = 0; i < updatedOperators[chainID].length; i++) {
-            OperatorUpdate memory opUpdate = updatedOperators[chainID][i];
-            if (opUpdate.updateType == UPDATE_TYPE_REGISTER) {
-                _registerOperator(opUpdate.operator);
-            } else if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
-                _updateAmount(opUpdate.operator);
-            } else if (opUpdate.updateType == UPDATE_TYPE_UNREGISTER) {
-                _unregisterOperator(opUpdate.operator);
-            }
-        }
-
         _compCommitteeRoot(chainID, epochNumber);
 
         updatedEpoch[chainID] = epochNumber;
@@ -369,7 +360,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         committeeLeavesMap[chainID][operator] = leafIndex;
         committeeAddrs[chainID].push(operator);
         // Update trie
-        _compLogCommitteeRootFromIndex(chainID, getEpochNumber(chainID, block.number), leafIndex);
+        _compLogCommitteeRootFromIndex(chainID, leafIndex);
     }
 
     function _updateAmount(address operator) internal {
@@ -377,7 +368,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 leafIndex = committeeLeavesMap[chainID][operator];
         committeeLeaves[chainID][leafIndex] = getLeafHash(operator);
         // Update trie
-        _compLogCommitteeRootFromIndex(chainID, getEpochNumber(chainID, block.number), leafIndex);
+        _compLogCommitteeRootFromIndex(chainID, leafIndex);
     }
 
     function _unregisterOperator(address operator) internal {
@@ -390,8 +381,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         committeeLeavesMap[chainID][lastAddr] = leafIndex;
         committeeLeaves[chainID].pop();
         committeeAddrs[chainID].pop();
-        // Update trie
-        _compLogCommitteeRootFromIndex(chainID, getEpochNumber(chainID, block.number), leafIndex);
+        // Update trie for operator leaf and last leaf
+        _compLogCommitteeRootFromIndex(chainID, lastIndex-1);
+        _compLogCommitteeRootFromIndex(chainID, leafIndex);
     }
 
     // Computes epoch number for a chain's committee at a given block
