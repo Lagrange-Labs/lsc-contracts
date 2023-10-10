@@ -39,6 +39,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // ChainID => Address[]
     mapping(uint32 => address[]) public committeeAddrs;
 
+    // ChainID => Distance from Leaves-row => Index => Node Hash
+    mapping(uint32 => mapping(uint256 => mapping(uint256 => uint256))) public committeeNodes;
+    // trie height => index value
+    //
+    // Height Index: committee root of completely empty trie of height n,
+    // for more efficient computation of committee roots when tree expands/contracts
+    //
+    mapping(uint256 => uint256) heightIndices;
+
     mapping(address => OperatorStatus) public operators;
 
     // ChainID => Epoch check if committee tree has been updated
@@ -132,18 +141,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         currentCommittee = committees[chainID][epochNumber];
         nextRoot = committees[chainID][nextEpoch].root;
     }
-    
-////////////////////////////////////////////////////////////////////////////////
-    // ChainID => Distance from Leaves-row => Index => Node Hash
-    mapping(uint32 => mapping(uint256 => mapping(uint256 => uint256))) public committeeNodes;
-
-    // trie height => index value
-    mapping(uint256 => uint256) heightIndices;
-    //
-    // Height Index: committee root of completely empty trie of height n,
-    // for more efficient computation of committee roots when tree expands
-    //
-    
+        
     // Logarithmic trie update mechanism
     function _compLogCommitteeRootFromIndex(uint32 chainID, uint256 leafIndex) internal {
         uint256 nextRoot; //return value placeholder - flux next committee root
@@ -152,7 +150,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         if (committeeParams[chainID].startBlock > 0) {
             epochNumber = getEpochNumber(chainID, block.number);
         } else {
-            epochNumber = 1;
+            epochNumber = 0;
         }
         
         assert(heightIndices[0] == uint256(0));
@@ -225,71 +223,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
                 nextRoot = hash;
             }
         }
-        uint256 nextEpoch = epochNumber/* + COMMITTEE_NEXT_1*/;
+        uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
         committees[chainID][nextEpoch].root = nextRoot;
-    }
-////////////////////////////////////////////////////////////////////////////////
-
-    // Computes and returns "next" committee root.
-    function getNext1CommitteeRoot(uint32 chainID) public view returns (uint256) {
-        // Return hash(0,0) if committee is empty.
-        if (committeeLeaves[chainID].length == 0) {
-            return _hash2Elements([uint256(0), uint256(0)]);
-        // Return hash of only leaf if committee has size 1.
-        } else if (committeeLeaves[chainID].length == 1) {
-            return committeeLeaves[chainID][0];
-        }
-
-        // Calculate limit, trie height
-        uint256 _lim = 2;
-        uint256 height = 1;
-        uint256 dataLength = committeeLeaves[chainID].length;
-        while (_lim < dataLength) {
-            _lim *= 2;
-            ++height;
-        }
-
-        uint256[] memory branches = new uint256[](height + 1);
-        uint256 right;
-        uint256 _h;
-        uint256 i = 1;
-        
-        // For each leaf pair, 
-        for (; i < dataLength; i += 2) {
-            _h = 0;
-            right = committeeLeaves[chainID][i];
-            branches[0] = committeeLeaves[chainID][i - 1];
-            while ((i >> _h) & 1 == 1) {
-                right = _hash2Elements([branches[_h], right]);
-                _h++;
-            }
-            branches[_h] = right;
-        }
-
-        if (i == dataLength) {
-            branches[0] = committeeLeaves[chainID][i - 1];
-            _h = 0;
-            right = 0;
-            while ((i >> _h) & 1 == 1) {
-                right = _hash2Elements([branches[_h], right]);
-                _h++;
-            }
-            branches[_h] = right;
-            i += 2;
-        }
-
-        branches[0] = 0;
-        for (; i < _lim; i += 2) {
-            _h = 0;
-            right = 0;
-            while ((i >> _h) & 1 == 1) {
-                right = _hash2Elements([branches[_h], right]);
-                _h++;
-            }
-            branches[_h] = right;
-        }
-
-        return branches[height];
     }
 
     // Recalculates committee root (next_1)
