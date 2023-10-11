@@ -144,7 +144,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         
     // Logarithmic trie update mechanism
     function _compLogCommitteeRootFromIndex(uint32 chainID, uint256 leafIndex) internal {
-        uint256 nextRoot; //return value placeholder - flux next committee root
+        uint256 nextRoot; //flux next committee root
         
         uint256 epochNumber;
         if (committeeParams[chainID].startBlock > 0) {
@@ -217,7 +217,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
                 // Hash left and right leaves
                 hash = _hash2Elements([left, right]);
                 // Compute parentIndex, set its corresponding value to hash, and recursively compute its parent's value
-                leafIndex = leafIndex/2;
+                leafIndex /= leafIndex;
                 committeeNodes[chainID][depth][leafIndex] = hash;
                 // Assign hash to nextRoot in the event that this is the final root
                 nextRoot = hash;
@@ -292,8 +292,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint32 chainID = operators[operator].chainID;
         uint32 leafIndex = uint32(committeeLeaves[chainID].length);
         committeeLeaves[chainID].push(getLeafHash(operator));
-        committeeLeavesMap[chainID][operator] = leafIndex;
         committeeAddrs[chainID].push(operator);
+        committeeLeavesMap[chainID][operator] = leafIndex;
         // Update trie
         _compLogCommitteeRootFromIndex(chainID, leafIndex);
     }
@@ -308,17 +308,26 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     function _unregisterOperator(address operator) internal {
         uint32 chainID = operators[operator].chainID;
+
         uint32 leafIndex = uint32(committeeLeavesMap[chainID][operator]);
         uint256 lastIndex = committeeLeaves[chainID].length - 1;
         address lastAddr = committeeAddrs[chainID][lastIndex];
 
         committeeLeaves[chainID][leafIndex] = committeeLeaves[chainID][lastIndex];
+        committeeAddrs[chainID][leafIndex] = committeeAddrs[chainID][lastIndex];
         committeeLeavesMap[chainID][lastAddr] = leafIndex;
+
         committeeLeaves[chainID].pop();
         committeeAddrs[chainID].pop();
+
         // Update trie for operator leaf and last leaf
-        _compLogCommitteeRootFromIndex(chainID, lastIndex-1);
-        _compLogCommitteeRootFromIndex(chainID, leafIndex);
+        if (leafIndex < lastIndex) {
+            _compLogCommitteeRootFromIndex(chainID, leafIndex);
+        }
+        
+        if (lastIndex >= 0) {
+            _compLogCommitteeRootFromIndex(chainID, (lastIndex == 0) ? 0 : lastIndex-1);
+        }
     }
 
     // Computes epoch number for a chain's committee at a given block
