@@ -217,7 +217,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
                 // Hash left and right leaves
                 hash = _hash2Elements([left, right]);
                 // Compute parentIndex, set its corresponding value to hash, and recursively compute its parent's value
-                leafIndex /= leafIndex;
+                leafIndex /= 2;
                 committeeNodes[chainID][depth][leafIndex] = hash;
                 // Assign hash to nextRoot in the event that this is the final root
                 nextRoot = hash;
