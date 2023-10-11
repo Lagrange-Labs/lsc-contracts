@@ -121,6 +121,69 @@ describe('LagrangeCommittee', function () {
     shared.LagrangeCommittee = committee;
   });
 
+  it('trie construction/deconstruction', async function() {
+    const committee = await ethers.getContractAt(
+      'LagrangeCommittee',
+      proxy.address,
+      admin,
+    );
+    
+    leafHashes = [];
+    addrs = [];
+    
+    for(i = 4; i <= 4; i++) {
+        console.log("Building trie of size "+i+"...");
+        chainid = "0x000000000000000000000000000000000000000000000000000000000000000"+i;
+        for(j = 1; j <= i; j++) {
+            addr = "0x000000000000000000000000000000000000000"+j;
+            await committee.addOperator(
+              addr,
+              "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"+j,
+              chainid,
+              4294967295
+            );
+            tx = await committee.updateOperator({ operator: addr, updateType: 1 });
+            rec = await tx.wait();
+            
+	    croot = await committee.committees(chainid,1);
+	    console.log("trie root at size "+j+":",croot.root.toString());
+            
+            addrs.push(addr);
+        }
+
+        tx = await committee.registerChain(chainid, 10000, 1000);
+        rec = await tx.wait();
+    }
+    
+    const leaves = await Promise.all(
+      addrs.map(async (op, index) => {
+        const leaf = await committee.committeeLeaves(
+          4,
+          index,
+        );
+        return BigInt(leaf.toHexString());
+      }),
+    );
+    
+    for(i = 0; i < 1; i++) {
+        console.log("Deconstructing trie #"+i+"...");
+        for(j = 0; j < addrs.length; j++) {
+            index = 3-j;
+            console.log("Removing operator "+addrs[index]+"...");
+            tx = await committee.updateOperator({
+                operator:	addrs[index],
+                updateType:	3
+            });
+            rec = await tx.wait();
+	    croot = await committee.committees(chainid,2);
+	    console.log("trie root:",croot.root.toString());
+	    if(index == 0) {
+	       expect(croot.root.toString()).to.equal(ethers.BigNumber.from("14744269619966411208579211824598458697587494354926760081771325075741142829156").toString());
+	    }
+        }
+    }
+  });
+
   it('leaf hash', async function () {
     const committee = await ethers.getContractAt(
       'LagrangeCommittee',
