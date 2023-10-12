@@ -1,5 +1,5 @@
-PRIVATE_KEY?=0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c
-RPC_URL?=http://127.0.0.1:8545
+PRIVATE_KEY?="0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c"
+RPC_URL?="https://0.0.0.0:8545"
 
 # Run ethereum nodes
 run-geth:
@@ -7,6 +7,9 @@ run-geth:
 
 init-accounts:
 	node util/init-accounts.js
+
+generate-accounts: 
+	node util/generate-accounts.js
 
 .PHONY: run-geth init-accounts
 
@@ -79,6 +82,13 @@ all: run-geth init-accounts deploy-weth9 deploy-eigenlayer add-strategy register
 all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deploy-register init-committee	
 
 all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deposit-stake deploy-register init-committee	
+
+deploy-verifiers:
+	echo "(deploy-verifiers)"
+
+deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
+
+deploy-native: run-geth generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
 
 .PHONY: all clean all-mock all-native
 
