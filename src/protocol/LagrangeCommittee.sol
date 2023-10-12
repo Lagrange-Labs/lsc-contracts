@@ -291,8 +291,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     function _registerOperator(address operator) internal {
         uint32 chainID = operators[operator].chainID;
         uint32 leafIndex = uint32(committeeLeaves[chainID].length);
-        committeeLeaves[chainID].push(getLeafHash(operator));
         committeeAddrs[chainID].push(operator);
+        committeeLeaves[chainID].push(getLeafHash(operator));
         committeeLeavesMap[chainID][operator] = leafIndex;
         // Update trie
         _compLogCommitteeRootFromIndex(chainID, leafIndex);
