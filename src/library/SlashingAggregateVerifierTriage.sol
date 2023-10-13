@@ -34,7 +34,7 @@ contract SlashingAggregateVerifierTriage is
         verifiers[routeIndex] = verifierAddress;
     }
     
-    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID) internal returns (uint,uint) {
+    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID) internal view returns (uint,uint) {
         uint _chainHeader1;
         uint _chainHeader2;
 
@@ -65,7 +65,7 @@ contract SlashingAggregateVerifierTriage is
       uint256 blockNumber,
       uint32 chainID,
       uint256 committeeSize
-    ) external returns (bool) {
+    ) external view returns (bool) {
         uint256 routeIndex = _computeRouteIndex(committeeSize);
         address verifierAddress = verifiers[routeIndex];
        
@@ -83,7 +83,7 @@ contract SlashingAggregateVerifierTriage is
             _chainHeader1,
             _chainHeader2
         ];
-
+        
         bool result = verifier.verifyProof(params.a, params.b, params.c, input);
         
         return result;

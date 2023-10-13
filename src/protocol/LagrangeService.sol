@@ -124,9 +124,17 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
     function _checkBlockSignature(
         Evidence memory _evidence
     ) internal returns (bool) {
+        OperatorStatus memory op = committee.getOperator(_evidence.operator);
+        
         // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) = committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
-        (bool sigVerify, uint[75] memory svInput) = SigVerify.verify(_evidence.sigProof, cdata.height);
+        
+        bool sigVerify = SigVerify.verify(
+          _evidence,
+          op.blsPubKey,
+          cdata.height
+        );
+        
         bool aggVerify = AggVerify.verify(
           _evidence.aggProof,
           _evidence.currentCommitteeRoot,
@@ -137,24 +145,6 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
           cdata.height
         );
 
-        // isolate pubkey
-        bytes memory pub = new bytes(48); // TODO what are the dimensions of pub (_pubKeyLength) and how are the public inputs converted
-        for (uint i = 1; i <= 14; i++) {
-            // construct BLS public key
-        }
-        
-        OperatorStatus memory op = committee.getOperator(_evidence.operator);
-        require(keccak256(op.blsPubKey) == keccak256(pub), "BLS public key associated with evidence address does not match BLS public key in proof.");
-        
-        // isolate signingroot
-        bytes32 signingRoot;
-        bytes memory tmp = new bytes(32);
-        for (uint i = 43; i <= 74; i++) {
-            require(svInput[i] < 256, "LagrangeService: signingRoot array contains value in excess of 255");
-            tmp[i-43] = bytes1(uint8(svInput[i]));
-        }
-        signingRoot = abi.decode(tmp,(bytes32));
-
         // compare signingroot to evidence, extract values - TODO crossreference/confirm
         bytes32 reconstructedSigningRoot = keccak256(abi.encodePacked(
             _evidence.currentCommitteeRoot,
@@ -163,10 +153,6 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
             _evidence.blockHash
         ));
 
-        require(signingRoot == reconstructedSigningRoot, "LagrangeService: Reconstructed signing root does not match evidence.");
-
-        // derive blocknumber, blockhash, committee roots from agg inputs, crossreference with committee state data TODO
-        
         return (sigVerify);
     }
         
