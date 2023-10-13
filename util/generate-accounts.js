@@ -6,8 +6,9 @@ const bls = require('bls-eth-wasm');
 require('dotenv').config();
 
 const DEFAULT_MNEMONIC =
-  'exchange holiday girl alone head gift unfair resist void voice people tobacco';
-const DEFAULT_NUM_ACCOUNTS = 150;
+      'exchange holiday girl alone head gift unfair resist void voice people tobacco';
+//      'journey virus rough topic pioneer lounge lava arena pencil juice ticket fly'; // alternate mnemonic for mantle node(s)
+const DEFAULT_NUM_ACCOUNTS = 1;
 
 async function genBLSKey() {
     await bls.init(bls.BLS12_381);
@@ -57,16 +58,19 @@ async function main() {
 
 	op = [];
 	bpk = [];
+	bpriv = [];
 	
 	await Object.entries(accounts).forEach(([k,v]) => {
 	    op.push(k);
 	    bpk.push(blsPairs[k].pub);
+	    bpriv.push(blsPairs[k].priv);
 	});
 	
 	for (i = 0; i < operators.length; i++) {
 	    chain = operators[i];
 	    operators[i].operators = op;
 	    operators[i].bls_pub_keys = bpk;
+	    operators[i].bls_priv_keys = bpriv;
 	}
 
 	await fs.promises.writeFile(
