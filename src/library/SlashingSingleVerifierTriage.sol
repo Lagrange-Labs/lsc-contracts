@@ -99,7 +99,20 @@ contract SlashingSingleVerifierTriage is
        }
        return slices;
     }
-    
+
+function _uint2array(uint base, uint slices, uint x) internal returns (uint[] memory) {
+	uint mod = 1;
+	for (uint idx = 0; idx < base; idx++) {
+		mod = mod * 2;
+	}
+	uint[slices] memory ret;
+	uint x_temp = x;
+	for (uint idx = 0; idx < slices; idx++) {
+		ret[idx]= x_temp % mod;
+		x_temp /= mod;
+	}
+	return ret;
+}    
     event Here(uint256[3]);
     
     function verify(
