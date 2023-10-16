@@ -33,15 +33,6 @@ contract SlashingSingleVerifierTriage is
     function setRoute(uint256 routeIndex, address verifierAddress) external onlyOwner {
         verifiers[routeIndex] = verifierAddress;
     }
-/*
-    function getSigningRoot(bytes32 blockHash, uint256 blockNumber, uint32 chainID, bytes32 currentCommittee, bytes32 nextCommittee) external view returns (bytes32) {
-        bytes memory chainHeader = abi.encodePacked(
-            blockHash,
-            uint256(blockNumber),
-            uint32(chainID),
-        );
-    }
-*/
     
     function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID) internal view returns (uint[32] memory) {
         bytes memory chainHeader = abi.encodePacked(
@@ -58,62 +49,77 @@ contract SlashingSingleVerifierTriage is
         }
         return signingRoot;
     }
-    
 
-    function _bytes192tobytes48(bytes memory bpk) internal returns (bytes[4] memory) {
-       bytes[4] memory res;
-       for(uint256 i = 0; i < 48; i++) {
-           res[0][i] = bpk[i];
-           res[1][i] = bpk[i+48];
-           res[2][i] = bpk[i+92];
-           res[3][i] = bpk[i+240];
-       }
-       return res;
-    }
-    
-    function _bytes96tobytes48(bytes memory bpk) internal returns (bytes[2] memory) {
-       bytes[2] memory gxy;
+    function _bytes96tobytes48(bytes memory bpk) public returns (bytes[2] memory) {
+       require(bpk.length == 96, "BLS public key must be provided in a form that is 96 bytes.");
+       bytes[2] memory gxy = [new bytes(48), new bytes(48)];
        for(uint256 i = 0; i < 48; i++) {
            gxy[0][i] = bpk[i];
            gxy[1][i] = bpk[i+48];
        }
-       return gxy;
+       return [abi.encodePacked(gxy[0]), abi.encodePacked(gxy[1])];
     }
     
-    function _bytes48(bytes memory b) internal returns (bytes1[48] memory) {
-        bytes1[48] memory res;
-        for(uint i = 0; i < 48; i++) {
-           res[i] = b[i];
+    function _bytes48toslices(bytes memory b48) internal returns (uint[7] memory) {
+        // validate length
+        require(b48.length == 48, "Input should be 48 bytes.");
+        // resultant slices
+        uint[7] memory res;
+        // first 32-byte word
+        uint256 buffer1;
+        // second 32-byte word / remainder
+        uint128 buffer2;
+        // for cycling from first to second word
+        uint56 activeBuffer;
+        // load words
+        assembly {
+            buffer1 := mload(add(b48,0x20))
+            buffer2 := mload(add(b48,0x40))
+        }
+        // define slice
+        uint56 slice;
+        // set active buffer to first buffer, retire first buffer
+        activeBuffer = uint56(buffer1);
+        buffer1 = 0;
+        for (uint i = 0; i < 7; i++) {
+            // assign slice (as active buffer truncated to 56 bits and shifted left for 55-bits with leading zero)
+            if (i == 6) {
+                slice = activeBuffer >> 2;
+            } else {
+                slice = activeBuffer >> 1;
+                // shift active buffer right by 55 bits
+                buffer1 << 55;
+                activeBuffer = uint56(buffer1);
+                // replace new trailing zeros in first buffer with first 55 bits of second buffer
+                activeBuffer += uint56(buffer2 >> 1);
+                // shift second buffer right by 55 bits
+                buffer2 << 55;
+            }
+            // add to slices
+            res[i] = uint256(slice >> 200);
         }
         return res;
     }
-    
-    function _bytes48toslices(bytes[2] memory gxy) internal returns (uint[7][2] memory) {
-       uint[7][2] memory slices;
-       for(uint256 i = 0; i < 2; i++) {
-           bytes1[48] memory coord = _bytes48(gxy[i]);
-           for(uint256 j = 0; j < 7; j++) {
-               bytes1[48] memory slice = coord >> ((6-j) * 55);
-               slices[j][i] = uint256(slice) & ((1 << 55) - 1);
-           }
+
+    function _bytes192tobytes48(bytes memory bpk) internal returns (bytes[4] memory) {
+       require(bpk.length==192);
+       bytes[4] memory res = [new bytes(48), new bytes(48), new bytes(48), new bytes(48)];
+       for(uint256 i = 0; i < 48; i++) {
+           res[0][i] = bpk[i];
+           res[1][i] = bpk[i+48];
+           res[2][i] = bpk[i+92];
+           res[3][i] = bpk[i+140];
        }
+       return res;
+    }
+    
+    function _getBLSPubKeySlices(bytes calldata blsPubKey) internal returns (uint[7][2] memory) {
+       //convert bls pubkey bytes (len 96) to bytes[2] (len 48)
+       bytes[2] memory gxy = _bytes96tobytes48(blsPubKey);
+       //conver to slices
+       uint[7][2] memory slices = [_bytes48toslices(gxy[0]),_bytes48toslices(gxy[1])];
        return slices;
     }
-
-function _uint2array(uint base, uint slices, uint x) internal returns (uint[] memory) {
-	uint mod = 1;
-	for (uint idx = 0; idx < base; idx++) {
-		mod = mod * 2;
-	}
-	uint[slices] memory ret;
-	uint x_temp = x;
-	for (uint idx = 0; idx < slices; idx++) {
-		ret[idx]= x_temp % mod;
-		x_temp /= mod;
-	}
-	return ret;
-}    
-    event Here(uint256[3]);
     
     function verify(
       EvidenceVerifier.Evidence memory _evidence,
@@ -121,7 +127,6 @@ function _uint2array(uint base, uint slices, uint x) internal returns (uint[] me
       uint256 committeeSize
     ) external returns (bool) {
         address verifierAddress = verifiers[_computeRouteIndex(committeeSize)];
-       
         require(verifierAddress != address(0), "SlashingSingleVerifierTriage: Verifier address not set for committee size specified.");
         
         Verifier verifier = Verifier(verifierAddress);
@@ -130,27 +135,24 @@ function _uint2array(uint base, uint slices, uint x) internal returns (uint[] me
         uint[75] memory input;
         input[0] = 1;
 
-       //convert bytes (len 96) to bytes[2] (len 48)
-       bytes[2] memory gxy = _bytes96tobytes48(blsPubKey);
-       uint[7][2] memory slices = _bytes48toslices(gxy);
-       
+       uint[7][2] memory slices = _getBLSPubKeySlices(blsPubKey);
+
+       // add to input
        uint inc = 1;
        for(uint i = 0; i < 7; i++) {
          for(uint j = 0; j < 2; j++) {
-           input[inc] = slices[i][j];
+           input[inc] = slices[j][i];
            inc++;
          }
        }
        
        bytes[4] memory sig_slices = _bytes192tobytes48(_evidence.blockSignature);
        for(uint si = 0; si < 4; si++){
-         uint[7][2] memory slice = _bytes48toslices(sig_slices[si]);
-         for(uint i = 0; i < 7; i++) {
-           for(uint j = 0; j < 2; j++) {
-             input[inc] = slices[i][j];
+           uint[7] memory slice = _bytes48toslices(sig_slices[si]);
+           for(uint i = 0; i < 7; i++) {
+             input[inc] = slice[i];
              inc++;
            }
-         }
        }
 
         uint256[32] memory signingRoot = _getChainHeader(_evidence.blockHash,_evidence.blockNumber,_evidence.chainID);
