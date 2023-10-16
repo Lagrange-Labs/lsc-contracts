@@ -9,22 +9,16 @@
     "tokens": [
         {
             "token_name": "mantle",
-            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
+            "token_address": "0x953CB47E00b9A022aDa02ba94BDDa4Fa544bE60E",
             "multiplier": 1000000000
         }
     ],
     "chains": [
         {
             "chain_name": "mantle",
-            "chain_id": 1337,
+            "chain_id": 5001,
             "epoch_period": 5,
             "freeze_duration": 2
-        },
-        {
-            "chain_name": "optimism",
-            "chain_id": 420,
-            "epoch_period": 43200,
-            "freeze_duration": 6000
         }
     ],
     "settlement": {

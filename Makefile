@@ -83,6 +83,8 @@ all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange upd
 
 all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee	
 
+deploy-native: run-geth generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee	
+
 .PHONY: all clean all-mock all-native
 
 # Formatter
