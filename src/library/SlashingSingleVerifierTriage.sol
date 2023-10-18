@@ -69,6 +69,7 @@ contract SlashingSingleVerifierTriage is
     
     event Here0(bytes);
     event Here1(uint256 a);
+    event Here2(uint[7] s);
     event Here(uint56 a);
     
     function _bytes48toslices(bytes memory b48) internal returns (uint[7] memory) {
@@ -93,28 +94,25 @@ contract SlashingSingleVerifierTriage is
         // define slice
         uint56 slice;
         // set active buffer to first buffer, retire first buffer
-emit Here0(b48);
-//emit Here1(buffer1);
-//emit Here1(buffer2);
         activeBuffer = buffer1;
         for (uint i = 0; i < 7; i++) {
             // assign slice (as active buffer truncated to 56 bits and shifted left for 55-bits with leading zero)
             if (i == 6) {
-                slice = uint56(activeBuffer >> 208);// >> 2;
+                slice = uint56(activeBuffer >> 201);// >> 2;
             } else {
-                slice = uint56(activeBuffer >> 200);// >> 1;
+                slice = uint56(activeBuffer >> 201);
                 // shift active buffer right by 55 bits
-                buffer1 = buffer1 << 56;//55;
+                buffer1 = buffer1 << 55;
                 // shift second buffer right by 55 bits
-                buffer2 = buffer2 << 56;//55;
+                buffer2 = buffer2 << 55;
                 // replace new trailing zeros in first buffer with first 55 bits of second buffer
-                buffer1 += uint56(buffer2 >> 128);// >> 1;
+                buffer1 += uint56(buffer2 >> 128);
                 activeBuffer = buffer1;
             }
             // add to slices
             res[i] = uint256(slice);
-emit Here1(res[i]);
         }
+        emit Here2(res);
         return res;
     }
 
