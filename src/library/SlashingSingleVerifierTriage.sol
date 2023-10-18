@@ -34,7 +34,10 @@ contract SlashingSingleVerifierTriage is
         verifiers[routeIndex] = verifierAddress;
     }
     
-    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID) internal view returns (uint[32] memory) {
+    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID) internal view returns (uint,uint) {
+        uint _chainHeader1;
+        uint _chainHeader2;
+
         bytes memory chainHeader = abi.encodePacked(
             blockHash,
             uint256(blockNumber),
@@ -42,12 +45,16 @@ contract SlashingSingleVerifierTriage is
         );
         
         bytes32 chHash = keccak256(chainHeader);
+        bytes16 ch1 = bytes16(chHash);
+        bytes16 ch2 = bytes16(chHash << 128);
         
-        uint256[32] memory signingRoot;
-        for (uint256 i = 0; i < 32; i++) {
-            signingRoot[i] = uint(uint8(bytes1(chHash[i]))) << 248;
-        }
-        return signingRoot;
+        bytes32 _ch1 = bytes32(ch1) >> 128;
+        bytes32 _ch2 = bytes32(ch2) >> 128;
+        
+        _chainHeader1 = uint256(_ch1);
+        _chainHeader2 = uint256(_ch2);
+        
+        return (_chainHeader1, _chainHeader2);
     }
 
     function _bytes96tobytes48(bytes memory bpk) public returns (bytes[2] memory) {
@@ -60,6 +67,10 @@ contract SlashingSingleVerifierTriage is
        return [abi.encodePacked(gxy[0]), abi.encodePacked(gxy[1])];
     }
     
+    event Here0(bytes);
+    event Here1(uint256 a);
+    event Here(uint56 a);
+    
     function _bytes48toslices(bytes memory b48) internal returns (uint[7] memory) {
         // validate length
         require(b48.length == 48, "Input should be 48 bytes.");
@@ -68,35 +79,41 @@ contract SlashingSingleVerifierTriage is
         // first 32-byte word
         uint256 buffer1;
         // second 32-byte word / remainder
-        uint128 buffer2;
+        uint256 buffer2;
         // for cycling from first to second word
-        uint56 activeBuffer;
+        uint256 activeBuffer;
         // load words
         assembly {
+            // 32b
             buffer1 := mload(add(b48,0x20))
+            // 16b
             buffer2 := mload(add(b48,0x40))
         }
+        buffer2 = buffer2 >> 128;
         // define slice
         uint56 slice;
         // set active buffer to first buffer, retire first buffer
-        activeBuffer = uint56(buffer1);
-        buffer1 = 0;
+emit Here0(b48);
+//emit Here1(buffer1);
+//emit Here1(buffer2);
+        activeBuffer = buffer1;
         for (uint i = 0; i < 7; i++) {
             // assign slice (as active buffer truncated to 56 bits and shifted left for 55-bits with leading zero)
             if (i == 6) {
-                slice = activeBuffer >> 2;
+                slice = uint56(activeBuffer >> 208);// >> 2;
             } else {
-                slice = activeBuffer >> 1;
+                slice = uint56(activeBuffer >> 200);// >> 1;
                 // shift active buffer right by 55 bits
-                buffer1 << 55;
-                activeBuffer = uint56(buffer1);
-                // replace new trailing zeros in first buffer with first 55 bits of second buffer
-                activeBuffer += uint56(buffer2 >> 1);
+                buffer1 = buffer1 << 56;//55;
                 // shift second buffer right by 55 bits
-                buffer2 << 55;
+                buffer2 = buffer2 << 56;//55;
+                // replace new trailing zeros in first buffer with first 55 bits of second buffer
+                buffer1 += uint56(buffer2 >> 128);// >> 1;
+                activeBuffer = buffer1;
             }
             // add to slices
-            res[i] = uint256(slice >> 200);
+            res[i] = uint256(slice);
+emit Here1(res[i]);
         }
         return res;
     }
@@ -120,6 +137,14 @@ contract SlashingSingleVerifierTriage is
        uint[7][2] memory slices = [_bytes48toslices(gxy[0]),_bytes48toslices(gxy[1])];
        return slices;
     }
+    /*
+    event Here(
+            uint[2] a,
+            uint[2][2] b,
+            uint[2] c,
+            uint[75] input
+        );
+    */
     
     function verify(
       EvidenceVerifier.Evidence memory _evidence,
@@ -132,16 +157,16 @@ contract SlashingSingleVerifierTriage is
         Verifier verifier = Verifier(verifierAddress);
         proofParams memory params = abi.decode(_evidence.sigProof,(proofParams));
         
-        uint[75] memory input;
+        uint[47] memory input;
         input[0] = 1;
 
        uint[7][2] memory slices = _getBLSPubKeySlices(blsPubKey);
 
        // add to input
        uint inc = 1;
-       for(uint i = 0; i < 7; i++) {
-         for(uint j = 0; j < 2; j++) {
-           input[inc] = slices[j][i];
+       for(uint i = 0; i < 2; i++) {
+         for(uint j = 0; j < 7; j++) {
+           input[inc] = slices[i][j];
            inc++;
          }
        }
@@ -155,11 +180,13 @@ contract SlashingSingleVerifierTriage is
            }
        }
 
-        uint256[32] memory signingRoot = _getChainHeader(_evidence.blockHash,_evidence.blockNumber,_evidence.chainID);
-        for(uint256 i = 43; i < 75; i++) {
-            input[i] = signingRoot[i-43];
-        }
+        input[43] = uint(_evidence.currentCommitteeRoot);
+        input[44] = uint(_evidence.nextCommitteeRoot);
         
+        (input[45], input[46]) = _getChainHeader(_evidence.blockHash,_evidence.blockNumber,_evidence.chainID);
+        
+        //emit Here(params.a, params.b, params.c, input);
+        return false;
         bool result = verifier.verifyProof(params.a, params.b, params.c, input);
         
         return result;
