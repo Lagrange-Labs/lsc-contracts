@@ -93,17 +93,17 @@ contract SlashingSingleVerifierTriage is
         for (uint i = 0; i < 7; i++) {
             // assign slice (as active buffer truncated to 56 bits and shifted left for 55-bits with leading zero)
             if (i == 6) {
-                slice = uint56(activeBuffer);// >> 2;
+                slice = (uint56(activeBuffer));// >> 2;
             } else {
-                slice = uint56(activeBuffer);// >> 1;
+                slice = (uint56(activeBuffer) << 1)>>1;// >> 1;
                 // shift second buffer right by 55 bits
-                buffer2 = buffer2 >> 56;//55;
+                buffer2 = buffer2 >> 55;
                 // replace new trailing zeros in first buffer with first 55 bits of second buffer
-                buffer2 = (uint256(uint56(buffer1))<<200) + buffer2;
+                buffer2 = (uint256(uint56(buffer1))<<201) + buffer2;
                 // refresh active buffer
                 activeBuffer = buffer2;
                 // shift first buffer right by 55 bits
-                buffer1 = buffer1 >> 56;//55;
+                buffer1 = buffer1 >> 55;
             }
             // add to slices
             res[i] = uint256(slice);
@@ -117,7 +117,7 @@ contract SlashingSingleVerifierTriage is
        for(uint256 i = 0; i < 48; i++) {
            res[0][i] = bpk[i];
            res[1][i] = bpk[i+48];
-           res[2][i] = bpk[i+92];
+           res[2][i] = bpk[i+96];
            res[3][i] = bpk[i+144];
        }
        return res;
@@ -131,14 +131,11 @@ contract SlashingSingleVerifierTriage is
        return slices;
     }
     
-    event Here(uint[47] a);
-    event Here1(uint[7] a);
-    
     function verify(
       EvidenceVerifier.Evidence memory _evidence,
       bytes calldata blsPubKey,
       uint256 committeeSize
-    ) external returns (bool) {
+    ) external view returns (bool) {
         address verifierAddress = verifiers[_computeRouteIndex(committeeSize)];
         require(verifierAddress != address(0), "SlashingSingleVerifierTriage: Verifier address not set for committee size specified.");
         
@@ -162,7 +159,6 @@ contract SlashingSingleVerifierTriage is
        bytes[4] memory sig_slices = _bytes192tobytes48(_evidence.blockSignature);
        for(uint si = 0; si < 4; si++){
            uint[7] memory slice = _bytes48toslices(sig_slices[si]);
-       emit Here1(slice);
            for(uint i = 0; i < 7; i++) {
              input[inc] = slice[i];
              inc++;
@@ -173,8 +169,6 @@ contract SlashingSingleVerifierTriage is
         input[44] = uint(_evidence.nextCommitteeRoot);
         
         (input[45], input[46]) = _getChainHeader(_evidence.blockHash,_evidence.blockNumber,_evidence.chainID);
-        
-        emit Here(input);return false;
         
         bool result = verifier.verifyProof(params.a, params.b, params.c, input);
         return result;
