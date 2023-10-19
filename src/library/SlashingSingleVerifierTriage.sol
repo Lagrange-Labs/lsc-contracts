@@ -27,7 +27,7 @@ contract SlashingSingleVerifierTriage is
         uint[2] a;
         uint[2][2] b;
         uint[2] c;
-        uint[75] input;
+        uint[47] input;
     }
     
     function setRoute(uint256 routeIndex, address verifierAddress) external onlyOwner {
@@ -57,7 +57,7 @@ contract SlashingSingleVerifierTriage is
         return (_chainHeader1, _chainHeader2);
     }
 
-    function _bytes96tobytes48(bytes memory bpk) public returns (bytes[2] memory) {
+    function _bytes96tobytes48(bytes memory bpk) public view returns (bytes[2] memory) {
        require(bpk.length == 96, "BLS public key must be provided in a form that is 96 bytes.");
        bytes[2] memory gxy = [new bytes(48), new bytes(48)];
        for(uint256 i = 0; i < 48; i++) {
@@ -67,12 +67,7 @@ contract SlashingSingleVerifierTriage is
        return [abi.encodePacked(gxy[0]), abi.encodePacked(gxy[1])];
     }
     
-    event Here0(bytes);
-    event Here1(uint256 a);
-    event Here2(uint[7] s);
-    event Here(uint56 a);
-    
-    function _bytes48toslices(bytes memory b48) internal returns (uint[7] memory) {
+    function _bytes48toslices(bytes memory b48) internal view returns (uint[7] memory) {
         // validate length
         require(b48.length == 48, "Input should be 48 bytes.");
         // resultant slices
@@ -88,35 +83,35 @@ contract SlashingSingleVerifierTriage is
             // 32b
             buffer1 := mload(add(b48,0x20))
             // 16b
-            buffer2 := mload(add(b48,0x40))
+            buffer2 := mload(add(b48,0x30))
         }
-        buffer2 = buffer2 >> 128;
+        buffer1 = buffer1 >> 128;
         // define slice
         uint56 slice;
         // set active buffer to first buffer, retire first buffer
-        activeBuffer = buffer1;
+        activeBuffer = buffer2;
         for (uint i = 0; i < 7; i++) {
             // assign slice (as active buffer truncated to 56 bits and shifted left for 55-bits with leading zero)
             if (i == 6) {
-                slice = uint56(activeBuffer >> 201);// >> 2;
+                slice = uint56(activeBuffer);// >> 2;
             } else {
-                slice = uint56(activeBuffer >> 201);
-                // shift active buffer right by 55 bits
-                buffer1 = buffer1 << 55;
+                slice = uint56(activeBuffer);// >> 1;
                 // shift second buffer right by 55 bits
-                buffer2 = buffer2 << 55;
+                buffer2 = buffer2 >> 56;//55;
                 // replace new trailing zeros in first buffer with first 55 bits of second buffer
-                buffer1 += uint56(buffer2 >> 128);
-                activeBuffer = buffer1;
+                buffer2 = (uint256(uint56(buffer1))<<200) + buffer2;
+                // refresh active buffer
+                activeBuffer = buffer2;
+                // shift first buffer right by 55 bits
+                buffer1 = buffer1 >> 56;//55;
             }
             // add to slices
             res[i] = uint256(slice);
         }
-        emit Here2(res);
         return res;
     }
 
-    function _bytes192tobytes48(bytes memory bpk) internal returns (bytes[4] memory) {
+    function _bytes192tobytes48(bytes memory bpk) internal view returns (bytes[4] memory) {
        require(bpk.length==192);
        bytes[4] memory res = [new bytes(48), new bytes(48), new bytes(48), new bytes(48)];
        for(uint256 i = 0; i < 48; i++) {
@@ -128,27 +123,19 @@ contract SlashingSingleVerifierTriage is
        return res;
     }
     
-    function _getBLSPubKeySlices(bytes calldata blsPubKey) internal returns (uint[7][2] memory) {
+    function _getBLSPubKeySlices(bytes calldata blsPubKey) internal view returns (uint[7][2] memory) {
        //convert bls pubkey bytes (len 96) to bytes[2] (len 48)
        bytes[2] memory gxy = _bytes96tobytes48(blsPubKey);
        //conver to slices
        uint[7][2] memory slices = [_bytes48toslices(gxy[0]),_bytes48toslices(gxy[1])];
        return slices;
     }
-    /*
-    event Here(
-            uint[2] a,
-            uint[2][2] b,
-            uint[2] c,
-            uint[75] input
-        );
-    */
     
     function verify(
       EvidenceVerifier.Evidence memory _evidence,
       bytes calldata blsPubKey,
       uint256 committeeSize
-    ) external returns (bool) {
+    ) external view returns (bool) {
         address verifierAddress = verifiers[_computeRouteIndex(committeeSize)];
         require(verifierAddress != address(0), "SlashingSingleVerifierTriage: Verifier address not set for committee size specified.");
         
@@ -183,8 +170,6 @@ contract SlashingSingleVerifierTriage is
         
         (input[45], input[46]) = _getChainHeader(_evidence.blockHash,_evidence.blockNumber,_evidence.chainID);
         
-        //emit Here(params.a, params.b, params.c, input);
-        return false;
         bool result = verifier.verifyProof(params.a, params.b, params.c, input);
         
         return result;
