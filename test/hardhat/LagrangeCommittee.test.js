@@ -121,66 +121,62 @@ describe('LagrangeCommittee', function () {
     shared.LagrangeCommittee = committee;
   });
 
-  it('trie construction/deconstruction', async function() {
+  it('trie construction/deconstruction', async function () {
     const committee = await ethers.getContractAt(
       'LagrangeCommittee',
       proxy.address,
       admin,
     );
-    
+
     leafHashes = [];
     addrs = [];
-    
-    for(i = 4; i <= 4; i++) {
-        console.log("Building trie of size "+i+"...");
-        chainid = "0x000000000000000000000000000000000000000000000000000000000000000"+i;
-        for(j = 1; j <= i; j++) {
-            addr = "0x000000000000000000000000000000000000000"+j;
-            await committee.addOperator(
-              addr,
-              "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"+j,
-              chainid,
-              4294967295
-            );
-            tx = await committee.updateOperator({ operator: addr, updateType: 1 });
-            rec = await tx.wait();
-            
-	    croot = await committee.committees(chainid,1);
-	    console.log("trie root at size "+j+":",croot.root.toString());
-            
-            addrs.push(addr);
-        }
 
-        tx = await committee.registerChain(chainid, 10000, 1000);
+    for (i = 4; i <= 4; i++) {
+      console.log('Building trie of size ' + i + '...');
+      chainid =
+        '0x000000000000000000000000000000000000000000000000000000000000000' + i;
+      for (j = 1; j <= i; j++) {
+        addr = '0x000000000000000000000000000000000000000' + j;
+        await committee.addOperator(
+          addr,
+          '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' +
+            j,
+          chainid,
+          4294967295,
+        );
+        tx = await committee.updateOperator({ operator: addr, updateType: 1 });
         rec = await tx.wait();
+
+        croot = await committee.committees(chainid, 1);
+        console.log('trie root at size ' + j + ':', croot.root.toString());
+
+        addrs.push(addr);
+      }
+
+      tx = await committee.registerChain(chainid, 10000, 1000);
+      rec = await tx.wait();
     }
-    
+
     const leaves = await Promise.all(
       addrs.map(async (op, index) => {
-        const leaf = await committee.committeeLeaves(
-          4,
-          index,
-        );
+        const leaf = await committee.committeeNodes(4, 0, index);
         return BigInt(leaf.toHexString());
       }),
     );
-    
-    for(i = 0; i < 1; i++) {
-        console.log("Deconstructing trie #"+i+"...");
-        for(j = 0; j < addrs.length; j++) {
-            index = 3-j;
-            console.log("Removing operator "+addrs[index]+"...");
-            tx = await committee.updateOperator({
-                operator:	addrs[index],
-                updateType:	3
-            });
-            rec = await tx.wait();
-	    croot = await committee.committees(chainid,2);
-	    console.log("trie root:",croot.root.toString());
-	    if(index == 0) {
-	       expect(croot.root.toString()).to.equal(ethers.BigNumber.from("14744269619966411208579211824598458697587494354926760081771325075741142829156").toString());
-	    }
-        }
+    croot = await committee.committees(chainid, 1);
+    console.log('current root: ', croot);
+
+    for (i = 0; i < 1; i++) {
+      console.log('Deconstructing trie #' + i + '...');
+      for (j = 0; j < addrs.length; j++) {
+        index = 3 - j;
+        console.log('Removing operator ' + addrs[index] + '...');
+        tx = await committee.updateOperator({
+          operator: addrs[index],
+          updateType: 3,
+        });
+        rec = await tx.wait();
+      }
     }
   });
 
@@ -228,7 +224,11 @@ describe('LagrangeCommittee', function () {
       leaf.toString(16),
     );
 
-    const leafHash = await committee.committeeLeaves(operators[0].chain_id, 0);
+    const leafHash = await committee.committeeNodes(
+      operators[0].chain_id,
+      0,
+      0,
+    );
     const committeeRoot = await committee.getCommittee(
       operators[0].chain_id,
       1000,
@@ -268,8 +268,9 @@ describe('LagrangeCommittee', function () {
 
     const leaves = await Promise.all(
       operators[0].operators.map(async (op, index) => {
-        const leaf = await committee.committeeLeaves(
+        const leaf = await committee.committeeNodes(
           operators[0].chain_id,
+          0,
           index,
         );
         return BigInt(leaf.toHexString());
@@ -279,15 +280,6 @@ describe('LagrangeCommittee', function () {
       operators[0].chain_id,
       1000,
     );
-    console.log(
-      'leaves: ',
-      leaves.map((l) => l.toString(16)),
-    );
-    console.log(
-      'current root: ',
-      committeeRoot.currentCommittee.root.toHexString(),
-    );
-    console.log('next root: ', committeeRoot.nextRoot.toHexString());
 
     let count = 1;
     while (count < leaves.length) {
@@ -302,9 +294,88 @@ describe('LagrangeCommittee', function () {
       for (let i = 0; i < count; i += 2) {
         const left = leaves[i];
         const right = leaves[i + 1];
-        console.log('left: ', left, 'right: ', right);
         const hash = poseidon([left, right]);
-        console.log('hash: ', hash);
+        leaves[i / 2] = hash;
+      }
+      count /= 2;
+    }
+    console.log(leaves[0].toString(16));
+    expect('0x' + leaves[0].toString(16)).to.equal(
+      committeeRoot.currentCommittee.root.toHexString(),
+    );
+  });
+  it('merkle tree update', async function () {
+    const committee = await ethers.getContractAt(
+      'LagrangeCommittee',
+      proxy.address,
+      admin,
+    );
+    for (let i = 0; i < operators[0].operators.length; i++) {
+      const op = operators[0].operators[i];
+      const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[i].slice(2));
+      const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
+      const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
+      const newPubKey = '0x' + Gx + Gy;
+
+      await committee.addOperator(
+        op,
+        newPubKey,
+        operators[0].chain_id,
+        serveUntilBlock,
+      );
+      await committee.updateOperator({ operator: op, updateType: 1 });
+    }
+
+    // unregister the first operator
+    await committee.updateOperator({
+      operator: operators[0].operators[0],
+      updateType: 3,
+    });
+    // unregister the last operator
+    await committee.updateOperator({
+      operator: operators[0].operators[operators[0].operators.length - 2],
+      updateType: 3,
+    });
+    // unregister the middle operator
+    await committee.updateOperator({
+      operator: operators[0].operators[4],
+      updateType: 3,
+    });
+    await committee.updateOperator({
+      operator: operators[0].operators[5],
+      updateType: 3,
+    });
+
+    await committee.registerChain(operators[0].chain_id, 10000, 1000);
+    let operatorCount = 5;
+
+    const leaves = await Promise.all(
+      new Array(operatorCount).fill(0).map(async (_, index) => {
+        const leaf = await committee.committeeNodes(
+          operators[0].chain_id,
+          0,
+          index,
+        );
+        return BigInt(leaf.toHexString());
+      }),
+    );
+    const committeeRoot = await committee.getCommittee(
+      operators[0].chain_id,
+      1000,
+    );
+    let count = 1;
+    while (count < leaves.length) {
+      count *= 2;
+    }
+    for (let i = 0; i < count - operatorCount; i++) {
+      leaves.push(BigInt(0));
+    }
+
+    while (count > 1) {
+      for (let i = 0; i < count; i += 2) {
+        const left = leaves[i];
+        const right = leaves[i + 1];
+        const hash = poseidon([left, right]);
         leaves[i / 2] = hash;
       }
       count /= 2;

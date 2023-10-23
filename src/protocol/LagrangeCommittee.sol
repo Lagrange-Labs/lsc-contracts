@@ -23,30 +23,25 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // Frozen Committee - Next "Current" Committee
     uint256 public constant COMMITTEE_NEXT_1 = 1;
 
-    // ChainID => OperatorUpdate[]
-    mapping(uint32 => OperatorUpdate[]) public updatedOperators;
-
     // ChainID => Committee
     mapping(uint32 => CommitteeDef) public committeeParams;
     // ChainID => Epoch => CommitteeData
     mapping(uint32 => mapping(uint256 => CommitteeData)) public committees;
+    // ChainID => Total Voting Power
+    mapping(uint32 => uint256) public totalVotingPower;
 
     /* Live Committee Data */
-    // ChainID => Merkle Leaves
-    mapping(uint32 => uint256[]) public committeeLeaves;
+    // ChainID => Tree Depth => Leaf Index => Node Value
+    // Note: Leaf Index is 0-indexed
+    mapping(uint32 => mapping(uint8 => mapping(uint256 => uint256))) public committeeNodes;
     // ChainID => Address => CommitteeLeaf Index
     mapping(uint32 => mapping(address => uint32)) public committeeLeavesMap;
-    // ChainID => Address[]
+    // ChainID => Tree Height
+    mapping(uint32 => uint8) public committeeHeights;
+    // ChainID => address[]
     mapping(uint32 => address[]) public committeeAddrs;
-
-    // ChainID => Distance from Leaves-row => Index => Node Hash
-    mapping(uint32 => mapping(uint256 => mapping(uint256 => uint256))) public committeeNodes;
-    // trie height => index value
-    //
-    // Height Index: committee root of completely empty trie of height n,
-    // for more efficient computation of committee roots when tree expands/contracts
-    //
-    mapping(uint256 => uint256) heightIndices;
+    // Tree Depth => Node Value
+    mapping(uint8 => uint256) zeroHashes;
 
     mapping(address => OperatorStatus) public operators;
 
@@ -93,6 +88,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             _poseidon5Elements,
             _poseidon6Elements
         );
+
+        // Initialize zero hashes
+        for (uint8 i = 1; i <= 20; i++) {
+            zeroHashes[i] = _hash2Elements([zeroHashes[i - 1], zeroHashes[i - 1]]);
+        }
+
         _transferOwnership(initialOwner);
     }
 
@@ -112,14 +113,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     function updateOperator(OperatorUpdate memory opUpdate) external onlyServiceManager {
         if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
-            operators[opUpdate.operator].amount = voteWeigher.weightOfOperator(opUpdate.operator, 1);
-            _updateAmount(opUpdate.operator);
+            _updateAmount(opUpdate.operator, voteWeigher.weightOfOperator(opUpdate.operator, 1));
         } else if (opUpdate.updateType == UPDATE_TYPE_REGISTER) {
             _registerOperator(opUpdate.operator);
         } else if (opUpdate.updateType == UPDATE_TYPE_UNREGISTER) {
             _unregisterOperator(opUpdate.operator);
         }
-        updatedOperators[operators[opUpdate.operator].chainID].push(opUpdate);
     }
 
     function setSlashed(address operator) external onlyService {
@@ -141,107 +140,37 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         currentCommittee = committees[chainID][epochNumber];
         nextRoot = committees[chainID][nextEpoch].root;
     }
-        
-    // Logarithmic trie update mechanism
-    function _compLogCommitteeRootFromIndex(uint32 chainID, uint256 leafIndex) internal {
-        uint256 nextRoot; //flux next committee root
-        
-        uint256 epochNumber;
-        if (committeeParams[chainID].startBlock > 0) {
-            epochNumber = getEpochNumber(chainID, block.number);
-        } else {
-            epochNumber = 0;
+
+    // Updates the tree from the given leaf index.
+    function _updateTreeByIndex(uint32 chainID, uint256 leafIndex) internal {
+        for (uint8 height = 0; height < committeeHeights[chainID] - 1; height++) {
+            _updateParent(chainID, height, leafIndex);
+            leafIndex /= 2;
         }
-        
-        assert(heightIndices[0] == uint256(0));
-        
-        // Return hash(0,0) if n = 0
-        if (committeeLeaves[chainID].length == 0) {
-            nextRoot = _hash2Elements([uint256(0), uint256(0)]);
-        // Return hash(leaf) if n = 1
-        } else if (committeeLeaves[chainID].length == 1) {
-            nextRoot = committeeLeaves[chainID][0];
-        } else {
-        // Calculate limit, trie height
-            uint256 _lim = 2;
-            uint256 height = 1;
-            uint256 dataLength = committeeLeaves[chainID].length;
-            while (_lim < dataLength) {
-                // Update height index at present height value if needed
-                if(heightIndices[height] == 0) {
-                    heightIndices[height] = _hash2Elements([heightIndices[height-1], heightIndices[height-1]]);
-                }
-                _lim *= 2;
-                ++height;
-            }
-    
-            uint256 left;
-            uint256 right;
-            uint256 hash;
-            uint256 depth = 0;
-            uint256 localBound = dataLength - 1;
-            
-            while (localBound > 0) {
-                // Determine whether leaf is left or right child of parent node
-                bool isLeft = (leafIndex % 2) == 0;
-                // Define left and right leaf values
-                // Populate committeeNodes for left and right if leaves
-                if(depth > 0) {
-                    if(isLeft) {
-                        left = committeeNodes[chainID][depth][leafIndex];
-                        right = committeeNodes[chainID][depth][leafIndex+1];
-                    } else {
-                        left = committeeNodes[chainID][depth][leafIndex-1];
-                        right = committeeNodes[chainID][depth][leafIndex];
-                    }
-                } else {
-                    if(isLeft) {
-                        left = committeeLeaves[chainID][leafIndex];
-                        right = leafIndex == localBound ? 0 : committeeLeaves[chainID][leafIndex+1];
-                        committeeNodes[chainID][depth][leafIndex] = left;
-                        committeeNodes[chainID][depth][leafIndex+1] = right;
-                    } else {
-                        left = committeeLeaves[chainID][leafIndex-1];
-                        right = committeeLeaves[chainID][leafIndex];
-                        committeeNodes[chainID][depth][leafIndex-1] = left;
-                        committeeNodes[chainID][depth][leafIndex] = right;
-                    }
-                }
-                // If left and edge leaf, derive right root from height index
-                if(isLeft && leafIndex == localBound) {
-                    right = heightIndices[depth];
-                }
-                // Increment depth in possible anticipation of next iteration
-                localBound /= 2;
-                depth++;
-                // Hash left and right leaves
-                hash = _hash2Elements([left, right]);
-                // Compute parentIndex, set its corresponding value to hash, and recursively compute its parent's value
-                leafIndex /= 2;
-                committeeNodes[chainID][depth][leafIndex] = hash;
-                // Assign hash to nextRoot in the event that this is the final root
-                nextRoot = hash;
-            }
-        }
-        uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
-        committees[chainID][nextEpoch].root = nextRoot;
     }
 
-    // Recalculates committee root (next_1)
-    function _compCommitteeRoot(uint32 chainID, uint256 epochNumber) internal {
-        uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
-        uint256 nextRoot = committees[chainID][nextEpoch].root;
-
-        // Update roots
-        committees[chainID][nextEpoch].height = committeeLeaves[chainID].length;
-        committees[chainID][nextEpoch].root = nextRoot;
-        committees[chainID][nextEpoch].totalVotingPower = _getTotalVotingPower(chainID);
+    // Updates the parent node from the given height and index
+    function _updateParent(uint32 chainID, uint8 height, uint256 leafIndex) internal {
+        uint256 left;
+        uint256 right;
+        if (leafIndex & 1 == 1) {
+            left = committeeNodes[chainID][height][leafIndex - 1];
+            right = committeeNodes[chainID][height][leafIndex];
+        } else {
+            left = committeeNodes[chainID][height][leafIndex];
+            if (committeeNodes[chainID][height][leafIndex + 1] == 0) {
+                right = zeroHashes[height];
+            } else {
+                right = committeeNodes[chainID][height][leafIndex + 1];
+            }
+        }
+        committeeNodes[chainID][height + 1][leafIndex / 2] = _hash2Elements([left, right]);
     }
 
     // Initializes a new committee, and optionally associates addresses with it.
     function registerChain(uint32 chainID, uint256 epochPeriod, uint256 freezeDuration) public onlyOwner {
         _initCommittee(chainID, epochPeriod, freezeDuration);
-        _update(chainID, 0);
+        _updateCommittee(chainID, 0);
     }
 
     // Adds address stake data and flags it for committee addition
@@ -276,57 +205,85 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
         require(updatedEpoch[chainID] < epochNumber, "Already updated.");
 
-        _update(chainID, epochNumber);
+        _updateCommittee(chainID, epochNumber);
     }
 
-    function _update(uint32 chainID, uint256 epochNumber) internal {
-        _compCommitteeRoot(chainID, epochNumber);
+    function _updateCommittee(uint32 chainID, uint256 epochNumber) internal {
+        uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
+
+        // Update roots
+        committees[chainID][nextEpoch].height = committeeAddrs[chainID].length;
+        if (committeeHeights[chainID] > 0) {
+            committees[chainID][nextEpoch].root = committeeNodes[chainID][committeeHeights[chainID] - 1][0];
+        }
+        committees[chainID][nextEpoch].totalVotingPower = totalVotingPower[chainID];
 
         updatedEpoch[chainID] = epochNumber;
-        delete updatedOperators[chainID];
 
-        emit UpdateCommittee(chainID, bytes32(committees[chainID][epochNumber + COMMITTEE_NEXT_1].root));
+        emit UpdateCommittee(chainID, bytes32(committees[chainID][nextEpoch].root));
     }
-    
+
     function _registerOperator(address operator) internal {
         uint32 chainID = operators[operator].chainID;
-        uint32 leafIndex = uint32(committeeLeaves[chainID].length);
+
+        totalVotingPower[chainID] += operators[operator].amount;
+        uint32 leafIndex = uint32(committeeAddrs[chainID].length);
         committeeAddrs[chainID].push(operator);
-        committeeLeaves[chainID].push(getLeafHash(operator));
+        committeeNodes[chainID][0][leafIndex] = getLeafHash(operator);
         committeeLeavesMap[chainID][operator] = leafIndex;
-        // Update trie
-        _compLogCommitteeRootFromIndex(chainID, leafIndex);
+        if (leafIndex == 0 || leafIndex == 1 << (committeeHeights[chainID] - 1)) {
+            committeeHeights[chainID] = committeeHeights[chainID] + 1;
+        }
+        // Update tree
+        _updateTreeByIndex(chainID, leafIndex);
     }
 
-    function _updateAmount(address operator) internal {
+    function _updateAmount(address operator, uint256 updatedAmount) internal {
         uint32 chainID = operators[operator].chainID;
         uint256 leafIndex = committeeLeavesMap[chainID][operator];
-        committeeLeaves[chainID][leafIndex] = getLeafHash(operator);
-        // Update trie
-        _compLogCommitteeRootFromIndex(chainID, leafIndex);
+        committeeNodes[chainID][0][leafIndex] = getLeafHash(operator);
+        totalVotingPower[chainID] -= operators[operator].amount;
+        totalVotingPower[chainID] += updatedAmount;
+        operators[operator].amount = updatedAmount;
+
+        // Update tree
+        _updateTreeByIndex(chainID, leafIndex);
     }
 
     function _unregisterOperator(address operator) internal {
         uint32 chainID = operators[operator].chainID;
 
+        totalVotingPower[chainID] -= operators[operator].amount;
         uint32 leafIndex = uint32(committeeLeavesMap[chainID][operator]);
-        uint256 lastIndex = committeeLeaves[chainID].length - 1;
+        uint256 lastIndex = committeeAddrs[chainID].length - 1;
         address lastAddr = committeeAddrs[chainID][lastIndex];
-
-        committeeLeaves[chainID][leafIndex] = committeeLeaves[chainID][lastIndex];
-        committeeAddrs[chainID][leafIndex] = committeeAddrs[chainID][lastIndex];
-        committeeLeavesMap[chainID][lastAddr] = leafIndex;
-
-        committeeLeaves[chainID].pop();
-        committeeAddrs[chainID].pop();
 
         // Update trie for operator leaf and last leaf
         if (leafIndex < lastIndex) {
-            _compLogCommitteeRootFromIndex(chainID, leafIndex);
+            committeeNodes[chainID][0][leafIndex] = committeeNodes[chainID][0][lastIndex];
+            committeeAddrs[chainID][leafIndex] = lastAddr;
+            committeeLeavesMap[chainID][lastAddr] = leafIndex;
+            _updateTreeByIndex(chainID, leafIndex);
         }
-        
-        if (lastIndex >= 0) {
-            _compLogCommitteeRootFromIndex(chainID, (lastIndex == 0) ? 0 : lastIndex-1);
+
+        committeeAddrs[chainID].pop();
+
+        bool isBreak;
+        uint8 treeHeight = committeeHeights[chainID];
+        committeeNodes[chainID][0][lastIndex] = 0;
+        for (uint8 height = 1; height < treeHeight; height++) {
+            if (isBreak || lastIndex & 1 == 1) {
+                isBreak = true;
+                _updateParent(chainID, height - 1, lastIndex);
+            } else {
+                committeeNodes[chainID][height][lastIndex / 2] = 0;
+                if (height == treeHeight - 2) {
+                    committeeNodes[chainID][treeHeight - 1][0] = 0;
+                    committeeHeights[chainID] = treeHeight - 1;
+                    break;
+                }
+            }
+            lastIndex /= 2;
         }
     }
 
@@ -335,15 +292,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 startBlockNumber = committeeParams[chainID].startBlock;
         uint256 epochPeriod = committeeParams[chainID].duration;
         return (blockNumber - startBlockNumber) / epochPeriod + 1;
-    }
-
-    // Returns cumulative strategy shares for opted in addresses
-    function _getTotalVotingPower(uint32 chainID) internal view returns (uint256) {
-        uint256 total = 0;
-        for (uint256 i = 0; i < committeeAddrs[chainID].length; i++) {
-            total += operators[committeeAddrs[chainID][i]].amount;
-        }
-        return total;
     }
 
     function getLeafHash(address opAddr) public view returns (uint256) {
