@@ -2,12 +2,14 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const fs = require('fs');
 const shared = require("./shared");
+const bls = require('@noble/bls12-381');
+let { PointG1, PointG2 } = require("./zk-utils-index.js");
 
 const verSigABI = [
     'uint[2]',
     'uint[2][2]',
     'uint[2]',
-    'uint[75]'
+    'uint[47]'
 ];
 
 const verAggABI = [
@@ -232,10 +234,45 @@ describe("Lagrange Verifiers", function () {
         ];
         input = pubNumeric;
         
-        const encoded = ethers.utils.defaultAbiCoder.encode(verSigABI, [a,b,c,input]);
+        const encoded = await ethers.utils.defaultAbiCoder.encode(verSigABI, [a,b,c,input]);
         
-        t = await triSig.verify(encoded,1);
-        expect(res).to.equal(true);
+        csig = "0x"
+        + "081777ea6ed2ccafe84b1b1c344c6b71cc955b1accc91b8b279d538ff5e0690efffbd89defb3d7ae38f9334685e96f1f"
+        + "0e7ff5683ebaf0e184631c037a2c74ac02f8b1fbf88a4463d724feaa3a3a047e8a8af8666e446118d908cda74173e38c"
+        + "0b19d154b6bbde2031c3317ec782d2f95ad06cf58dae599bf96fe2bb3116ca3f4827feb69c7b5e24cde3ccc379132a88"
+        + "0edcf12681a2b4e4213ca1b142d56359f949332935aec692f9cd70a342a290cc635677b8ed94ac8e1a420d14ad84bd57";
+        
+    const evidence = {
+        operator: "0x0000000000000000000000000000000000000000",
+        blockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
+        correctBlockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
+        currentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        correctCurrentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        nextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        correctNextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        blockNumber: 28809913,
+        epochBlockNumber: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        blockSignature: csig,
+        commitSignature:csig,
+        chainID: 421613,
+        attestBlockHeader: "0x00",
+        sigProof: encoded,
+        aggProof: "0x00"
+    };
+
+        tx = await triSig.verify(
+            evidence,
+            "0x06b50179774296419b7e8375118823ddb06940d9a28ea045ab418c7ecbe6da84d416cb55406eec6393db97ac26e38bd4"
+            + "059d39bc5fb8ef92d890b18d41ef33891f41561e468f8dc52c66a53a9cdf84d983814c9763053e8a9a77ade1824461fd",
+            1
+        );
+        /*
+        rec = await tx.wait();
+        console.log(JSON.stringify(rec.events,null,2));
+	console.log(rec.events[0].args);
+        */
+	
+        expect(tx).to.equal(true);
     });
     it("slashing_aggregate_16 triage", async function () {
         const triAgg = shared.SAVT;
@@ -269,19 +306,20 @@ describe("Lagrange Verifiers", function () {
         const indices = [1, 2, 3, 5, 8, 13];
         for(i = 0; i < indices.length; i++) {
           index = indices[i];
+          
           tx = await triAgg.verify(
             encoded, //aggProof
             "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //currentCommitteeRoot
             "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //nextCommitteeRoot
-            "0x95aea085c0d4a908eed989c9f2c793477d53309ae3e9f0a28f29510ffeff2b91", //blockHash
-            28810640, //blockNumber
+            "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896", //blockHash
+            28809913, //blockNumber
             421613, //chainID
             9 //committeeSize
           );
           console.log(tx);
-          res = await tx.wait();
-          console.log(await res.events);
-          expect(res).to.equal(true);
+          //rec = await tx.wait();
+          //console.log(await rec.events[0].args);
+          expect(tx).to.equal(true);
         };
     });
     it("slashing_aggregate_32 triage", async function () {
@@ -315,7 +353,7 @@ describe("Lagrange Verifiers", function () {
         const indices = [32];
         for(i = 0; i < indices.length; i++) {
           index = indices[i];
-          res = await triAgg.verify(
+          tx = await triAgg.verify(
             encoded, //aggProof
             "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //currentCommitteeRoot
             "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //nextCommitteeRoot
@@ -324,7 +362,7 @@ describe("Lagrange Verifiers", function () {
             421613, //chainID
             index //committeeSize
           );
-          expect(res).to.equal(true);
+          expect(tx).to.equal(true);
         };
     });
 });
