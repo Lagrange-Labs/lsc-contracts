@@ -72,9 +72,9 @@ contract SlashingSingleVerifierTriage is
         require(b48.length == 48, "Input should be 48 bytes.");
         // resultant slices
         uint[7] memory res;
-        // first 32-byte word
+        // first 32-byte word (truncate to 16 bytes)
         uint256 buffer1;
-        // second 32-byte word / remainder
+        // second 32-byte word
         uint256 buffer2;
         // for cycling from first to second word
         uint256 activeBuffer;
@@ -88,17 +88,17 @@ contract SlashingSingleVerifierTriage is
         buffer1 = buffer1 >> 128;
         // define slice
         uint56 slice;
-        // set active buffer to first buffer, retire first buffer
+        // set active buffer to second buffer
         activeBuffer = buffer2;
         for (uint i = 0; i < 7; i++) {
-            // assign slice (as active buffer truncated to 56 bits and shifted left for 55-bits with leading zero)
             if (i == 6) {
-                slice = (uint56(activeBuffer));// >> 2;
+                slice = (uint56(activeBuffer));
             } else {
-                slice = (uint56(activeBuffer) << 1)>>1;// >> 1;
+                // assign slice, derived from active buffer's last 55 bits
+                slice = (uint56(activeBuffer) << 1)>>1;
                 // shift second buffer right by 55 bits
                 buffer2 = buffer2 >> 55;
-                // replace new trailing zeros in first buffer with first 55 bits of second buffer
+                // replace new leading zeros in second buffer with last 55 bits of first buffer
                 buffer2 = (uint256(uint56(buffer1))<<201) + buffer2;
                 // refresh active buffer
                 activeBuffer = buffer2;

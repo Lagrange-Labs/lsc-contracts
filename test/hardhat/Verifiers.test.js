@@ -4,6 +4,7 @@ const fs = require('fs');
 const shared = require("./shared");
 const bls = require('@noble/bls12-381');
 let { PointG1, PointG2 } = require("./zk-utils-index.js");
+const { poseidon } = require("@iden3/js-crypto");
 
 const verSigABI = [
     'uint[2]',
@@ -236,25 +237,52 @@ describe("Lagrange Verifiers", function () {
         
         const encoded = await ethers.utils.defaultAbiCoder.encode(verSigABI, [a,b,c,input]);
         
+        blsPriv = "0x27d402641e400663087b57e1394e1dffa233083129ff5283555c193f7d0aecfc";
+        blsPub = "0xb66a7d0803f34de5acbb832dc4952c4c486367e1c2a9356be3836f4ee4a20acc0b0fe8a76c89210eea0bf4490f0af93b";
+        chainHeader = "0xe796232da2a2990e05ed6a097c4964f8ce229c3b3c4f0bc9bf9b0b15f344d61b";
+        signingRoot = chainHeader
+                    + "15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756"
+                    + "15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756";
+        srHash = await poseidon.hashBytes(Uint8Array.from(Buffer.from(signingRoot.slice(2), 'hex'))).toString(16);
+        console.log(signingRoot,srHash);
+        
+	message = new Uint8Array(Buffer.from(srHash,'hex'));
+	signature = await bls.sign(message, blsPriv.slice(2));
+        coords = await bls.PointG2.fromSignature(signature);
+	affine = [
+	  coords.toAffine()[0].c0.value.toString(16).padStart(96, '0'),
+	  coords.toAffine()[0].c1.value.toString(16).padStart(96, '0'),
+	  coords.toAffine()[1].c0.value.toString(16).padStart(96, '0'),
+	  coords.toAffine()[1].c1.value.toString(16).padStart(96, '0'),  
+	]; 
+	
+	     
+    const pubKey = await bls.PointG1.fromHex(blsPub.slice(2));
+    const Gx = await pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
+    const Gy = await pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
+    const newPubKey = '0x' + Gx + Gy;
+
+	console.log(newPubKey);return;
+        
         csig = "0x"
-        + "081777ea6ed2ccafe84b1b1c344c6b71cc955b1accc91b8b279d538ff5e0690efffbd89defb3d7ae38f9334685e96f1f"
-        + "0e7ff5683ebaf0e184631c037a2c74ac02f8b1fbf88a4463d724feaa3a3a047e8a8af8666e446118d908cda74173e38c"
-        + "0b19d154b6bbde2031c3317ec782d2f95ad06cf58dae599bf96fe2bb3116ca3f4827feb69c7b5e24cde3ccc379132a88"
-        + "0edcf12681a2b4e4213ca1b142d56359f949332935aec692f9cd70a342a290cc635677b8ed94ac8e1a420d14ad84bd57";
+        + "0e4121f36bffdfea60d4ad6f76f46e8b14ff065ae65ebe38fde5058d717c45535ef83723106fe34270d8dd51f6628163"
+        + "0fa18e6016e317a0965ed54d6de009d2bb47a93a1fff59757f41e781ac3efb9a4a91c50d6a4b0cf68e4ee07dbd740f2b"
+        + "038474fb4623f9053b90424eced3f507608ed293cef1c44b54e91e7e05fb7d4a2340f00b71ea2ad53a650801b3e8399f"
+        + "1866fc169a323ad7b1f98d4f34f3e71e62e52bc649245de6c733e2073a3ba7bd1d399a8de58ae9c4739c651884faf080";
         
     const evidence = {
         operator: "0x0000000000000000000000000000000000000000",
-        blockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
-        correctBlockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
-        currentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
-        correctCurrentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
-        nextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
-        correctNextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
-        blockNumber: 28809913,
+        blockHash: "0xa0091f9446be880a0674e20fb5ec6c4d0511e5d687c5e7e36f01393beec1df96",
+        correctBlockHash: "0xa0091f9446be880a0674e20fb5ec6c4d0511e5d687c5e7e36f01393beec1df96",
+        currentCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
+        correctCurrentCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
+        nextCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
+        correctNextCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
+        blockNumber: 23173304,
         epochBlockNumber: "0x0000000000000000000000000000000000000000000000000000000000000000",
         blockSignature: csig,
         commitSignature:csig,
-        chainID: 421613,
+        chainID: 5001,
         attestBlockHeader: "0x00",
         sigProof: encoded,
         aggProof: "0x00"
@@ -262,8 +290,8 @@ describe("Lagrange Verifiers", function () {
 
         tx = await triSig.verify(
             evidence,
-            "0x06b50179774296419b7e8375118823ddb06940d9a28ea045ab418c7ecbe6da84d416cb55406eec6393db97ac26e38bd4"
-            + "059d39bc5fb8ef92d890b18d41ef33891f41561e468f8dc52c66a53a9cdf84d983814c9763053e8a9a77ade1824461fd",
+            "0x166a7d0803f34de5acbb832dc4952c4c486367e1c2a9356be3836f4ee4a20acc0b0fe8a76c89210eea0bf4490f0af93b"
+            + "1929866a5a506aecf1110492f8d466ffd096831e9d930faf4f843c99e974bce24761bd4f599fd4b5a6ba7ae1b4210dc8",
             1
         );
         /*
