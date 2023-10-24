@@ -51,6 +51,8 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
         (bool locked,) = committee.isLocked(chainID);
         require(!locked, "The related chain is in the freeze period");
 
+        require(_blsPubKey.length == 96, "LagrangeService: Inappropriately preformatted BLS public key.");
+
         committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
 

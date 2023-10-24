@@ -20,7 +20,7 @@ const convertBLSPubKey = (oldPubKey) => {
   return newPubKey;
 };
 
-operators.forEach(async (chain) => {
+operators.forEach(async (chain, k) => {
   for (let index = 0; index < chain.operators.length; index++) {
     const address = chain.operators[index];
     const privKey = accounts[address];
@@ -30,10 +30,15 @@ operators.forEach(async (chain) => {
       abi,
       wallet,
     );
+    const nonce = await provider.getTransactionCount(address);
+
     const tx = await contract.register(
       chain.chain_id,
       convertBLSPubKey(chain.bls_pub_keys[index]),
       uint32Max,
+      {
+        nonce: nonce + k,
+      },
     );
     console.log(
       `Starting to register operator for address: ${address} tx hash: ${tx.hash}`,
