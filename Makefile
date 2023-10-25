@@ -92,6 +92,13 @@ deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-moc
 
 deploy-native: run-geth generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
 
+deploy-verifiers:
+	echo "(deploy-verifiers)"
+
+deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
+
+deploy-native: run-geth generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
+
 .PHONY: all clean all-mock all-native
 
 # Formatter
