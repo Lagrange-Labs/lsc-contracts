@@ -3,10 +3,10 @@ pragma solidity ^0.8.12;
 
 struct OperatorStatus {
     uint256 amount;
-    bytes blsPubKey;
-    uint32 serveUntilBlock;
-    uint32 chainID;
     bool slashed;
+    uint32 serveUntilBlock;
+    // ChainID => BLSPubKey
+    mapping(uint32 => bytes) registeredChains;
 }
 
 struct OperatorUpdate {
@@ -27,7 +27,7 @@ interface ILagrangeCommittee {
         uint256 totalVotingPower;
     }
 
-    function getServeUntilBlock(address operator) external returns (uint32);
+    function getServeUntilBlock(address operator, uint32 chainID) external returns (uint32);
 
     function setSlashed(address operator) external;
 

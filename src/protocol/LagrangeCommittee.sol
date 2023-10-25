@@ -107,8 +107,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         emit InitCommittee(chainID, _duration, freezeDuration);
     }
 
-    function getServeUntilBlock(address operator) public view returns (uint32) {
-        return operators[operator].serveUntilBlock;
+    function getServeUntilBlock(address operator, uint32 chainID) public view returns (uint32) {
+        return operators[operator].registeredChains[chainID].serveUntilBlock;
     }
 
     function updateOperator(OperatorUpdate memory opUpdate) external onlyServiceManager {
@@ -179,7 +179,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         onlyService
     {
         uint96 stakeAmount = voteWeigher.weightOfOperator(operator, 1);
-        operators[operator] = OperatorStatus(stakeAmount, blsPubKey, serveUntilBlock, chainID, false);
+        OperatorStatus storage opStatus = operators[operator];
+        require(!opStatus.slashed, "Operator is slashed.");
+        opStatus.amount = stakeAmount;
+        opStatus.registeredChains[chainID] = RegisteredChain(blsPubKey, serveUntilBlock);
     }
 
     // Checks if a chain's committee is updatable at a given block
