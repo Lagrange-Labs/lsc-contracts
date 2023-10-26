@@ -286,7 +286,7 @@ describe('LagrangeCommittee', function () {
       count /= 2;
     }
     console.log(leaves[0].toString(16));
-    expect('0x' + leaves[0].toString(16)).to.equal(
+    expect('0x' + leaves[0].toString(16).padStart(64, '0')).to.equal(
       committeeRoot.currentCommittee.root.toHexString(),
     );
   });
@@ -362,7 +362,7 @@ describe('LagrangeCommittee', function () {
       count /= 2;
     }
     console.log(leaves[0].toString(16));
-    expect('0x' + leaves[0].toString(16)).to.equal(
+    expect('0x' + leaves[0].toString(16).padStart(64, '0')).to.equal(
       committeeRoot.currentCommittee.root.toHexString(),
     );
   });
