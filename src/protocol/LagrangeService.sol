@@ -45,26 +45,30 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
     }
 
     /// Add the operator to the service.
-    // Only unfractinalized WETH strategy shares assumed for stake amount
-    function register(uint32 chainID, bytes memory _blsPubKey, uint32 serveUntilBlock) external {
-        // NOTE: Please ensure that the order of the following two lines remains unchanged
-        (bool locked,) = committee.isLocked(chainID);
-        require(!locked, "The related chain is in the freeze period");
-
+    function register(bytes memory _blsPubKey, uint32 serveUntilBlock) external {
         require(_blsPubKey.length == 96, "LagrangeService: Inappropriately preformatted BLS public key.");
 
-        committee.addOperator(msg.sender, _blsPubKey, chainID, serveUntilBlock);
+        committee.addOperator(msg.sender, _blsPubKey, serveUntilBlock);
+
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
 
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
 
-    /// deregister the operator from the service.
-    function deregister(uint32 chainID) external {
-        (bool locked, uint256 epochEnd) = committee.isLocked(chainID);
-        require(!locked, "The related chain is in the freeze period");
+    /// Subscribe the dedicated chain.
+    function subscribe(uint32 chainID) external {
+        committee.subscribeChain(msg.sender, chainID);
+    }
 
-        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(msg.sender, uint32(epochEnd));
+    function unsubscribe(uint32 chainID) external {
+        committee.unsubscribeChain(msg.sender, chainID);
+    }
+
+    /// deregister the operator from the service.
+    function deregister() external {
+        (bool possible, uint256 unsubscribeBlockNumber) = committee.isUnregisterable(msg.sender);
+        require(possible, "The operator is not able to deregister");
+        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(msg.sender, uint32(unsubscribeBlockNumber));
     }
 
     /// upload the evidence to punish the operator.
@@ -160,7 +164,6 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
 
     /// Slash the given operator
     function _freezeOperator(address operator) internal {
-        committee.setSlashed(operator);
         serviceManager.freezeOperator(operator);
 
         emit OperatorSlashed(operator);

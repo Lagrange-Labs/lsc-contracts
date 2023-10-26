@@ -5,15 +5,11 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
-import {ILagrangeCommittee, OperatorUpdate} from "../interfaces/ILagrangeCommittee.sol";
+import {ILagrangeCommittee} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 import {IStakeManager} from "../interfaces/IStakeManager.sol";
 
 contract LagrangeServiceManager is Initializable, OwnableUpgradeable, IServiceManager {
-    uint8 public constant UPDATE_TYPE_REGISTER = 1;
-    uint8 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
-    uint8 public constant UPDATE_TYPE_UNREGISTER = 3;
-
     IStakeManager public immutable slasher;
     ILagrangeCommittee public immutable committee;
     ILagrangeService public immutable service;
@@ -39,19 +35,18 @@ contract LagrangeServiceManager is Initializable, OwnableUpgradeable, IServiceMa
 
     // slash the given operator
     function freezeOperator(address operator) external onlyService {
-        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_UNREGISTER}));
+        committee.freezeOperator(operator);
         slasher.freezeOperator(operator);
     }
 
     function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external onlyService {
-        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_REGISTER}));
         slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
     }
 
     function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement)
         external
     {
-        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_AMOUNT_CHANGE}));
+        committee.updateOperatorAmount(operator);
         slasher.recordStakeUpdate(operator, updateBlock, serveUntilBlock, prevElement);
     }
 
@@ -59,7 +54,6 @@ contract LagrangeServiceManager is Initializable, OwnableUpgradeable, IServiceMa
         external
         onlyService
     {
-        committee.updateOperator(OperatorUpdate({operator: operator, updateType: UPDATE_TYPE_UNREGISTER}));
         slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntilBlock);
     }
 

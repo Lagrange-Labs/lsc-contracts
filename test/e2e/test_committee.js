@@ -9,7 +9,7 @@ const deployedAddresses = require('../../script/output/deployed_lgr.json');
 require('dotenv').config();
 
 const address = '0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9';
-const tokenAddress = '0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956';
+const tokenAddress = '0x1D7Acca2751281Bd27d8254fC2fCd71a5243626c';
 const privKey = accounts[address];
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(privKey, provider);
@@ -43,14 +43,18 @@ stake.operatorStakes(tokenAddress, address).then((stake) => {
 const arbChainID = 1337;
 const optChainID = 420;
 
-contract.getCommittee(optChainID, 1000).then((current) => {
+contract.getCommittee(optChainID, 5000).then((current) => {
   console.log('Opt Current committee: ', current[0]);
   console.log('Opt Next committee: ', current[1]);
 });
 
-contract.getCommittee(arbChainID, 1000).then((current) => {
+contract.getCommittee(arbChainID, 4677).then((current) => {
   console.log('Arb Current committee: ', current[0]);
   console.log('Arb Next committee: ', current[1]);
+});
+
+contract.committeeParams(arbChainID).then((params) => {
+  console.log('Arb params: ', params);
 });
 
 contract.operators(address).then((op) => {

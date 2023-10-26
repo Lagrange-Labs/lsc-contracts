@@ -11,10 +11,6 @@ import "../interfaces/ILagrangeService.sol";
 import "../interfaces/IVoteWeigher.sol";
 
 contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, ILagrangeCommittee {
-    uint8 public constant UPDATE_TYPE_REGISTER = 1;
-    uint8 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
-    uint8 public constant UPDATE_TYPE_UNREGISTER = 3;
-
     ILagrangeService public immutable service;
     IVoteWeigher public immutable voteWeigher;
 
@@ -107,22 +103,90 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         emit InitCommittee(chainID, _duration, freezeDuration);
     }
 
-    function getServeUntilBlock(address operator, uint32 chainID) public view returns (uint32) {
-        return operators[operator].registeredChains[chainID].serveUntilBlock;
+    function getServeUntilBlock(address operator) public view returns (uint32) {
+        return operators[operator].serveUntilBlock;
     }
 
-    function updateOperator(OperatorUpdate memory opUpdate) external onlyServiceManager {
-        if (opUpdate.updateType == UPDATE_TYPE_AMOUNT_CHANGE) {
-            _updateAmount(opUpdate.operator, voteWeigher.weightOfOperator(opUpdate.operator, 1));
-        } else if (opUpdate.updateType == UPDATE_TYPE_REGISTER) {
-            _registerOperator(opUpdate.operator);
-        } else if (opUpdate.updateType == UPDATE_TYPE_UNREGISTER) {
-            _unregisterOperator(opUpdate.operator);
+    // Adds address stake data and flags it for committee addition
+    function addOperator(address operator, bytes memory blsPubKey, uint32 serveUntilBlock) public onlyService {
+        uint96 stakeAmount = voteWeigher.weightOfOperator(operator, 1);
+        OperatorStatus storage opStatus = operators[operator];
+        require(opStatus.amount == 0, "Operator is already registered.");
+        opStatus.amount = stakeAmount;
+        opStatus.serveUntilBlock = serveUntilBlock;
+        opStatus.blsPubKey = blsPubKey;
+    }
+
+    function freezeOperator(address operator) external onlyServiceManager {
+        OperatorStatus storage opStatus = operators[operator];
+        opStatus.slashed = true;
+
+        for (uint256 i = 0; i < opStatus.subscribedChains.length; i++) {
+            _unregisterOperator(operator, opStatus.subscribedChains[i]);
         }
     }
 
-    function setSlashed(address operator) external onlyService {
-        operators[operator].slashed = true;
+    function updateOperatorAmount(address operator) external onlyServiceManager {
+        if (getSlashed(operator)) {
+            return;
+        }
+        for (uint256 i = 0; i < operators[operator].subscribedChains.length; i++) {
+            _updateAmount(operator, voteWeigher.weightOfOperator(operator, 1), operators[operator].subscribedChains[i]);
+        }
+    }
+
+    function subscribeChain(address operator, uint32 chainID) external onlyService {
+        (bool locked,) = isLocked(chainID);
+        require(!locked, "The dedicated chain is locked.");
+
+        OperatorStatus storage opStatus = operators[operator];
+        require(!opStatus.slashed, "Operator is slashed.");
+        uint256 blockNumber = opStatus.unsubscribedChains[chainID];
+
+        if (blockNumber > 0 && blockNumber >= block.number) {
+            revert("The dedciated chain is while unsubscribing.");
+        }
+
+        opStatus.subscribedChains.push(chainID);
+        _registerOperator(operator, chainID);
+    }
+
+    function unsubscribeChain(address operator, uint32 chainID) external onlyService {
+        OperatorStatus storage opStatus = operators[operator];
+        require(!opStatus.slashed, "Operator is slashed.");
+
+        uint256 index;
+        uint256 subChainLength = opStatus.subscribedChains.length;
+        for (; index < subChainLength; index++) {
+            if (opStatus.subscribedChains[index] == chainID) {
+                break;
+            }
+        }
+        require(index < subChainLength, "The dedicated chain is not subscribed");
+
+        (bool locked, uint256 blockNumber) = isLocked(chainID);
+        require(!locked, "The dedicated chain is locked.");
+
+        opStatus.subscribedChains[index] = opStatus.subscribedChains[subChainLength - 1];
+        opStatus.subscribedChains.pop();
+
+        opStatus.unsubscribedChains[chainID] = blockNumber;
+        if (blockNumber > opStatus.unsubscribedBlockNumber) {
+            opStatus.unsubscribedBlockNumber = blockNumber;
+        }
+
+        _unregisterOperator(operator, chainID);
+    }
+
+    function isUnregisterable(address operator) public view returns (bool, uint256) {
+        OperatorStatus storage opStatus = operators[operator];
+        require(!opStatus.slashed, "Operator is slashed.");
+
+        if (opStatus.subscribedChains.length > 0) {
+            return (false, 0);
+        }
+
+        return (true, opStatus.unsubscribedBlockNumber);
     }
 
     function getSlashed(address operator) public view returns (bool) {
@@ -173,18 +237,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         _updateCommittee(chainID, 0);
     }
 
-    // Adds address stake data and flags it for committee addition
-    function addOperator(address operator, bytes memory blsPubKey, uint32 chainID, uint32 serveUntilBlock)
-        public
-        onlyService
-    {
-        uint96 stakeAmount = voteWeigher.weightOfOperator(operator, 1);
-        OperatorStatus storage opStatus = operators[operator];
-        require(!opStatus.slashed, "Operator is slashed.");
-        opStatus.amount = stakeAmount;
-        opStatus.registeredChains[chainID] = RegisteredChain(blsPubKey, serveUntilBlock);
-    }
-
     // Checks if a chain's committee is updatable at a given block
     function isUpdatable(uint32 chainID, uint256 epochNumber) public view returns (bool) {
         uint256 epochEnd = epochNumber * committeeParams[chainID].duration + committeeParams[chainID].startBlock;
@@ -226,9 +278,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         emit UpdateCommittee(chainID, bytes32(committees[chainID][nextEpoch].root));
     }
 
-    function _registerOperator(address operator) internal {
-        uint32 chainID = operators[operator].chainID;
-
+    function _registerOperator(address operator, uint32 chainID) internal {
         totalVotingPower[chainID] += operators[operator].amount;
         uint32 leafIndex = uint32(committeeAddrs[chainID].length);
         committeeAddrs[chainID].push(operator);
@@ -241,8 +291,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         _updateTreeByIndex(chainID, leafIndex);
     }
 
-    function _updateAmount(address operator, uint256 updatedAmount) internal {
-        uint32 chainID = operators[operator].chainID;
+    function _updateAmount(address operator, uint256 updatedAmount, uint32 chainID) internal {
         uint256 leafIndex = committeeLeavesMap[chainID][operator];
         committeeNodes[chainID][0][leafIndex] = getLeafHash(operator);
         totalVotingPower[chainID] -= operators[operator].amount;
@@ -253,9 +302,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         _updateTreeByIndex(chainID, leafIndex);
     }
 
-    function _unregisterOperator(address operator) internal {
-        uint32 chainID = operators[operator].chainID;
-
+    function _unregisterOperator(address operator, uint32 chainID) internal {
         totalVotingPower[chainID] -= operators[operator].amount;
         uint32 leafIndex = uint32(committeeLeavesMap[chainID][operator]);
         uint256 lastIndex = committeeAddrs[chainID].length - 1;
@@ -299,7 +346,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     function getLeafHash(address opAddr) public view returns (uint256) {
         uint96[11] memory slices;
-        OperatorStatus memory opStatus = operators[opAddr];
+        OperatorStatus storage opStatus = operators[opAddr];
         for (uint256 i = 0; i < 8; i++) {
             bytes memory addr = new bytes(12);
             for (uint256 j = 0; j < 12; j++) {

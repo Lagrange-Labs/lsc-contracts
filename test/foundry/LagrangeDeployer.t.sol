@@ -148,8 +148,9 @@ contract LagrangeDeployer is Test {
         vm.roll(START_EPOCH);
         vm.startPrank(vm.addr(1));
 
-        // register chain
+        // register chains
         lagrangeCommittee.registerChain(CHAIN_ID, EPOCH_PERIOD, FREEZE_DURATION);
+        lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2);
         // register token multiplier
         stakeManager.setTokenMultiplier(address(token), 1e9);
         // register quorum
