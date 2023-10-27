@@ -1,5 +1,5 @@
 PRIVATE_KEY?="0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c"
-RPC_URL?="https://0.0.0.0:8545"
+RPC_URL?="http://0.0.0.0:8545"
 
 # Run ethereum nodes
 run-geth:

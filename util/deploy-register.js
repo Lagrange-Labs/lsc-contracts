@@ -20,30 +20,52 @@ const convertBLSPubKey = (oldPubKey) => {
   return newPubKey;
 };
 
-operators.forEach(async (chain, k) => {
-  for (let index = 0; index < chain.operators.length; index++) {
-    const address = chain.operators[index];
-    const privKey = accounts[address];
-    const wallet = new ethers.Wallet(privKey, provider);
-    const contract = new ethers.Contract(
-      deployedAddresses.addresses.lagrangeService,
-      abi,
-      wallet,
-    );
-    const nonce = await provider.getTransactionCount(address);
+(async () => {
+  await Promise.all(
+    operators[0].operators.map(async (operator, index) => {
+      const privKey = accounts[operator];
+      const wallet = new ethers.Wallet(privKey, provider);
+      const contract = new ethers.Contract(
+        deployedAddresses.addresses.lagrangeService,
+        abi,
+        wallet,
+      );
 
-    const tx = await contract.register(
-      chain.chain_id,
-      convertBLSPubKey(chain.bls_pub_keys[index]),
-      uint32Max,
-      {
+      const tx = await contract.register(
+        convertBLSPubKey(operators[0].bls_pub_keys[index]),
+        uint32Max,
+      );
+      console.log(
+        `Starting to register operator for address: ${operator} tx hash: ${tx.hash}`,
+      );
+      const receipt = await tx.wait();
+      console.log(
+        `Register Transaction was mined in block ${receipt.blockNumber}`,
+      );
+    }),
+  );
+
+  operators.forEach(async (chain, k) => {
+    for (let index = 0; index < chain.operators.length; index++) {
+      const address = chain.operators[index];
+      const privKey = accounts[address];
+      const wallet = new ethers.Wallet(privKey, provider);
+      const contract = new ethers.Contract(
+        deployedAddresses.addresses.lagrangeService,
+        abi,
+        wallet,
+      );
+      const nonce = await provider.getTransactionCount(address);
+      const tx = await contract.subscribe(chain.chain_id, {
         nonce: nonce + k,
-      },
-    );
-    console.log(
-      `Starting to register operator for address: ${address} tx hash: ${tx.hash}`,
-    );
-    const receipt = await tx.wait();
-    console.log(`Transaction was mined in block ${receipt.blockNumber}`);
-  }
-});
+      });
+      console.log(
+        `Starting to subscribe operator for address: ${address} tx hash: ${tx.hash}`,
+      );
+      const receipt = await tx.wait();
+      console.log(
+        `Subscribe Transaction was mined in block ${receipt.blockNumber}`,
+      );
+    }
+  });
+})();

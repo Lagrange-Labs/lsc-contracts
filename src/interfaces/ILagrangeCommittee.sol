@@ -4,14 +4,12 @@ pragma solidity ^0.8.12;
 struct OperatorStatus {
     uint256 amount;
     bytes blsPubKey;
-    uint32 serveUntilBlock;
-    uint32 chainID;
     bool slashed;
-}
-
-struct OperatorUpdate {
-    address operator;
-    uint8 updateType;
+    uint32 serveUntilBlock;
+    uint32[] subscribedChains;
+    uint256 unsubscribedBlockNumber;
+    // ChainID => Block Number which can be unsubscribable
+    mapping(uint32 => uint256) unsubscribedChains;
 }
 
 interface ILagrangeCommittee {
@@ -29,17 +27,23 @@ interface ILagrangeCommittee {
 
     function getServeUntilBlock(address operator) external returns (uint32);
 
-    function setSlashed(address operator) external;
-
     function getSlashed(address operator) external returns (bool);
 
     function getCommittee(uint32 chainID, uint256 blockNumber) external returns (CommitteeData memory, uint256);
 
-    function addOperator(address operator, bytes memory blsPubKey, uint32 chainID, uint32 serveUntilBlock) external;
+    function addOperator(address operator, bytes memory blsPubKey, uint32 serveUntilBlock) external;
+
+    function freezeOperator(address operator) external;
 
     function isLocked(uint32 chainID) external returns (bool, uint256);
 
-    function updateOperator(OperatorUpdate memory opUpdate) external;
+    function updateOperatorAmount(address operator) external;
+
+    function subscribeChain(address operator, uint32 chainID) external;
+
+    function unsubscribeChain(address operator, uint32 chainID) external;
+
+    function isUnregisterable(address operator) external returns (bool, uint256);
 
     function update(uint32 chainID, uint256 epochNumber) external;
 }

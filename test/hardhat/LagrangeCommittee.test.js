@@ -141,10 +141,9 @@ describe('LagrangeCommittee', function () {
           addr,
           '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' +
             j,
-          chainid,
           4294967295,
         );
-        tx = await committee.updateOperator({ operator: addr, updateType: 1 });
+        tx = await committee.subscribeChain(addr, chainid);
         rec = await tx.wait();
 
         croot = await committee.committees(chainid, 1);
@@ -171,10 +170,7 @@ describe('LagrangeCommittee', function () {
       for (j = 0; j < addrs.length; j++) {
         index = 3 - j;
         console.log('Removing operator ' + addrs[index] + '...');
-        tx = await committee.updateOperator({
-          operator: addrs[index],
-          updateType: 3,
-        });
+        tx = await committee.unsubscribeChain(addrs[index], chainid);
         rec = await tx.wait();
       }
     }
@@ -192,13 +188,8 @@ describe('LagrangeCommittee', function () {
     const newPubKey = '0x' + Gx + Gy;
     const address = operators[0].operators[0];
 
-    await committee.addOperator(
-      address,
-      newPubKey,
-      operators[0].chain_id,
-      serveUntilBlock,
-    );
-    await committee.updateOperator({ operator: address, updateType: 1 });
+    await committee.addOperator(address, newPubKey, serveUntilBlock);
+    await committee.subscribeChain(address, operators[0].chain_id);
     await committee.registerChain(operators[0].chain_id, 10000, 1000);
 
     const chunks = [];
@@ -256,13 +247,8 @@ describe('LagrangeCommittee', function () {
       const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
       const newPubKey = '0x' + Gx + Gy;
 
-      await committee.addOperator(
-        op,
-        newPubKey,
-        operators[0].chain_id,
-        serveUntilBlock,
-      );
-      await committee.updateOperator({ operator: op, updateType: 1 });
+      await committee.addOperator(op, newPubKey, serveUntilBlock);
+      await committee.subscribeChain(op, operators[0].chain_id);
     }
     await committee.registerChain(operators[0].chain_id, 10000, 1000);
 
@@ -300,7 +286,7 @@ describe('LagrangeCommittee', function () {
       count /= 2;
     }
     console.log(leaves[0].toString(16));
-    expect('0x' + leaves[0].toString(16)).to.equal(
+    expect('0x' + leaves[0].toString(16).padStart(64, '0')).to.equal(
       committeeRoot.currentCommittee.root.toHexString(),
     );
   });
@@ -317,34 +303,29 @@ describe('LagrangeCommittee', function () {
       const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
       const newPubKey = '0x' + Gx + Gy;
 
-      await committee.addOperator(
-        op,
-        newPubKey,
-        operators[0].chain_id,
-        serveUntilBlock,
-      );
-      await committee.updateOperator({ operator: op, updateType: 1 });
+      await committee.addOperator(op, newPubKey, serveUntilBlock);
+      await committee.subscribeChain(op, operators[0].chain_id);
     }
 
-    // unregister the first operator
-    await committee.updateOperator({
-      operator: operators[0].operators[0],
-      updateType: 3,
-    });
-    // unregister the last operator
-    await committee.updateOperator({
-      operator: operators[0].operators[operators[0].operators.length - 2],
-      updateType: 3,
-    });
-    // unregister the middle operator
-    await committee.updateOperator({
-      operator: operators[0].operators[4],
-      updateType: 3,
-    });
-    await committee.updateOperator({
-      operator: operators[0].operators[5],
-      updateType: 3,
-    });
+    // unsubscribe the first operator
+    await committee.unsubscribeChain(
+      operators[0].operators[0],
+      operators[0].chain_id,
+    );
+    // unsubscribe the last operator
+    await committee.unsubscribeChain(
+      operators[0].operators[operators[0].operators.length - 2],
+      operators[0].chain_id,
+    );
+    // unsubscribe the middle operator
+    await committee.unsubscribeChain(
+      operators[0].operators[4],
+      operators[0].chain_id,
+    );
+    await committee.unsubscribeChain(
+      operators[0].operators[5],
+      operators[0].chain_id,
+    );
 
     await committee.registerChain(operators[0].chain_id, 10000, 1000);
     let operatorCount = 5;
@@ -381,7 +362,7 @@ describe('LagrangeCommittee', function () {
       count /= 2;
     }
     console.log(leaves[0].toString(16));
-    expect('0x' + leaves[0].toString(16)).to.equal(
+    expect('0x' + leaves[0].toString(16).padStart(64, '0')).to.equal(
       committeeRoot.currentCommittee.root.toHexString(),
     );
   });
