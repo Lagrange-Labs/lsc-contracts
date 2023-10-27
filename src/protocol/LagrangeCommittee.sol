@@ -193,6 +193,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return operators[operator].slashed;
     }
 
+    function getBlsPubKey(address operator) public view returns (bytes memory) {
+        return operators[operator].blsPubKey;
+    }
+
     // Returns chain's committee current and next roots at a given block.
     function getCommittee(uint32 chainID, uint256 blockNumber)
         public
@@ -383,9 +387,5 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
                 )
             ]
         );
-    }
-
-    function getOperator(address operator) external returns (OperatorStatus memory) {
-        return operators[operator];
     }
 }

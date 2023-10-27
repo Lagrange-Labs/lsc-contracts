@@ -25,8 +25,6 @@ interface ILagrangeCommittee {
         uint256 totalVotingPower;
     }
 
-    function getOperator(address operator) external returns (OperatorStatus memory);
-
     function getServeUntilBlock(address operator) external returns (uint32);
 
     function getSlashed(address operator) external returns (bool);
@@ -48,4 +46,6 @@ interface ILagrangeCommittee {
     function isUnregisterable(address operator) external returns (bool, uint256);
 
     function update(uint32 chainID, uint256 epochNumber) external;
+
+    function getBlsPubKey(address operator) external returns (bytes memory);
 }

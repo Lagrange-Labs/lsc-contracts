@@ -130,14 +130,14 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
     function _checkBlockSignature(
         Evidence memory _evidence
     ) internal returns (bool) {
-        OperatorStatus memory op = committee.getOperator(_evidence.operator);
+        bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
         
         // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) = committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
         
         bool sigVerify = SigVerify.verify(
           _evidence,
-          op.blsPubKey,
+          blsPubKey,
           cdata.height
         );
         
