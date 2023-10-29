@@ -112,7 +112,7 @@ contract SlashingSingleVerifierTriage is
     }
 
     function _bytes192tobytes48(bytes memory bpk) internal view returns (bytes[4] memory) {
-       require(bpk.length==192);
+       require(bpk.length==192,"Block signature must be in a form of length 192 bytes.");
        bytes[4] memory res = [new bytes(48), new bytes(48), new bytes(48), new bytes(48)];
        for(uint256 i = 0; i < 48; i++) {
            res[0][i] = bpk[i];
@@ -171,6 +171,7 @@ contract SlashingSingleVerifierTriage is
         (input[45], input[46]) = _getChainHeader(_evidence.blockHash,_evidence.blockNumber,_evidence.chainID);
         
         bool result = verifier.verifyProof(params.a, params.b, params.c, input);
+
         return result;
     }
     
