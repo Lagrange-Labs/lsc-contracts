@@ -36,7 +36,7 @@ contract EvidenceVerifier is Common {
 
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
-    
+
     ISlashingSingleVerifierTriage SigVerify;
     ISlashingAggregateVerifierTriage AggVerify;
 

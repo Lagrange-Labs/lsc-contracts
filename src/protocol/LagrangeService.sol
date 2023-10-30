@@ -43,9 +43,9 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
     }
 
     function initialize(
-      address initialOwner,
-      ISlashingSingleVerifierTriage _SigVerify,
-      ISlashingAggregateVerifierTriage _AggVerify
+        address initialOwner,
+        ISlashingSingleVerifierTriage _SigVerify,
+        ISlashingAggregateVerifierTriage _AggVerify
     ) external initializer {
         _transferOwnership(initialOwner);
         SigVerify = _SigVerify;
@@ -89,11 +89,11 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
 
         require(checkCommitSignature(evidence), "The commit signature is not correct");
 
-       if (!_checkBlockSignature(evidence)) {
-           _freezeOperator(evidence.operator);
-       }
-       
-       if (evidence.correctBlockHash == evidence.blockHash) {
+        if (!_checkBlockSignature(evidence)) {
+            _freezeOperator(evidence.operator);
+        }
+
+        if (evidence.correctBlockHash == evidence.blockHash) {
             _freezeOperator(evidence.operator);
         }
 
@@ -121,47 +121,41 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
             evidence.epochBlockNumber,
             evidence.blockSignature,
             evidence.commitSignature,
-            evidence.chainID//,
-            //evidence.sigProof,
-            //evidence.aggProof
+            evidence.chainID //,
+                //evidence.sigProof,
+                //evidence.aggProof
         );
     }
 
-    function _checkBlockSignature(
-        Evidence memory _evidence
-    ) internal returns (bool) {
+    function _checkBlockSignature(Evidence memory _evidence) internal returns (bool) {
         bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
-        
+
         // establish that proofs are valid
-        (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) = committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
-        
-        bool sigVerify = SigVerify.verify(
-          _evidence,
-          blsPubKey,
-          cdata.height
-        );
-        
+        (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) =
+            committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
+
+        bool sigVerify = SigVerify.verify(_evidence, blsPubKey, cdata.height);
+
         bool aggVerify = AggVerify.verify(
-          _evidence.aggProof,
-          _evidence.currentCommitteeRoot,
-          _evidence.nextCommitteeRoot,
-          _evidence.blockHash,
-          _evidence.blockNumber,
-          _evidence.chainID,
-          cdata.height
+            _evidence.aggProof,
+            _evidence.currentCommitteeRoot,
+            _evidence.nextCommitteeRoot,
+            _evidence.blockHash,
+            _evidence.blockNumber,
+            _evidence.chainID,
+            cdata.height
         );
 
         // compare signingroot to evidence, extract values - TODO crossreference/confirm
-        bytes32 reconstructedSigningRoot = keccak256(abi.encodePacked(
-            _evidence.currentCommitteeRoot,
-            _evidence.nextCommitteeRoot,
-            _evidence.blockNumber,
-            _evidence.blockHash
-        ));
+        bytes32 reconstructedSigningRoot = keccak256(
+            abi.encodePacked(
+                _evidence.currentCommitteeRoot, _evidence.nextCommitteeRoot, _evidence.blockNumber, _evidence.blockHash
+            )
+        );
 
         return (sigVerify);
     }
-        
+
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,

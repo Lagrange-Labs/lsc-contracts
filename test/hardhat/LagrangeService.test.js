@@ -51,9 +51,9 @@ describe('LagrangeService', function () {
     const overrides = {
       gasLimit: 5000000,
     };
-    
-      proxyAdmin = shared.proxyAdmin;
-      proxy = shared.proxy;
+
+    proxyAdmin = shared.proxyAdmin;
+    proxy = shared.proxy;
 
     const Common = await ethers.getContractFactory('Common');
     const common = await Common.deploy();
@@ -82,7 +82,7 @@ describe('LagrangeService', function () {
       overrides,
     );
     await lsm.deployed();
-    
+
     shared.LagrangeServiceManager = lsm;
 
     console.log('Deploying DelegationManager mock...');
@@ -111,7 +111,7 @@ describe('LagrangeService', function () {
     const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
       'TransparentUpgradeableProxy',
     );
-    
+
     lsproxy = await TransparentUpgradeableProxyFactory.deploy(
       lagrangeService.address,
       proxyAdmin.address,
@@ -163,7 +163,7 @@ describe('LagrangeService', function () {
 
     shared.LagrangeService = lagrangeService;
   });
-  
+
   it('Smoke test L2-L1 settlement interfaces', async function () {
     const lagrangeService = await ethers.getContractAt(
       'LagrangeService',
@@ -178,7 +178,7 @@ describe('LagrangeService', function () {
         addr2 != '0x0000000000000000000000000000000000000000',
     ).to.equal(true);
   });
-    
+
   it('Slashed status', async function () {
     const lc = shared.LagrangeCommittee;
     slashed = await lc.getSlashed('0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9');

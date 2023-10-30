@@ -65,7 +65,7 @@ contract Deploy is Script, Test {
     SlashingSingleVerifierTriage public SigVerifyImp;
     SlashingAggregateVerifierTriage public AggVerify;
     SlashingAggregateVerifierTriage public AggVerifyImp;
-    
+
     Outbox public outbox;
     L2OutputOracle public l2oo;
 
@@ -233,36 +233,21 @@ contract Deploy is Script, Test {
         );
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(
-                payable(address(SigVerify))
-            ),
+            TransparentUpgradeableProxy(payable(address(SigVerify))),
             address(SigVerifyImp),
-            abi.encodeWithSelector(
-                SlashingSingleVerifierTriage.initialize.selector,
-                msg.sender
-            )
+            abi.encodeWithSelector(SlashingSingleVerifierTriage.initialize.selector, msg.sender)
         );
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(
-                payable(address(AggVerify))
-            ),
+            TransparentUpgradeableProxy(payable(address(AggVerify))),
             address(AggVerifyImp),
-            abi.encodeWithSelector(
-                SlashingAggregateVerifierTriage.initialize.selector,
-                msg.sender
-            )
+            abi.encodeWithSelector(SlashingAggregateVerifierTriage.initialize.selector, msg.sender)
         );
-        
+
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(
-                LagrangeService.initialize.selector,
-                msg.sender,
-                SigVerify,
-                AggVerify
-            )
+            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, SigVerify, AggVerify)
         );
         if (isNative) {
             proxyAdmin.upgradeAndCall(
@@ -286,34 +271,18 @@ contract Deploy is Script, Test {
         // write deployment data to file
         string memory parent_object = "parent object";
         string memory deployed_addresses = "addresses";
-	
+
         vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
         vm.serializeAddress(deployed_addresses, "lagrangeCommitteeImp", address(lagrangeCommitteeImp));
         vm.serializeAddress(deployed_addresses, "lagrangeCommittee", address(lagrangeCommittee));
         vm.serializeAddress(deployed_addresses, "lagrangeServiceImp", address(lagrangeServiceImp));
         vm.serializeAddress(deployed_addresses, "lagrangeService", address(lagrangeService));
         vm.serializeAddress(deployed_addresses, "lagrangeServiceManagerImp", address(lagrangeServiceManagerImp));
-        vm.serializeAddress(
-            deployed_addresses,
-            "SigVerify",
-            address(SigVerify)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "SigVerifyImp",
-            address(SigVerifyImp)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "AggVerify",
-            address(AggVerify)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "AggVerifyImp",
-            address(AggVerifyImp)
-        );
-	
+        vm.serializeAddress(deployed_addresses, "SigVerify", address(SigVerify));
+        vm.serializeAddress(deployed_addresses, "SigVerifyImp", address(SigVerifyImp));
+        vm.serializeAddress(deployed_addresses, "AggVerify", address(AggVerify));
+        vm.serializeAddress(deployed_addresses, "AggVerifyImp", address(AggVerifyImp));
+
         if (isNative) {
             vm.serializeAddress(deployed_addresses, "stakeManager", address(stakeManager));
             vm.serializeAddress(deployed_addresses, "stakeManagerImp", address(stakeManagerImp));

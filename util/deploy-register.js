@@ -11,15 +11,14 @@ const uint32Max = 4294967295;
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 
-
 const convertBLSPubKey = (oldPubKey) => {
-    const pubKey = bls.PointG1.fromHex(oldPubKey.slice(2));
-    const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
-    const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
-    const newPubKey = "0x" + Gx + Gy;
-    console.log("newPubKey: ", newPubKey);
-    return newPubKey;
-}
+  const pubKey = bls.PointG1.fromHex(oldPubKey.slice(2));
+  const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
+  const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
+  const newPubKey = '0x' + Gx + Gy;
+  console.log('newPubKey: ', newPubKey);
+  return newPubKey;
+};
 
 (async () => {
   await Promise.all(
