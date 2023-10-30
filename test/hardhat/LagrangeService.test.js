@@ -52,7 +52,8 @@ describe('LagrangeService', function () {
       gasLimit: 5000000,
     };
     
-    proxyAdmin = shared.proxyAdmin;
+      proxyAdmin = shared.proxyAdmin;
+      proxy = shared.proxy;
 
     const Common = await ethers.getContractFactory('Common');
     const common = await Common.deploy();
@@ -127,20 +128,6 @@ describe('LagrangeService', function () {
     await lsmproxy.deployed();
     shared.lsmproxy = lsmproxy;
 
-    await proxyAdmin.upgradeAndCall(
-      proxy.address,
-      committee.address,
-      committee.interface.encodeFunctionData('initialize', [
-        admin.address,
-        poseidonAddresses[1],
-        poseidonAddresses[2],
-        poseidonAddresses[3],
-        poseidonAddresses[4],
-        poseidonAddresses[5],
-        poseidonAddresses[6],
-      ]),
-    );
-
     const outboxFactory = await ethers.getContractFactory('Outbox');
     const outbox = await outboxFactory.deploy();
     await outbox.deployed();
@@ -177,7 +164,6 @@ describe('LagrangeService', function () {
     shared.LagrangeService = lagrangeService;
   });
   
-
   it('Smoke test L2-L1 settlement interfaces', async function () {
     const lagrangeService = await ethers.getContractAt(
       'LagrangeService',
@@ -192,9 +178,7 @@ describe('LagrangeService', function () {
         addr2 != '0x0000000000000000000000000000000000000000',
     ).to.equal(true);
   });
-
-  return;
-
+    
   it('Slashed status', async function () {
     const lc = shared.LagrangeCommittee;
     slashed = await lc.getSlashed('0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9');

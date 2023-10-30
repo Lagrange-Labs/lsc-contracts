@@ -181,8 +181,6 @@ describe('LagrangeCommittee', function () {
     }
   });
   
-  return;
-
   it('leaf hash', async function () {
     const committee = await ethers.getContractAt(
       'LagrangeCommittee',
