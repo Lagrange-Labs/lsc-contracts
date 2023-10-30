@@ -38,6 +38,8 @@
   ```
 - Walk through `make all-native` step by step, without `run-geth` or `init-accounts`:
 ```bash
+make run-geth;
+make generate-accounts;
 make deploy-weth9;
 make deploy-mock;
 make deploy-poseidon;
@@ -45,6 +47,7 @@ make deploy-lagrange;
 make deploy-verifiers;
 make update-config;
 make add-quorum;
+node util/distributor.js # optional for private testnet
 make deposit-stake;
 make deploy-register;
 make init-committee;
