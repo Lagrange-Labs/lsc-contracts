@@ -752,46 +752,83 @@ describe("Lagrange Verifiers", function () {
         };
     });
     it("slashing_single evidence submission", async function () {    
-return;
-/*
-        //await redeploy(admin);
         ls = shared.LagrangeService;
+        lsm = shared.LagrangeServiceManager;
+        lsproxy = shared.lsproxy;
+        lsmproxy = shared.lsmproxy;
         proxy = shared.proxy;
         proxyAdmin = shared.proxyAdmin;
         poseidonAddresses = shared.poseidonAddresses;
         voteWeigher = shared.voteWeigher;
-//        committee = shared.LagrangeCommittee;
+        
+        // Upgrade Committee w/ LagrangeService auth
+        console.log("Upgrading committee...");
         lcfactory = await ethers.getContractFactory('LagrangeCommittee');
         committee = await lcfactory.deploy(
-          admin.address,
+          lsproxy.address,
           voteWeigher.address,
         );
         await committee.deployed();
 
+        tx = await proxyAdmin.upgrade(
+          proxy.address,
+          committee.address
+        );
+        await tx.wait();
+        
+        // Upgrade ServiceManager
+        console.log("Redeploying service manager...");
+        lsmfactory = await ethers.getContractFactory("LagrangeServiceManager");
+        lsmimp = await lsmfactory.deploy(shared.slasher.address, proxy.address, lsproxy.address);
+        await lsmimp.deployed();
+        console.log("Upgrading service...");
+        await proxyAdmin.upgradeAndCall(
+          lsmproxy.address,
+          lsmimp.address,
+          lsmimp.interface.encodeFunctionData('initialize', [
+            lsproxy.address
+          ]),
+        );
+        /*
+        tx = await proxyAdmin.upgrade(
+          lsmproxy.address,
+          lsmimp.address
+        );
+        await tx.wait();
+        */
+        
+        // Upgrade Service
+        console.log("Redeploying service...");
+        lsfactory = await ethers.getContractFactory("LagrangeService");
+        lsimp = await lsfactory.deploy(proxy.address, lsmimp.address);
+        await lsimp.deployed();
+        console.log("Upgrading service...");
     await proxyAdmin.upgradeAndCall(
-      proxy.address,
-      committee.address,
-      committee.interface.encodeFunctionData('initialize', [
-        ls.address,
-        poseidonAddresses[1],
-        poseidonAddresses[2],
-        poseidonAddresses[3],
-        poseidonAddresses[4],
-        poseidonAddresses[5],
-        poseidonAddresses[6],
+      lsproxy.address,
+      lsimp.address,
+      lsimp.interface.encodeFunctionData('initialize', [
+        admin.address,
+        shared.SSVT.address,
+        shared.SAVT.address
       ]),
     );
+        tx = await proxyAdmin.upgrade(
+          lsproxy.address,
+          lsimp.address
+        );
+        await tx.wait();
         
-        proxyAdmin
-*/
+        console.log("done.")
         
         bpk = "0xb66a7d0803f34de5acbb832dc4952c4c486367e1c2a9356be3836f4ee4a20acc0b0fe8a76c89210eea0bf4490f0af93b";
-    pub = await bls.PointG1.fromHex(bpk.slice(2));
-    gx = await pub.toAffine()[0].value.toString(16).padStart(96, '0');
-    gy = await pub.toAffine()[1].value.toString(16).padStart(96, '0');
-    newPub = '0x' + gx + gy;
+        pub = await bls.PointG1.fromHex(bpk.slice(2));
+        gx = await pub.toAffine()[0].value.toString(16).padStart(96, '0');
+        gy = await pub.toAffine()[1].value.toString(16).padStart(96, '0');
+        newPub = '0x' + gx + gy;
+        
+        lsproxy = await ethers.getContractAt("LagrangeService",lsproxy.address);
 
-	await ls.register(newPub,1000000);
+	tx = await lsproxy.register(newPub,1000000);
 
         const triSig = shared.SSVT;
         pub = await getJSON("test/hardhat/slashing_single/public.json");
@@ -817,62 +854,216 @@ return;
           ethers.BigNumber.from(proof.pi_c[1])
         ];
         input = pubNumeric;
-        
+        // convert input to hex bytes for evidence
         const encoded = await ethers.utils.defaultAbiCoder.encode(verSigABI, [a,b,c,input]);
-        
-        blsPriv = "0x27d402641e400663087b57e1394e1dffa233083129ff5283555c193f7d0aecfc";
-        blsPub = "0xb66a7d0803f34de5acbb832dc4952c4c486367e1c2a9356be3836f4ee4a20acc0b0fe8a76c89210eea0bf4490f0af93b";
-        chainHeader = "0xe796232da2a2990e05ed6a097c4964f8ce229c3b3c4f0bc9bf9b0b15f344d61b";
+        // use bls keypair, derived from query layer
+        blsPriv = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        blsPub = "0x86b50179774296419b7e8375118823ddb06940d9a28ea045ab418c7ecbe6da84d416cb55406eec6393db97ac26e38bd4";
+        // derive chainheader from in-contract event emission
+        chainHeaderPreimage = await ethers.utils.solidityPack(
+            chainHeaderABI,[
+            "0x90b40de3f413784ec5a5aa2de3e9b7e4f00b81b473d38095e98740e8f40e7e31",
+            39613956,
+            421613
+            ]
+        );
+        console.log("preimage:",chainHeaderPreimage);
+        chainHeader = await ethers.utils.keccak256(chainHeaderPreimage);
+        console.log("hash:",chainHeader);
+        // derive signingRoot from chainHeader and cur/next committee roots, poseidon hash
         signingRoot = chainHeader
-                    + "15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756"
-                    + "15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756";
+                    + "2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514"
+                    + "2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514";
+
         srHash = await poseidon.hashBytes(Uint8Array.from(Buffer.from(signingRoot.slice(2), 'hex'))).toString(16);
-        console.log(signingRoot,srHash);
-        
+        if (srHash.length % 2 == 1) {
+            srHash = '0' + srHash;
+        }
+        console.log("signingRoot:",signingRoot,"hash:",ethers.BigNumber.from('0x'+srHash));
+        // sign signingroot
 	message = new Uint8Array(Buffer.from(srHash,'hex'));
+	signature = "0x842f2fb51708ee79d8ef1ac3e09cddb6b6b2f8ab770f440658819485170411c02fa3d97dee3ed4402d86f773bc5011cb098544560f1e495b4caf13964ea820f773c84e254156b7b8a4abde9c9953896b4eab2004c5e4d4d75d8f5791c5d180d8";
+	console.log("aggsig___:",signature);
+        coords = await bls.PointG2.fromHex(signature.slice(2));
+        console.log(coords);
+	/*
+	*/
+	/*
 	signature = await bls.sign(message, blsPriv.slice(2));
+	// convert coordinates to hex for verifier
         coords = await bls.PointG2.fromSignature(signature);
+	*/
 	affine = [
 	  coords.toAffine()[0].c0.value.toString(16).padStart(96, '0'),
 	  coords.toAffine()[0].c1.value.toString(16).padStart(96, '0'),
 	  coords.toAffine()[1].c0.value.toString(16).padStart(96, '0'),
 	  coords.toAffine()[1].c1.value.toString(16).padStart(96, '0'),  
 	]; 
-	
+	csig = '0x' + affine.join("");
+	console.log("signature:",csig);
 	     
     const pubKey = await bls.PointG1.fromHex(blsPub.slice(2));
     const Gx = await pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
     const Gy = await pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
     const newPubKey = '0x' + Gx + Gy;
-
-        csig = "0x"
-        + "0e4121f36bffdfea60d4ad6f76f46e8b14ff065ae65ebe38fde5058d717c45535ef83723106fe34270d8dd51f6628163"
-        + "0fa18e6016e317a0965ed54d6de009d2bb47a93a1fff59757f41e781ac3efb9a4a91c50d6a4b0cf68e4ee07dbd740f2b"
-        + "038474fb4623f9053b90424eced3f507608ed293cef1c44b54e91e7e05fb7d4a2340f00b71ea2ad53a650801b3e8399f"
-        + "1866fc169a323ad7b1f98d4f34f3e71e62e52bc649245de6c733e2073a3ba7bd1d399a8de58ae9c4739c651884faf080";
-        
+            
     const evidence = {
-        operator: "0x0000000000000000000000000000000000000000",
-        blockHash: "0xa0091f9446be880a0674e20fb5ec6c4d0511e5d687c5e7e36f01393beec1df96",
-        correctBlockHash: "0xa0091f9446be880a0674e20fb5ec6c4d0511e5d687c5e7e36f01393beec1df96",
-        currentCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
-        correctCurrentCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
-        nextCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
-        correctNextCommitteeRoot: "0x15c5994da30094441f9b699a147c4f5b87eaf8bfb1effec08d16e94e79464756",
-        blockNumber: 23173304,
+        operator: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        blockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
+        correctBlockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
+        currentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        correctCurrentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        nextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        correctNextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        blockNumber: 28809913,
         epochBlockNumber: "0x0000000000000000000000000000000000000000000000000000000000000000",
         blockSignature: csig,
         commitSignature:csig,
-        chainID: 5001,
+        chainID: 421613,
         attestBlockHeader: "0x00",
         sigProof: encoded,
         aggProof: "0x00"
     };
 
-        tx = await ls.uploadEvidence(
+        console.log("Uploading evidence...");
+        tx = await lsproxy.uploadEvidence(
             evidence
         );
-        
-        console.log(JSON.stringify(tx));
     });
+    it("slashing_aggregate evidence submission", async function () {    
+        ls = shared.LagrangeService;
+        lsm = shared.LagrangeServiceManager;
+        lsproxy = shared.lsproxy;
+        lsmproxy = shared.lsmproxy;
+        proxy = shared.proxy;
+        proxyAdmin = shared.proxyAdmin;
+        poseidonAddresses = shared.poseidonAddresses;
+        voteWeigher = shared.voteWeigher;
+        
+        // Upgrade Committee w/ LagrangeService auth
+        console.log("Upgrading committee...");
+        lcfactory = await ethers.getContractFactory('LagrangeCommittee');
+        committee = await lcfactory.deploy(
+          lsproxy.address,
+          voteWeigher.address,
+        );
+        await committee.deployed();
+
+        tx = await proxyAdmin.upgrade(
+          proxy.address,
+          committee.address
+        );
+        await tx.wait();
+        
+        /*
+        // Upgrade ServiceManager
+        console.log("Redeploying service manager...");
+        lsmfactory = await ethers.getContractFactory("LagrangeServiceManager");
+        lsmimp = await lsmfactory.deploy("0x0000000000000000000000000000000000000000", proxy.address, lsproxy.address);
+        await lsmimp.deployed();
+        console.log("Upgrading service...");
+        await proxyAdmin.upgradeAndCall(
+          lsmproxy.address,
+          lsmimp.address,
+          lsmimp.interface.encodeFunctionData('initialize', [
+            lsproxy.address
+          ]),
+        );
+        tx = await proxyAdmin.upgrade(
+          lsmproxy.address,
+          lsmimp.address
+        );
+        await tx.wait();
+        
+        // Upgrade Service
+        console.log("Redeploying service...");
+        lsfactory = await ethers.getContractFactory("LagrangeService");
+        lsimp = await lsfactory.deploy(proxy.address, lsmimp.address);
+        await lsimp.deployed();
+        console.log("Upgrading service...");
+    await proxyAdmin.upgradeAndCall(
+      lsproxy.address,
+      lsimp.address,
+      lsimp.interface.encodeFunctionData('initialize', [
+        admin.address,
+        shared.SSVT.address,
+        shared.SAVT.address
+      ]),
+    );
+        tx = await proxyAdmin.upgrade(
+          lsproxy.address,
+          lsimp.address
+        );
+        await tx.wait();
+        */
+        
+        console.log("done.")
+        
+        bpk = "0xb66a7d0803f34de5acbb832dc4952c4c486367e1c2a9356be3836f4ee4a20acc0b0fe8a76c89210eea0bf4490f0af93b";
+        pub = await bls.PointG1.fromHex(bpk.slice(2));
+        gx = await pub.toAffine()[0].value.toString(16).padStart(96, '0');
+        gy = await pub.toAffine()[1].value.toString(16).padStart(96, '0');
+        newPub = '0x' + gx + gy;
+        
+        lsproxy = await ethers.getContractAt("LagrangeService",lsproxy.address);
+
+	await lsproxy.register(newPub,1000000);
+
+        const triAgg = shared.SAVT;
+
+        pub = await getJSON("test/hardhat/slashing_aggregate_16/public.json");
+        proof = await getJSON("test/hardhat/slashing_aggregate_16/proof.json");
+        pubNumeric = Object.values(pub).map(ethers.BigNumber.from);
+	
+        a = [
+          ethers.BigNumber.from(proof.pi_a[0]),
+          ethers.BigNumber.from(proof.pi_a[1])
+        ];
+        b = [
+         [
+          ethers.BigNumber.from(proof.pi_b[0][1]),
+          ethers.BigNumber.from(proof.pi_b[0][0]),
+         ],
+         [
+          ethers.BigNumber.from(proof.pi_b[1][1]),
+          ethers.BigNumber.from(proof.pi_b[1][0]),
+         ]
+        ];
+        c = [
+          ethers.BigNumber.from(proof.pi_c[0]),
+          ethers.BigNumber.from(proof.pi_c[1])
+        ];
+        input = pubNumeric;
+        
+        const encoded = ethers.utils.defaultAbiCoder.encode(verAggABI, [a,b,c,input]);
+        
+        const indices = [1];
+        
+    const evidence = {
+        operator: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        blockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
+        correctBlockHash: "0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896",
+        currentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        correctCurrentCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        nextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        correctNextCommitteeRoot: "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514",
+        blockNumber: 28809913,
+        epochBlockNumber: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        blockSignature: csig,
+        commitSignature:csig,
+        chainID: 421613,
+        attestBlockHeader: "0x00",
+        sigProof: "0x00",
+        aggProof: encoded
+    };
+    console.log(admin.address);
+
+        for(i = 0; i < indices.length; i++) {
+          index = indices[i];
+          
+          console.log("Uploading evidence...");
+          tx = await lsproxy.uploadEvidence(evidence);
+        };
+    });
+
 });
