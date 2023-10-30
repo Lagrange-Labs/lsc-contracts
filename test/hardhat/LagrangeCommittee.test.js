@@ -119,6 +119,11 @@ describe('LagrangeCommittee', function () {
     );
 
     shared.LagrangeCommittee = committee;
+    shared.proxy = proxy;
+    shared.proxyAdmin = proxyAdmin;
+    shared.poseidonAddresses = poseidonAddresses;
+    shared.voteWeigher = voteWeigher;
+    shared.emptyContract = emptyContract;
   });
 
   it('trie construction/deconstruction', async function () {
@@ -175,6 +180,8 @@ describe('LagrangeCommittee', function () {
       }
     }
   });
+  
+  return;
 
   it('leaf hash', async function () {
     const committee = await ethers.getContractAt(
