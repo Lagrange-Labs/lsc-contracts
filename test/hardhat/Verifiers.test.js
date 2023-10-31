@@ -66,13 +66,13 @@ describe('Lagrange Verifiers', function () {
       'src/library/slashing_single/verifier.sol:Verifier',
     );
     const verAggFactory = await ethers.getContractFactory(
-      'src/library/slashing_aggregate_16/verifier.sol:Verifier',
+      'src/library/slashing_aggregate/verifier_16.sol:Verifier_16',
     );
     const verAgg32Factory = await ethers.getContractFactory(
-      'src/library/slashing_aggregate_32/verifier.sol:Verifier',
+      'src/library/slashing_aggregate/verifier_32.sol:Verifier_32',
     );
     const verAgg64Factory = await ethers.getContractFactory(
-      'src/library/slashing_aggregate_64/verifier.sol:Verifier',
+      'src/library/slashing_aggregate/verifier_64.sol:Verifier_64',
     );
 
     const verSig = await verSigFactory.deploy();

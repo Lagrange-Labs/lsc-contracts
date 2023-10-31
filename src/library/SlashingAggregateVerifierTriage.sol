@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
-import {Verifier} from "./slashing_aggregate_16/verifier.sol";
+import {ISlashingAggregateVerifier} from "../interfaces/ISlashingAggregateVerifier.sol";
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
 contract SlashingAggregateVerifierTriage is ISlashingAggregateVerifierTriage, Initializable, OwnableUpgradeable {
@@ -67,7 +67,7 @@ contract SlashingAggregateVerifierTriage is ISlashingAggregateVerifierTriage, In
             "SlashingSingleVerifierTriage: Verifier address not set for committee size specified."
         );
 
-        Verifier verifier = Verifier(verifierAddress);
+        ISlashingAggregateVerifier verifier = ISlashingAggregateVerifier(verifierAddress);
         proofParams memory params = abi.decode(aggProof, (proofParams));
 
         (uint256 _chainHeader1, uint256 _chainHeader2) = _getChainHeader(blockHash, blockNumber, chainID);
