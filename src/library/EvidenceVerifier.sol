@@ -37,9 +37,6 @@ contract EvidenceVerifier is Common {
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
 
-    ISlashingSingleVerifierTriage SigVerify;
-    ISlashingAggregateVerifierTriage AggVerify;
-
     function setArbAddr(ArbitrumVerifier _arb) public {
         ArbVerify = _arb;
     }

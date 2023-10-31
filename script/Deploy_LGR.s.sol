@@ -213,9 +213,6 @@ contract Deploy is Script, Test {
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
         //evidenceVerifier = new EvidenceVerifier();
 
-        lagrangeServiceImp.setOptAddr(optimismVerifier);
-        lagrangeServiceImp.setArbAddr(arbitrumVerifier);
-
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
@@ -254,6 +251,11 @@ contract Deploy is Script, Test {
             address(lagrangeServiceImp),
             abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, SigVerify, AggVerify)
         );
+
+	EvidenceVerifier ev = lagrangeService.evidenceVerifier();
+        ev.setOptAddr(optimismVerifier);
+        ev.setArbAddr(arbitrumVerifier);
+
         if (isNative) {
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(stakeManager))),

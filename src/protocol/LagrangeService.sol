@@ -12,13 +12,17 @@ import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
 import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 
-contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService, EvidenceVerifier {
+contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
     uint256 public constant UPDATE_TYPE_REGISTER = 1;
     uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
     uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
 
     ILagrangeCommittee public immutable committee;
     IServiceManager public immutable serviceManager;
+
+    ISlashingSingleVerifierTriage SigVerify;
+    ISlashingAggregateVerifierTriage AggVerify;
+    EvidenceVerifier public evidenceVerifier;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
 
@@ -50,6 +54,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
         _transferOwnership(initialOwner);
         SigVerify = _SigVerify;
         AggVerify = _AggVerify;
+        evidenceVerifier = new EvidenceVerifier();
     }
 
     /// Add the operator to the service.
@@ -80,14 +85,14 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
     }
 
     /// upload the evidence to punish the operator.
-    function uploadEvidence(Evidence calldata evidence) external {
+    function uploadEvidence(EvidenceVerifier.Evidence calldata evidence) external {
         // check the operator is registered or not
         require(committee.getServeUntilBlock(evidence.operator) > 0, "The operator is not registered");
 
         // check the operator is slashed or not
         require(!committee.getSlashed(evidence.operator), "The operator is slashed");
 
-        require(checkCommitSignature(evidence), "The commit signature is not correct");
+        require(evidenceVerifier.checkCommitSignature(evidence), "The commit signature is not correct");
 
         if (!_checkBlockSignature(evidence)) {
             _freezeOperator(evidence.operator);
@@ -127,7 +132,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
         );
     }
 
-    function _checkBlockSignature(Evidence memory _evidence) internal returns (bool) {
+    function _checkBlockSignature(EvidenceVerifier.Evidence memory _evidence) internal returns (bool) {
         bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
 
         // establish that proofs are valid

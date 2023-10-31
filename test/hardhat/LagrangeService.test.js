@@ -118,6 +118,15 @@ describe('LagrangeService', function () {
       '0x',
     );
     await lsproxy.deployed();
+
+    await proxyAdmin.upgradeAndCall(
+      lsproxy.address,
+      lagrangeService.address,
+      lagrangeService.interface.encodeFunctionData('initialize', [admin.address,"0x0000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000"]),
+    );
+    
+    lsproxy = await ethers.getContractAt("LagrangeService",lsproxy.address);
+    
     shared.lsproxy = lsproxy;
 
     lsmproxy = await TransparentUpgradeableProxyFactory.deploy(
@@ -155,8 +164,11 @@ describe('LagrangeService', function () {
     console.log('L2OutputOracle:', l2oo.address);
     console.log('Outbox:', outbox.address);
 
-    await lagrangeService.setOptAddr(opt.address);
-    await lagrangeService.setArbAddr(arb.address);
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+
+    await ev.setOptAddr(opt.address);
+    await ev.setArbAddr(arb.address);
 
     console.log('OptimismVerifier:', opt.address);
     console.log('ArbitrumVerifier:', arb.address);
@@ -170,8 +182,11 @@ describe('LagrangeService', function () {
       lsaddr,
       admin,
     );
-    addr1 = await lagrangeService.getArbAddr();
-    addr2 = await lagrangeService.getOptAddr();
+    lsproxy = shared.lsproxy;
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+    addr1 = await ev.getArbAddr();
+    addr2 = await ev.getOptAddr();
     console.log(addr1, addr2);
     expect(
       addr1 != '0x0000000000000000000000000000000000000000' &&
@@ -220,7 +235,10 @@ describe('LagrangeService', function () {
       lsaddr,
       admin,
     );
-    optAddr = await lagrangeService.getOptAddr();
+    lsproxy = shared.lsproxy;
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+    optAddr = await ev.getOptAddr();
     const ov = await ethers.getContractAt('OptimismVerifier', optAddr, admin);
     const l2oo = await ethers.getContractAt('IL2OutputOracle', l2ooAddr, admin);
     //console.log(l2oo);
@@ -273,12 +291,15 @@ describe('LagrangeService', function () {
     }
   });
   it('Arbitrum Verification', async function () {
+    lsproxy = shared.lsproxy;
     const lagrangeService = await ethers.getContractAt(
       'LagrangeService',
       lsaddr,
       admin,
     );
-    arbAddr = await lagrangeService.getArbAddr();
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);    
+    arbAddr = await ev.getArbAddr();
     const av = await ethers.getContractAt('ArbitrumVerifier', arbAddr, admin);
     const ob = await ethers.getContractAt('IOutbox', outboxAddr, admin);
     // nonexistent root
