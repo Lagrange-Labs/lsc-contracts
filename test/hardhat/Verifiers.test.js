@@ -63,23 +63,23 @@ describe('Lagrange Verifiers', function () {
     console.log('Deploying verifier contracts...');
 
     const verSigFactory = await ethers.getContractFactory(
-      'src/library/slashing_single/verifier.sol:Verifier',
+      'Verifier',
     );
     const verAggFactory = await ethers.getContractFactory(
-      'src/library/slashing_aggregate/verifier_16.sol:Verifier_16',
+      'Verifier_16',
     );
     const verAgg32Factory = await ethers.getContractFactory(
-      'src/library/slashing_aggregate/verifier_32.sol:Verifier_32',
+      'Verifier_32',
     );
     const verAgg64Factory = await ethers.getContractFactory(
-      'src/library/slashing_aggregate/verifier_64.sol:Verifier_64',
+      'Verifier_64',
     );
 
     const verSig = await verSigFactory.deploy();
     const verAgg = await verAggFactory.deploy();
     const verAgg32 = await verAgg32Factory.deploy();
     const verAgg64 = await verAgg64Factory.deploy();
-
+    
     console.log('Deploying verifier triage contracts...');
 
     const triSigFactory = await ethers.getContractFactory(
@@ -417,14 +417,19 @@ describe('Lagrange Verifiers', function () {
       sigProof: encoded,
       aggProof: '0x00',
     };
+    
+    console.log("Submitting evidence..");
 
-    tx = await triSig.verify(evidence, newPubKey, 1);
-    /*
-        rec = await tx.wait();
-        console.log(rec.events[0].args);
-        */
-
+    tx = triSig.verify(evidence, newPubKey, 1);
+    console.log(tx);
+    try {
+    res = await tx;
+    console.log(res);
     expect(tx).to.equal(true);
+    } catch(error) {
+       console.log(error);
+       expect(false).to.equal(true);
+    }
   });
 
   it('slashing_aggregate_16 triage', async function () {
