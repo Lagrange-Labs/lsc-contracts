@@ -130,4 +130,12 @@ contract EvidenceVerifier is Common {
 
         return (_chainHeader1, _chainHeader2);
     }
+
+    function _computeRouteIndex(uint256 committeeSize) internal pure returns (uint256) {
+        uint256 routeIndex = 1;
+        while (routeIndex < committeeSize) {
+            routeIndex = routeIndex * 2;
+        }
+        return routeIndex;
+    }
 }

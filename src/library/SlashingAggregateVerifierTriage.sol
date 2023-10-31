@@ -56,12 +56,4 @@ contract SlashingAggregateVerifierTriage is ISlashingAggregateVerifierTriage, In
 
         return result;
     }
-
-    function _computeRouteIndex(uint256 committeeSize) internal pure returns (uint256) {
-        uint256 routeIndex = 1;
-        while (routeIndex < committeeSize) {
-            routeIndex = routeIndex * 2;
-        }
-        return routeIndex;
-    }
 }
