@@ -421,11 +421,9 @@ describe('Lagrange Verifiers', function () {
     console.log("Submitting evidence..");
 
     tx = triSig.verify(evidence, newPubKey, 1);
-    console.log(tx);
     try {
-    res = await tx;
-    console.log(res);
-    expect(tx).to.equal(true);
+      res = await tx;
+      expect(res).to.equal(true);
     } catch(error) {
        console.log(error);
        expect(false).to.equal(true);

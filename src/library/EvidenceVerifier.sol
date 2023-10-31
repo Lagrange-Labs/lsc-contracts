@@ -23,7 +23,7 @@ contract EvidenceVerifier is Common {
         bytes blockSignature; // 96-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
-        bytes rawBlockHeader;
+        bytes attestBlockHeader;
         //bytes checkpointBlockHeader;
         bytes sigProof;
         bytes aggProof;
