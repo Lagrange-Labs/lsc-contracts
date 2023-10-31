@@ -103,7 +103,7 @@ describe('Lagrange Verifiers', function () {
     await proxyAdmin.upgradeAndCall(
       tsProxy.address,
       triSig.address,
-      triSig.interface.encodeFunctionData('initialize', [admin.address]),
+      triSig.interface.encodeFunctionData('initialize', [admin.address, verSig.address]),
     );
 
     await proxyAdmin.upgradeAndCall(
@@ -127,8 +127,6 @@ describe('Lagrange Verifiers', function () {
       'SlashingAggregateVerifierTriage',
       taProxy.address,
     );
-
-    await tsProxy.setRoute(1, verSig.address);
 
     await taProxy.setRoute(1, verAgg.address);
     await taProxy.setRoute(2, verAgg.address);
@@ -273,12 +271,8 @@ describe('Lagrange Verifiers', function () {
     const triSig = shared.SSVT;
     const triAgg = shared.SAVT;
 
-    a = await triSig.verifiers(0);
-    expect(a).to.equal('0x0000000000000000000000000000000000000000');
-    b = await triSig.verifiers(1);
-    expect(b).to.equal(verSig.address);
-    c = await triSig.verifiers(2);
-    expect(c).to.equal('0x0000000000000000000000000000000000000000');
+    a = await triSig.verifier();
+    expect(a).to.equal(verSig.address);
 
     d = await triAgg.verifiers(0);
     expect(d).to.equal('0x0000000000000000000000000000000000000000');
@@ -421,13 +415,8 @@ describe('Lagrange Verifiers', function () {
     console.log("Submitting evidence..");
 
     tx = triSig.verify(evidence, newPubKey, 1);
-    try {
-      res = await tx;
-      expect(res).to.equal(true);
-    } catch(error) {
-       console.log(error);
-       expect(false).to.equal(true);
-    }
+    res = await tx;
+    expect(res).to.equal(true);
   });
 
   it('slashing_aggregate_16 triage', async function () {

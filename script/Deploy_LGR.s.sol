@@ -22,6 +22,9 @@ import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
 import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
 import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
 
+import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
+import {Verifier} from "src/library/slashing_single/verifier.sol";
+
 import {SlashingSingleVerifierTriage} from "src/library/SlashingSingleVerifierTriage.sol";
 import {SlashingAggregateVerifierTriage} from "src/library/SlashingAggregateVerifierTriage.sol";
 
@@ -60,6 +63,7 @@ contract Deploy is Script, Test {
     EvidenceVerifier public evidenceVerifier;
     OptimismVerifier public optimismVerifier;
     ArbitrumVerifier public arbitrumVerifier;
+    Verifier public verifier;
 
     SlashingSingleVerifierTriage public SigVerify;
     SlashingSingleVerifierTriage public SigVerifyImp;
@@ -192,6 +196,7 @@ contract Deploy is Script, Test {
             lagrangeServiceManager
         );
 
+	verifier = new Verifier();
         SigVerifyImp = new SlashingSingleVerifierTriage();
         AggVerifyImp = new SlashingAggregateVerifierTriage();
 
@@ -235,7 +240,7 @@ contract Deploy is Script, Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(SigVerify))),
             address(SigVerifyImp),
-            abi.encodeWithSelector(SlashingSingleVerifierTriage.initialize.selector, msg.sender)
+            abi.encodeWithSelector(SlashingSingleVerifierTriage.initialize.selector, msg.sender, ISlashingSingleVerifier(address(verifier)))
         );
 
         proxyAdmin.upgradeAndCall(

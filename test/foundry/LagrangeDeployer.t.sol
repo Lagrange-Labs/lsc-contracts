@@ -14,6 +14,8 @@ import "src/library/StakeManager.sol";
 import "src/library/HermezHelpers.sol";
 import "src/library/SlashingSingleVerifierTriage.sol";
 import "src/library/SlashingAggregateVerifierTriage.sol";
+import {Verifier} from "src/library/slashing_single/verifier.sol";
+import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
 
 import {WETH9} from "src/mock/WETH9.sol";
 
@@ -133,7 +135,25 @@ contract LagrangeDeployer is Test {
             abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, sender)
         );
 
-	SlashingSingleVerifierTriage slashingSingle = new SlashingSingleVerifierTriage();
+	Verifier verifier = new Verifier();
+	SlashingSingleVerifierTriage slashingSingleImp = new SlashingSingleVerifierTriage();
+
+        SlashingSingleVerifierTriage slashingSingle = SlashingSingleVerifierTriage(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(slashingSingle))),
+            address(slashingSingleImp),
+            abi.encodeWithSelector(SlashingSingleVerifierTriage.initialize.selector, msg.sender, ISlashingSingleVerifier(address(verifier)))
+        );
+	
+	
 	SlashingAggregateVerifierTriage slashingAggregate = new SlashingAggregateVerifierTriage();
 
         proxyAdmin.upgradeAndCall(

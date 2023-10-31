@@ -107,4 +107,27 @@ contract EvidenceVerifier is Common {
             )
         );
     }
+
+    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID)
+        internal
+        view
+        returns (uint256, uint256)
+    {
+        uint256 _chainHeader1;
+        uint256 _chainHeader2;
+
+        bytes memory chainHeader = abi.encodePacked(blockHash, uint256(blockNumber), uint32(chainID));
+
+        bytes32 chHash = keccak256(chainHeader);
+        bytes16 ch1 = bytes16(chHash);
+        bytes16 ch2 = bytes16(chHash << 128);
+
+        bytes32 _ch1 = bytes32(ch1) >> 128;
+        bytes32 _ch2 = bytes32(ch2) >> 128;
+
+        _chainHeader1 = uint256(_ch1);
+        _chainHeader2 = uint256(_ch2);
+
+        return (_chainHeader1, _chainHeader2);
+    }
 }

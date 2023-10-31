@@ -7,13 +7,16 @@ import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifi
 import {ISlashingSingleVerifier} from "../interfaces/ISlashingSingleVerifier.sol";
 import {EvidenceVerifier} from "./EvidenceVerifier.sol";
 
-contract SlashingSingleVerifierTriage is ISlashingSingleVerifierTriage, Initializable, OwnableUpgradeable {
-    mapping(uint256 => address) public verifiers;
+contract SlashingSingleVerifierTriage is ISlashingSingleVerifierTriage, Initializable, OwnableUpgradeable, EvidenceVerifier {
+    ISlashingSingleVerifier public verifier;
 
-    constructor() {}
-
-    function initialize(address initialOwner) external initializer {
+    function initialize(address initialOwner, ISlashingSingleVerifier verifierAddress) external initializer {
         _transferOwnership(initialOwner);
+        require(
+            address(verifierAddress) != address(0),
+            "SlashingSingleVerifierTriage: Invalid verifier address."
+        );
+        verifier = verifierAddress;
     }
 
     struct proofParams {
@@ -21,33 +24,6 @@ contract SlashingSingleVerifierTriage is ISlashingSingleVerifierTriage, Initiali
         uint256[2][2] b;
         uint256[2] c;
         uint256[47] input;
-    }
-
-    function setRoute(uint256 routeIndex, address verifierAddress) external onlyOwner {
-        verifiers[routeIndex] = verifierAddress;
-    }
-
-    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID)
-        internal
-        view
-        returns (uint256, uint256)
-    {
-        uint256 _chainHeader1;
-        uint256 _chainHeader2;
-
-        bytes memory chainHeader = abi.encodePacked(blockHash, uint256(blockNumber), uint32(chainID));
-
-        bytes32 chHash = keccak256(chainHeader);
-        bytes16 ch1 = bytes16(chHash);
-        bytes16 ch2 = bytes16(chHash << 128);
-
-        bytes32 _ch1 = bytes32(ch1) >> 128;
-        bytes32 _ch2 = bytes32(ch2) >> 128;
-
-        _chainHeader1 = uint256(_ch1);
-        _chainHeader2 = uint256(_ch2);
-
-        return (_chainHeader1, _chainHeader2);
     }
 
     function _bytes96tobytes48(bytes memory bpk) public view returns (bytes[2] memory) {
@@ -129,13 +105,6 @@ contract SlashingSingleVerifierTriage is ISlashingSingleVerifierTriage, Initiali
         view
         returns (bool)
     {
-        address verifierAddress = verifiers[_computeRouteIndex(committeeSize)];
-        require(
-            verifierAddress != address(0),
-            "SlashingSingleVerifierTriage: Verifier address not set for committee size specified."
-        );
-
-        ISlashingSingleVerifier verifier = ISlashingSingleVerifier(verifierAddress);
         proofParams memory params = abi.decode(_evidence.sigProof, (proofParams));
 
         uint256[47] memory input;
