@@ -25,7 +25,6 @@ import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
 import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
 import {Verifier} from "src/library/slashing_single/verifier.sol";
 
-import {SlashingSingleVerifierTriage} from "src/library/SlashingSingleVerifierTriage.sol";
 import {SlashingAggregateVerifierTriage} from "src/library/SlashingAggregateVerifierTriage.sol";
 
 import "forge-std/Script.sol";
@@ -65,8 +64,6 @@ contract Deploy is Script, Test {
     ArbitrumVerifier public arbitrumVerifier;
     Verifier public verifier;
 
-    SlashingSingleVerifierTriage public SigVerify;
-    SlashingSingleVerifierTriage public SigVerifyImp;
     SlashingAggregateVerifierTriage public AggVerify;
     SlashingAggregateVerifierTriage public AggVerifyImp;
 
@@ -110,16 +107,6 @@ contract Deploy is Script, Test {
             )
         );
         lagrangeServiceManager = LagrangeServiceManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-
-        SigVerify = SlashingSingleVerifierTriage(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -197,8 +184,7 @@ contract Deploy is Script, Test {
         );
 
 	verifier = new Verifier();
-        SigVerifyImp = new SlashingSingleVerifierTriage();
-        AggVerifyImp = new SlashingAggregateVerifierTriage();
+        AggVerifyImp = new SlashingAggregateVerifierTriage(address(0));
 
         outbox = new Outbox();
         IL2OutputOracle opt_L2OutputOracle =
@@ -211,7 +197,6 @@ contract Deploy is Script, Test {
         // deploy evidence verifier
         arbitrumVerifier = new ArbitrumVerifier(outbox);
         optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
-        //evidenceVerifier = new EvidenceVerifier();
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -235,21 +220,17 @@ contract Deploy is Script, Test {
         );
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(SigVerify))),
-            address(SigVerifyImp),
-            abi.encodeWithSelector(SlashingSingleVerifierTriage.initialize.selector, msg.sender, ISlashingSingleVerifier(address(verifier)))
-        );
-
-        proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(AggVerify))),
             address(AggVerifyImp),
             abi.encodeWithSelector(SlashingAggregateVerifierTriage.initialize.selector, msg.sender)
         );
 
+	evidenceVerifier = new EvidenceVerifier(address(verifier));
+
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, SigVerify, AggVerify)
+            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, AggVerify, evidenceVerifier)
         );
 
 	EvidenceVerifier ev = lagrangeService.evidenceVerifier();
@@ -285,8 +266,6 @@ contract Deploy is Script, Test {
         vm.serializeAddress(deployed_addresses, "lagrangeServiceImp", address(lagrangeServiceImp));
         vm.serializeAddress(deployed_addresses, "lagrangeService", address(lagrangeService));
         vm.serializeAddress(deployed_addresses, "lagrangeServiceManagerImp", address(lagrangeServiceManagerImp));
-        vm.serializeAddress(deployed_addresses, "SigVerify", address(SigVerify));
-        vm.serializeAddress(deployed_addresses, "SigVerifyImp", address(SigVerifyImp));
         vm.serializeAddress(deployed_addresses, "AggVerify", address(AggVerify));
         vm.serializeAddress(deployed_addresses, "AggVerifyImp", address(AggVerifyImp));
 

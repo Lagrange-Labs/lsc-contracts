@@ -3,13 +3,16 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 import "../../src/library/EvidenceVerifier.sol";
+import "../../src/interfaces/ISlashingSingleVerifier.sol";
+import "../../src/library/slashing_single/verifier.sol";
 
 contract EvidenceVerifierTest is Test {
     EvidenceVerifier public verifier;
     EvidenceVerifier.Evidence evidence;
 
     function setUp() public {
-        verifier = new EvidenceVerifier();
+        Verifier v = new Verifier();
+        verifier = new EvidenceVerifier(address(v));
 
         evidence.operator = address(0x516D6C27C23CEd21BF7930E2a01F0BcA9A141a0d);
         evidence.blockHash = 0xafe58890693444d9116c940a5ff4418723e7f75869b30c9d8e4528e147cb4b7f;

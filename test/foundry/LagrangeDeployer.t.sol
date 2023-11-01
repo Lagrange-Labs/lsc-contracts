@@ -12,7 +12,6 @@ import "src/protocol/LagrangeServiceManager.sol";
 import "src/protocol/LagrangeCommittee.sol";
 import "src/library/StakeManager.sol";
 import "src/library/HermezHelpers.sol";
-import "src/library/SlashingSingleVerifierTriage.sol";
 import "src/library/SlashingAggregateVerifierTriage.sol";
 import {Verifier} from "src/library/slashing_single/verifier.sol";
 import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
@@ -29,6 +28,7 @@ contract LagrangeDeployer is Test {
     LagrangeCommittee public lagrangeCommitteeImp;
     StakeManager public stakeManager;
     StakeManager public stakeManagerImp;
+    EvidenceVerifier public evidenceVerifier;
 
     WETH9 public token;
     ProxyAdmin public proxyAdmin;
@@ -136,25 +136,10 @@ contract LagrangeDeployer is Test {
         );
 
 	Verifier verifier = new Verifier();
-	SlashingSingleVerifierTriage slashingSingleImp = new SlashingSingleVerifierTriage();
 
-        SlashingSingleVerifierTriage slashingSingle = SlashingSingleVerifierTriage(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(slashingSingle))),
-            address(slashingSingleImp),
-            abi.encodeWithSelector(SlashingSingleVerifierTriage.initialize.selector, msg.sender, ISlashingSingleVerifier(address(verifier)))
-        );
-	
-	
-	SlashingAggregateVerifierTriage slashingAggregate = new SlashingAggregateVerifierTriage();
+	evidenceVerifier = new EvidenceVerifier(address(verifier));
+		
+	SlashingAggregateVerifierTriage slashingAggregate = new SlashingAggregateVerifierTriage(address(0));
 
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
@@ -162,8 +147,8 @@ contract LagrangeDeployer is Test {
             abi.encodeWithSelector(
 	        LagrangeService.initialize.selector,
 		sender,
-		address(slashingSingle),
-		address(slashingAggregate)
+		address(slashingAggregate),
+	    	evidenceVerifier
 	    )
         );
         proxyAdmin.upgradeAndCall(

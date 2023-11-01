@@ -119,10 +119,21 @@ describe('LagrangeService', function () {
     );
     await lsproxy.deployed();
 
+    const verSigFactory = await ethers.getContractFactory(
+      'Verifier',
+    );
+    const verSig = await verSigFactory.deploy();
+    await verSig.deployed();
+    shared.SSV = verSig;
+    evFactory = await ethers.getContractFactory("EvidenceVerifier");
+    ev = await evFactory.deploy(verSig.address);
+    await ev.deployed();
+    shared.EV = ev;
+      
     await proxyAdmin.upgradeAndCall(
       lsproxy.address,
       lagrangeService.address,
-      lagrangeService.interface.encodeFunctionData('initialize', [admin.address,"0x0000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000"]),
+      lagrangeService.interface.encodeFunctionData('initialize', [admin.address,"0x0000000000000000000000000000000000000000", ev.address]),
     );
     
     lsproxy = await ethers.getContractAt("LagrangeService",lsproxy.address);

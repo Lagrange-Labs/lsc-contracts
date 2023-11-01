@@ -5,12 +5,14 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 import {ISlashingAggregateVerifier} from "../interfaces/ISlashingAggregateVerifier.sol";
+import {ISlashingSingleVerifier} from "../interfaces/ISlashingSingleVerifier.sol";
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
 contract SlashingAggregateVerifierTriage is ISlashingAggregateVerifierTriage, Initializable, OwnableUpgradeable, EvidenceVerifier {
     mapping(uint256 => address) public verifiers;
 
-    constructor() {}
+    constructor (address verifierAddress) EvidenceVerifier(address(0)) public {
+    }
 
     function initialize(address initialOwner) external initializer {
         _transferOwnership(initialOwner);

@@ -9,7 +9,6 @@ import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommitt
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
-import {ISlashingSingleVerifierTriage} from "../interfaces/ISlashingSingleVerifierTriage.sol";
 import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 
 contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
@@ -20,7 +19,6 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     ILagrangeCommittee public immutable committee;
     IServiceManager public immutable serviceManager;
 
-    ISlashingSingleVerifierTriage SigVerify;
     ISlashingAggregateVerifierTriage AggVerify;
     EvidenceVerifier public evidenceVerifier;
 
@@ -48,13 +46,12 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
 
     function initialize(
         address initialOwner,
-        ISlashingSingleVerifierTriage _SigVerify,
-        ISlashingAggregateVerifierTriage _AggVerify
+        ISlashingAggregateVerifierTriage _AggVerify,
+	EvidenceVerifier _evidenceVerifier
     ) external initializer {
         _transferOwnership(initialOwner);
-        SigVerify = _SigVerify;
         AggVerify = _AggVerify;
-        evidenceVerifier = new EvidenceVerifier();
+        evidenceVerifier = _evidenceVerifier;
     }
 
     /// Add the operator to the service.
@@ -139,7 +136,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) =
             committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
 
-        bool sigVerify = SigVerify.verify(_evidence, blsPubKey, cdata.height);
+        bool sigVerify = evidenceVerifier.verifySingle(_evidence, blsPubKey, cdata.height);
 
         bool aggVerify = AggVerify.verify(
             _evidence.aggProof,

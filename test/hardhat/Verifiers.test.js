@@ -62,9 +62,6 @@ describe('Lagrange Verifiers', function () {
 
     console.log('Deploying verifier contracts...');
 
-    const verSigFactory = await ethers.getContractFactory(
-      'Verifier',
-    );
     const verAggFactory = await ethers.getContractFactory(
       'Verifier_16',
     );
@@ -75,36 +72,20 @@ describe('Lagrange Verifiers', function () {
       'Verifier_64',
     );
 
-    const verSig = await verSigFactory.deploy();
     const verAgg = await verAggFactory.deploy();
     const verAgg32 = await verAgg32Factory.deploy();
     const verAgg64 = await verAgg64Factory.deploy();
     
     console.log('Deploying verifier triage contracts...');
 
-    const triSigFactory = await ethers.getContractFactory(
-      'SlashingSingleVerifierTriage',
-    );
-    const triAggFactory = await ethers.getContractFactory(
-      'SlashingAggregateVerifierTriage',
-    );
+    const triAggFactory = await ethers.getContractFactory("SlashingAggregateVerifierTriage");
+    const triAgg = await triAggFactory.deploy("0x0000000000000000000000000000000000000000");
 
-    const triSig = await triSigFactory.deploy();
-    const triAgg = await triAggFactory.deploy();
-
-    tx1 = await verSig.deployed();
     tx2 = await verAgg.deployed();
     tx3 = await verAgg.deployed();
-    tx4 = await triSig.deployed();
-    tx5 = await triAgg.deployed();
+    tx4 = await triAgg.deployed();
 
     console.log('Upgrading proxy...');
-
-    await proxyAdmin.upgradeAndCall(
-      tsProxy.address,
-      triSig.address,
-      triSig.interface.encodeFunctionData('initialize', [admin.address, verSig.address]),
-    );
 
     await proxyAdmin.upgradeAndCall(
       taProxy.address,
@@ -112,17 +93,11 @@ describe('Lagrange Verifiers', function () {
       triAgg.interface.encodeFunctionData('initialize', [admin.address]),
     );
 
-    console.log('signature verifier:', verSig.address);
     console.log('aggregate verifier:', verAgg.address);
-    console.log('signature triage:', tsProxy.address);
     console.log('aggregate triage:', taProxy.address);
 
     console.log('Linking verifier triage contracts to verifier contracts...');
 
-    tsProxy = await ethers.getContractAt(
-      'SlashingSingleVerifierTriage',
-      tsProxy.address,
-    );
     taProxy = await ethers.getContractAt(
       'SlashingAggregateVerifierTriage',
       taProxy.address,
@@ -136,11 +111,9 @@ describe('Lagrange Verifiers', function () {
     await taProxy.setRoute(32, verAgg32.address);
     await taProxy.setRoute(64, verAgg64.address);
 
-    shared.SSV = verSig;
     shared.SAV = verAgg;
     shared.SAV32 = verAgg32;
     shared.SAV64 = verAgg64;
-    shared.SSVT = tsProxy;
     shared.SAVTimp = triAgg;
     shared.SAVT = taProxy;
   });
@@ -268,10 +241,10 @@ describe('Lagrange Verifiers', function () {
     const verAgg = shared.SAV;
     const verAgg32 = shared.SAV32;
     const verAgg64 = shared.SAV64;
-    const triSig = shared.SSVT;
     const triAgg = shared.SAVT;
+    const ev = shared.EV;
 
-    a = await triSig.verifier();
+    a = await ev.verifier();
     expect(a).to.equal(verSig.address);
 
     d = await triAgg.verifiers(0);
@@ -294,8 +267,8 @@ describe('Lagrange Verifiers', function () {
     expect(l).to.equal('0x0000000000000000000000000000000000000000');
   });
   it('slashing_single triage', async function () {
+    const ev = shared.EV;
     // load relevant contracts from shared
-    const triSig = shared.SSVT;
     // retrieve input and public statement
     pub = await getJSON('test/hardhat/slashing_single/public.json');
     proof = await getJSON('test/hardhat/slashing_single/proof.json');
@@ -414,7 +387,7 @@ describe('Lagrange Verifiers', function () {
     
     console.log("Submitting evidence..");
 
-    tx = triSig.verify(evidence, newPubKey, 1);
+    tx = ev.verifySingle(evidence, newPubKey, 1);
     res = await tx;
     expect(res).to.equal(true);
   });
