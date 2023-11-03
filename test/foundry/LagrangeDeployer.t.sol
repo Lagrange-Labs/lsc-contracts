@@ -12,6 +12,9 @@ import "src/protocol/LagrangeServiceManager.sol";
 import "src/protocol/LagrangeCommittee.sol";
 import "src/library/StakeManager.sol";
 import "src/library/HermezHelpers.sol";
+import "src/library/SlashingAggregateVerifierTriage.sol";
+import {Verifier} from "src/library/slashing_single/verifier.sol";
+import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
 
 import {WETH9} from "src/mock/WETH9.sol";
 
@@ -25,6 +28,7 @@ contract LagrangeDeployer is Test {
     LagrangeCommittee public lagrangeCommitteeImp;
     StakeManager public stakeManager;
     StakeManager public stakeManagerImp;
+    EvidenceVerifier public evidenceVerifier;
 
     WETH9 public token;
     ProxyAdmin public proxyAdmin;
@@ -130,10 +134,22 @@ contract LagrangeDeployer is Test {
             address(lagrangeServiceManagerImp),
             abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, sender)
         );
+
+	Verifier verifier = new Verifier();
+
+	evidenceVerifier = new EvidenceVerifier(address(verifier));
+		
+	SlashingAggregateVerifierTriage slashingAggregate = new SlashingAggregateVerifierTriage(address(0));
+
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(LagrangeService.initialize.selector, sender)
+            abi.encodeWithSelector(
+	        LagrangeService.initialize.selector,
+		sender,
+		address(slashingAggregate),
+	    	evidenceVerifier
+	    )
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(stakeManager))),

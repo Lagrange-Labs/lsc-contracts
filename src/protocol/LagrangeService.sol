@@ -5,18 +5,22 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 import {IServiceManager} from "../interfaces/IServiceManager.sol";
-import {ILagrangeCommittee} from "../interfaces/ILagrangeCommittee.sol";
+import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
+import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 
-contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService, EvidenceVerifier {
+contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
     uint256 public constant UPDATE_TYPE_REGISTER = 1;
     uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
     uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
 
     ILagrangeCommittee public immutable committee;
     IServiceManager public immutable serviceManager;
+
+    ISlashingAggregateVerifierTriage AggVerify;
+    EvidenceVerifier public evidenceVerifier;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
 
@@ -40,8 +44,14 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) external initializer {
+    function initialize(
+        address initialOwner,
+        ISlashingAggregateVerifierTriage _AggVerify,
+	EvidenceVerifier _evidenceVerifier
+    ) external initializer {
         _transferOwnership(initialOwner);
+        AggVerify = _AggVerify;
+        evidenceVerifier = _evidenceVerifier;
     }
 
     /// Add the operator to the service.
@@ -72,28 +82,20 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
     }
 
     /// upload the evidence to punish the operator.
-    function uploadEvidence(Evidence calldata evidence) external {
+    function uploadEvidence(EvidenceVerifier.Evidence calldata evidence) external {
         // check the operator is registered or not
         require(committee.getServeUntilBlock(evidence.operator) > 0, "The operator is not registered");
 
         // check the operator is slashed or not
         require(!committee.getSlashed(evidence.operator), "The operator is slashed");
 
-        require(checkCommitSignature(evidence), "The commit signature is not correct");
+        require(evidenceVerifier.checkCommitSignature(evidence), "The commit signature is not correct");
 
-        // if (!_checkBlockSignature(evidence.operator, evidence.commitSignature, evidence.blockHash, evidence.stateRoot, evidence.currentCommitteeRoot, evidence.nextCommitteeRoot, evidence.chainID, evidence.commitSignature)) {
-        //     _freezeOperator(evidence.operator);
-        // }
+        if (!_checkBlockSignature(evidence)) {
+            _freezeOperator(evidence.operator);
+        }
 
-        if (
-            !_checkBlockHash(
-                evidence.correctBlockHash,
-                evidence.blockHash,
-                evidence.blockNumber,
-                evidence.rawBlockHeader,
-                evidence.chainID
-            )
-        ) {
+        if (evidence.correctBlockHash == evidence.blockHash) {
             _freezeOperator(evidence.operator);
         }
 
@@ -121,27 +123,41 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService,
             evidence.epochBlockNumber,
             evidence.blockSignature,
             evidence.commitSignature,
-            evidence.chainID
+            evidence.chainID //,
+                //evidence.sigProof,
+                //evidence.aggProof
         );
     }
 
-    // Slashing condition.  Returns veriifcation of block hash and number for a given chain.
-    function _checkBlockHash(
-        bytes32 correctBlockHash,
-        bytes32 blockHash,
-        uint256 blockNumber,
-        bytes calldata rawBlockHeader,
-        uint256 chainID
-    ) internal pure returns (bool) {
-        return
-            verifyBlockNumber(blockNumber, rawBlockHeader, correctBlockHash, chainID) && blockHash == correctBlockHash;
+    function _checkBlockSignature(EvidenceVerifier.Evidence memory _evidence) internal returns (bool) {
+        bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
+
+        // establish that proofs are valid
+        (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) =
+            committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
+
+        bool sigVerify = evidenceVerifier.verifySingle(_evidence, blsPubKey, cdata.height);
+
+        bool aggVerify = AggVerify.verify(
+            _evidence.aggProof,
+            _evidence.currentCommitteeRoot,
+            _evidence.nextCommitteeRoot,
+            _evidence.blockHash,
+            _evidence.blockNumber,
+            _evidence.chainID,
+            cdata.height
+        );
+
+        // compare signingroot to evidence, extract values - TODO crossreference/confirm
+        bytes32 reconstructedSigningRoot = keccak256(
+            abi.encodePacked(
+                _evidence.currentCommitteeRoot, _evidence.nextCommitteeRoot, _evidence.blockNumber, _evidence.blockHash
+            )
+        );
+
+        return (sigVerify);
     }
 
-    /*
-    function verifyRawHeaderSequence(bytes32 latestHash, bytes[] calldata sequence) public view returns (bool) {
-        return _verifyRawHeaderSequence(latestHash, sequence);
-    }
-    */
     // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,

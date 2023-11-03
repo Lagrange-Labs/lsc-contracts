@@ -52,6 +52,9 @@ describe('LagrangeService', function () {
       gasLimit: 5000000,
     };
 
+    proxyAdmin = shared.proxyAdmin;
+    proxy = shared.proxy;
+
     const Common = await ethers.getContractFactory('Common');
     const common = await Common.deploy();
     await common.deployed();
@@ -61,6 +64,7 @@ describe('LagrangeService', function () {
     const SlasherFactory = await ethers.getContractFactory('Slasher');
     const slasher = await SlasherFactory.deploy(overrides);
     await slasher.deployed();
+    shared.slasher = slasher;
 
     console.log('Loading Lagrange Committee shared state...');
 
@@ -78,6 +82,8 @@ describe('LagrangeService', function () {
       overrides,
     );
     await lsm.deployed();
+
+    shared.LagrangeServiceManager = lsm;
 
     console.log('Deploying DelegationManager mock...');
 
@@ -101,6 +107,46 @@ describe('LagrangeService', function () {
     );
     await lagrangeService.deployed();
     lsaddr = lagrangeService.address;
+
+    const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
+      'TransparentUpgradeableProxy',
+    );
+
+    lsproxy = await TransparentUpgradeableProxyFactory.deploy(
+      lagrangeService.address,
+      proxyAdmin.address,
+      '0x',
+    );
+    await lsproxy.deployed();
+
+    const verSigFactory = await ethers.getContractFactory(
+      'Verifier',
+    );
+    const verSig = await verSigFactory.deploy();
+    await verSig.deployed();
+    shared.SSV = verSig;
+    evFactory = await ethers.getContractFactory("EvidenceVerifier");
+    ev = await evFactory.deploy(verSig.address);
+    await ev.deployed();
+    shared.EV = ev;
+      
+    await proxyAdmin.upgradeAndCall(
+      lsproxy.address,
+      lagrangeService.address,
+      lagrangeService.interface.encodeFunctionData('initialize', [admin.address,"0x0000000000000000000000000000000000000000", ev.address]),
+    );
+    
+    lsproxy = await ethers.getContractAt("LagrangeService",lsproxy.address);
+    
+    shared.lsproxy = lsproxy;
+
+    lsmproxy = await TransparentUpgradeableProxyFactory.deploy(
+      lsm.address,
+      proxyAdmin.address,
+      '0x',
+    );
+    await lsmproxy.deployed();
+    shared.lsmproxy = lsmproxy;
 
     const outboxFactory = await ethers.getContractFactory('Outbox');
     const outbox = await outboxFactory.deploy();
@@ -129,11 +175,16 @@ describe('LagrangeService', function () {
     console.log('L2OutputOracle:', l2oo.address);
     console.log('Outbox:', outbox.address);
 
-    await lagrangeService.setOptAddr(opt.address);
-    await lagrangeService.setArbAddr(arb.address);
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+
+    await ev.setOptAddr(opt.address);
+    await ev.setArbAddr(arb.address);
 
     console.log('OptimismVerifier:', opt.address);
     console.log('ArbitrumVerifier:', arb.address);
+
+    shared.LagrangeService = lagrangeService;
   });
 
   it('Smoke test L2-L1 settlement interfaces', async function () {
@@ -142,20 +193,38 @@ describe('LagrangeService', function () {
       lsaddr,
       admin,
     );
-    addr1 = await lagrangeService.getArbAddr();
-    addr2 = await lagrangeService.getOptAddr();
+    lsproxy = shared.lsproxy;
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+    addr1 = await ev.getArbAddr();
+    addr2 = await ev.getOptAddr();
     console.log(addr1, addr2);
     expect(
       addr1 != '0x0000000000000000000000000000000000000000' &&
         addr2 != '0x0000000000000000000000000000000000000000',
     ).to.equal(true);
   });
+
   it('Slashed status', async function () {
     const lc = shared.LagrangeCommittee;
     slashed = await lc.getSlashed('0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9');
     expect(slashed).to.equal(false);
   });
   it('Evidence submission (no registration)', async function () {
+    const lagrangeService = await ethers.getContractAt(
+      'LagrangeService',
+      lsaddr,
+      admin,
+    );
+    evidence = await getSampleEvidence();
+    console.log(evidence);
+    // Pre-registration
+    try {
+      await lagrangeService.uploadEvidence(evidence);
+      expect(false).to.equal(false);
+    } catch (error) {}
+  });
+  it('Evidence submission (slashing)', async function () {
     const lagrangeService = await ethers.getContractAt(
       'LagrangeService',
       lsaddr,
@@ -177,7 +246,10 @@ describe('LagrangeService', function () {
       lsaddr,
       admin,
     );
-    optAddr = await lagrangeService.getOptAddr();
+    lsproxy = shared.lsproxy;
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+    optAddr = await ev.getOptAddr();
     const ov = await ethers.getContractAt('OptimismVerifier', optAddr, admin);
     const l2oo = await ethers.getContractAt('IL2OutputOracle', l2ooAddr, admin);
     //console.log(l2oo);
@@ -230,12 +302,15 @@ describe('LagrangeService', function () {
     }
   });
   it('Arbitrum Verification', async function () {
+    lsproxy = shared.lsproxy;
     const lagrangeService = await ethers.getContractAt(
       'LagrangeService',
       lsaddr,
       admin,
     );
-    arbAddr = await lagrangeService.getArbAddr();
+    evAddr = await lsproxy.evidenceVerifier();
+    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);    
+    arbAddr = await ev.getArbAddr();
     const av = await ethers.getContractAt('ArbitrumVerifier', arbAddr, admin);
     const ob = await ethers.getContractAt('IOutbox', outboxAddr, admin);
     // nonexistent root

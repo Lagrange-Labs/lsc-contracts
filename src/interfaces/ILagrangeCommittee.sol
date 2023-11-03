@@ -46,4 +46,6 @@ interface ILagrangeCommittee {
     function isUnregisterable(address operator) external returns (bool, uint256);
 
     function update(uint32 chainID, uint256 epochNumber) external;
+
+    function getBlsPubKey(address operator) external returns (bytes memory);
 }

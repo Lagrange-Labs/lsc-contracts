@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@iden3/js-crypto": "^1.0.2",
     "@noble/bls12-381": "^1.4.0",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "big.js": "^6.2.1",
