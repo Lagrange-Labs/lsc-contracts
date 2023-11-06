@@ -8,11 +8,15 @@ import {ISlashingAggregateVerifier} from "../interfaces/ISlashingAggregateVerifi
 import {ISlashingSingleVerifier} from "../interfaces/ISlashingSingleVerifier.sol";
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
 
-contract SlashingAggregateVerifierTriage is ISlashingAggregateVerifierTriage, Initializable, OwnableUpgradeable, EvidenceVerifier {
+contract SlashingAggregateVerifierTriage is
+    ISlashingAggregateVerifierTriage,
+    Initializable,
+    OwnableUpgradeable,
+    EvidenceVerifier
+{
     mapping(uint256 => address) public verifiers;
 
-    constructor (address verifierAddress) EvidenceVerifier(address(0)) public {
-    }
+    constructor(address verifierAddress) public EvidenceVerifier(address(0)) {}
 
     function initialize(address initialOwner) external initializer {
         _transferOwnership(initialOwner);

@@ -119,25 +119,27 @@ describe('LagrangeService', function () {
     );
     await lsproxy.deployed();
 
-    const verSigFactory = await ethers.getContractFactory(
-      'Verifier',
-    );
+    const verSigFactory = await ethers.getContractFactory('Verifier');
     const verSig = await verSigFactory.deploy();
     await verSig.deployed();
     shared.SSV = verSig;
-    evFactory = await ethers.getContractFactory("EvidenceVerifier");
+    evFactory = await ethers.getContractFactory('EvidenceVerifier');
     ev = await evFactory.deploy(verSig.address);
     await ev.deployed();
     shared.EV = ev;
-      
+
     await proxyAdmin.upgradeAndCall(
       lsproxy.address,
       lagrangeService.address,
-      lagrangeService.interface.encodeFunctionData('initialize', [admin.address,"0x0000000000000000000000000000000000000000", ev.address]),
+      lagrangeService.interface.encodeFunctionData('initialize', [
+        admin.address,
+        '0x0000000000000000000000000000000000000000',
+        ev.address,
+      ]),
     );
-    
-    lsproxy = await ethers.getContractAt("LagrangeService",lsproxy.address);
-    
+
+    lsproxy = await ethers.getContractAt('LagrangeService', lsproxy.address);
+
     shared.lsproxy = lsproxy;
 
     lsmproxy = await TransparentUpgradeableProxyFactory.deploy(
@@ -176,7 +178,7 @@ describe('LagrangeService', function () {
     console.log('Outbox:', outbox.address);
 
     evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
 
     await ev.setOptAddr(opt.address);
     await ev.setArbAddr(arb.address);
@@ -195,7 +197,7 @@ describe('LagrangeService', function () {
     );
     lsproxy = shared.lsproxy;
     evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
     addr1 = await ev.getArbAddr();
     addr2 = await ev.getOptAddr();
     console.log(addr1, addr2);
@@ -248,7 +250,7 @@ describe('LagrangeService', function () {
     );
     lsproxy = shared.lsproxy;
     evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);
+    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
     optAddr = await ev.getOptAddr();
     const ov = await ethers.getContractAt('OptimismVerifier', optAddr, admin);
     const l2oo = await ethers.getContractAt('IL2OutputOracle', l2ooAddr, admin);
@@ -309,7 +311,7 @@ describe('LagrangeService', function () {
       admin,
     );
     evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt("EvidenceVerifier",evAddr);    
+    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
     arbAddr = await ev.getArbAddr();
     const av = await ethers.getContractAt('ArbitrumVerifier', arbAddr, admin);
     const ob = await ethers.getContractAt('IOutbox', outboxAddr, admin);

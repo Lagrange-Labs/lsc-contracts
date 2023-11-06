@@ -183,7 +183,7 @@ contract Deploy is Script, Test {
             lagrangeServiceManager
         );
 
-	verifier = new Verifier();
+        verifier = new Verifier();
         AggVerifyImp = new SlashingAggregateVerifierTriage(address(0));
 
         outbox = new Outbox();
@@ -225,7 +225,7 @@ contract Deploy is Script, Test {
             abi.encodeWithSelector(SlashingAggregateVerifierTriage.initialize.selector, msg.sender)
         );
 
-	evidenceVerifier = new EvidenceVerifier(address(verifier));
+        evidenceVerifier = new EvidenceVerifier(address(verifier));
 
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
@@ -233,7 +233,7 @@ contract Deploy is Script, Test {
             abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, AggVerify, evidenceVerifier)
         );
 
-	EvidenceVerifier ev = lagrangeService.evidenceVerifier();
+        EvidenceVerifier ev = lagrangeService.evidenceVerifier();
         ev.setOptAddr(optimismVerifier);
         ev.setArbAddr(arbitrumVerifier);
 

@@ -62,24 +62,22 @@ describe('Lagrange Verifiers', function () {
 
     console.log('Deploying verifier contracts...');
 
-    const verAggFactory = await ethers.getContractFactory(
-      'Verifier_16',
-    );
-    const verAgg32Factory = await ethers.getContractFactory(
-      'Verifier_32',
-    );
-    const verAgg64Factory = await ethers.getContractFactory(
-      'Verifier_64',
-    );
+    const verAggFactory = await ethers.getContractFactory('Verifier_16');
+    const verAgg32Factory = await ethers.getContractFactory('Verifier_32');
+    const verAgg64Factory = await ethers.getContractFactory('Verifier_64');
 
     const verAgg = await verAggFactory.deploy();
     const verAgg32 = await verAgg32Factory.deploy();
     const verAgg64 = await verAgg64Factory.deploy();
-    
+
     console.log('Deploying verifier triage contracts...');
 
-    const triAggFactory = await ethers.getContractFactory("SlashingAggregateVerifierTriage");
-    const triAgg = await triAggFactory.deploy("0x0000000000000000000000000000000000000000");
+    const triAggFactory = await ethers.getContractFactory(
+      'SlashingAggregateVerifierTriage',
+    );
+    const triAgg = await triAggFactory.deploy(
+      '0x0000000000000000000000000000000000000000',
+    );
 
     tx2 = await verAgg.deployed();
     tx3 = await verAgg.deployed();
@@ -384,8 +382,8 @@ describe('Lagrange Verifiers', function () {
       sigProof: encoded,
       aggProof: '0x00',
     };
-    
-    console.log("Submitting evidence..");
+
+    console.log('Submitting evidence..');
 
     tx = ev.verifySingle(evidence, newPubKey, 1);
     res = await tx;
