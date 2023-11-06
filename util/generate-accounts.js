@@ -58,11 +58,13 @@ async function main() {
     operators = [];
 
     op = [];
-    bpk = [];
+    bpubk = [];
+    bprivk = [];
 
     await Object.entries(accounts).forEach(([k, v]) => {
       op.push(k);
-      bpk.push(blsPairs[k].pub);
+      bpubk.push(blsPairs[k].pub);
+      bprivk.push(blsPairs[k].priv);
     });
 
     for (i = 0; i < config.chains.length; i++) {
@@ -70,7 +72,8 @@ async function main() {
       operator.chain_name = config.chains[i].chain_name;
       operator.chain_id = config.chains[i].chain_id;
       operator.operators = op;
-      operator.bls_pub_keys = bpk;
+      operator.bls_pub_keys = bpubk;
+      operator.bls_priv_keys = bprivk;
       operators.push(operator);
     }
 

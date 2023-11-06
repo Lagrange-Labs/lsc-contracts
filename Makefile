@@ -89,7 +89,7 @@ all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon depl
 distribute:
 	node util/distributor.js
 
-deploy-native: deploy-weth9 deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum distribute deposit-stake deploy-register init-committee
+deploy-native: deploy-weth9 deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
 
 deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
 

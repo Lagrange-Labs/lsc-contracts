@@ -24,27 +24,27 @@ const service = new ethers.Contract(
   wallet,
 );
 
-const arbChainID = 421613;
-const optChainID = 420;
+const arbChainID = 5001;
+const optChainID = 5001;
 
-contract.getEpochNumber(arbChainID, 9377423).then((epoch) => {
+contract.getEpochNumber(arbChainID, 9998228).then((epoch) => {
   console.log('Arb epoch: ', epoch);
 });
 
-contract.getCommittee(arbChainID, 9377423).then((current) => {
+contract.getCommittee(arbChainID, 9998228).then((current) => {
   console.log('Arb Current committee: ', current[0]);
   console.log('Arb Next committee: ', current[1]);
 });
 
-contract.getEpochNumber(optChainID, 9377423).then((epoch) => {
+contract.getEpochNumber(optChainID, 9998228).then((epoch) => {
   console.log('Opt epoch: ', epoch);
 });
 
-contract.isUpdatable(2, arbChainID).then((updatable) => {
+contract.isUpdatable(arbChainID, 2).then((updatable) => {
   console.log('Arb updatable: ', updatable);
 });
 
-contract.isUpdatable(3, arbChainID).then((updatable) => {
+contract.isUpdatable(arbChainID, 3).then((updatable) => {
   console.log('Arb updatable: ', updatable);
 });
 
