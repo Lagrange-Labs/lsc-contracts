@@ -47,7 +47,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     function initialize(
         address initialOwner,
         ISlashingAggregateVerifierTriage _AggVerify,
-	EvidenceVerifier _evidenceVerifier
+        EvidenceVerifier _evidenceVerifier
     ) external initializer {
         _transferOwnership(initialOwner);
         AggVerify = _AggVerify;

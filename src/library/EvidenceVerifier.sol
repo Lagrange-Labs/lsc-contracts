@@ -46,7 +46,7 @@ contract EvidenceVerifier is Common {
     OptimismVerifier OptVerify;
     ArbitrumVerifier ArbVerify;
 
-    constructor (address verifierAddress) {
+    constructor(address verifierAddress) {
         verifier = ISlashingSingleVerifier(verifierAddress);
     }
 
@@ -262,5 +262,4 @@ contract EvidenceVerifier is Common {
 
         return result;
     }
-
 }

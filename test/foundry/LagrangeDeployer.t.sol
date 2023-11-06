@@ -135,21 +135,18 @@ contract LagrangeDeployer is Test {
             abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, sender)
         );
 
-	Verifier verifier = new Verifier();
+        Verifier verifier = new Verifier();
 
-	evidenceVerifier = new EvidenceVerifier(address(verifier));
-		
-	SlashingAggregateVerifierTriage slashingAggregate = new SlashingAggregateVerifierTriage(address(0));
+        evidenceVerifier = new EvidenceVerifier(address(verifier));
+
+        SlashingAggregateVerifierTriage slashingAggregate = new SlashingAggregateVerifierTriage(address(0));
 
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
             abi.encodeWithSelector(
-	        LagrangeService.initialize.selector,
-		sender,
-		address(slashingAggregate),
-	    	evidenceVerifier
-	    )
+                LagrangeService.initialize.selector, sender, address(slashingAggregate), evidenceVerifier
+            )
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(stakeManager))),
