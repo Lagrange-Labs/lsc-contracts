@@ -21,7 +21,7 @@ async function main() {
   triageABI = triageABIjson.abi;
   triage = new ethers.Contract(addresses['AggVerify'], triageABI, wallet);
 
-  const sizes = [16, 32, 64];
+  const sizes = [16, 32, 64, 128, 256, 512];
   for (size of sizes) {
     // deploy
     path = `src/library/slashing_aggregate/verifier_${size}.sol:Verifier_${size}`;
