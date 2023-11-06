@@ -40,8 +40,8 @@ stake.operatorStakes(tokenAddress, address).then((stake) => {
   console.log('Stake: ', stake);
 });
 
-const arbChainID = 1337;
-const optChainID = 420;
+const arbChainID = 5001;
+const optChainID = 5001;
 
 contract.getCommittee(optChainID, 5000).then((current) => {
   console.log('Opt Current committee: ', current[0]);

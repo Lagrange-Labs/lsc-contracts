@@ -1,5 +1,5 @@
 PRIVATE_KEY?="0x3e17bc938ec10c865fc4e2d049902716dc0712b5b0e688b7183c16807234a84c"
-RPC_URL?="http://0.0.0.0:8545"
+RPC_URL?="http://localhost:8545"
 
 # Run ethereum nodes
 run-geth:
@@ -89,7 +89,7 @@ all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon depl
 distribute:
 	node util/distributor.js
 
-deploy-native: generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum distribute deposit-stake deploy-register init-committee
+deploy-native: deploy-weth9 deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum distribute deposit-stake deploy-register init-committee
 
 deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
 

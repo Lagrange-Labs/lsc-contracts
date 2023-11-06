@@ -3,11 +3,12 @@
 const ethers = require('ethers');
 const fs = require('fs');
 const bls = require('bls-eth-wasm');
+const { config } = require('dotenv');
 require('dotenv').config();
 
 const DEFAULT_MNEMONIC =
   'exchange holiday girl alone head gift unfair resist void voice people tobacco';
-const DEFAULT_NUM_ACCOUNTS = 9;
+const DEFAULT_NUM_ACCOUNTS = 150;
 
 async function genBLSKey() {
   await bls.init(bls.BLS12_381);
@@ -53,7 +54,8 @@ async function main() {
   }
 
   try {
-    operators = await require('../config/operators.json');
+    const config = require('../config/LagrangeService.json');
+    operators = [];
 
     op = [];
     bpk = [];
@@ -63,10 +65,13 @@ async function main() {
       bpk.push(blsPairs[k].pub);
     });
 
-    for (i = 0; i < operators.length; i++) {
-      chain = operators[i];
-      operators[i].operators = op;
-      operators[i].bls_pub_keys = bpk;
+    for (i = 0; i < config.chains.length; i++) {
+      operator = {};
+      operator.chain_name = config.chains[i].chain_name;
+      operator.chain_id = config.chains[i].chain_id;
+      operator.operators = op;
+      operator.bls_pub_keys = bpk;
+      operators.push(operator);
     }
 
     await fs.promises.writeFile(

@@ -40,7 +40,7 @@ const convertBLSPubKey = (oldPubKey) => {
       );
       const receipt = await tx.wait();
       console.log(
-        `Register Transaction was mined in block ${receipt.blockNumber}`,
+        `Register Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
       );
     }),
   );
@@ -64,7 +64,7 @@ const convertBLSPubKey = (oldPubKey) => {
       );
       const receipt = await tx.wait();
       console.log(
-        `Subscribe Transaction was mined in block ${receipt.blockNumber}`,
+        `Subscribe Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
       );
     }
   });
