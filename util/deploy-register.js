@@ -45,27 +45,26 @@ const convertBLSPubKey = (oldPubKey) => {
     }),
   );
 
-  operators.forEach(async (chain, k) => {
-    for (let index = 0; index < chain.operators.length; index++) {
-      const address = chain.operators[index];
-      const privKey = accounts[address];
-      const wallet = new ethers.Wallet(privKey, provider);
-      const contract = new ethers.Contract(
-        deployedAddresses.addresses.lagrangeService,
-        abi,
-        wallet,
-      );
-      const nonce = await provider.getTransactionCount(address);
-      const tx = await contract.subscribe(chain.chain_id, {
-        nonce: nonce + k,
-      });
-      console.log(
-        `Starting to subscribe operator for address: ${address} tx hash: ${tx.hash}`,
-      );
-      const receipt = await tx.wait();
-      console.log(
-        `Subscribe Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
-      );
-    }
-  });
+  for (let k = 0; k < operators.length; k++) {
+    const chain = operators[k];
+    await Promise.all(
+      chain.operators.map(async (address) => {
+        const privKey = accounts[address];
+        const wallet = new ethers.Wallet(privKey, provider);
+        const contract = new ethers.Contract(
+          deployedAddresses.addresses.lagrangeService,
+          abi,
+          wallet,
+        );
+        const tx = await contract.subscribe(chain.chain_id);
+        console.log(
+          `Starting to subscribe operator for address: ${address} tx hash: ${tx.hash}`,
+        );
+        const receipt = await tx.wait();
+        console.log(
+          `Subscribe Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
+        );
+      }),
+    );
+  }
 })();
