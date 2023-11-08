@@ -27,27 +27,40 @@ const service = new ethers.Contract(
 const arbChainID = 5001;
 const optChainID = 5001;
 
-contract.getEpochNumber(arbChainID, 9998228).then((epoch) => {
-  console.log('Arb epoch: ', epoch);
-});
+// contract.getEpochNumber(arbChainID, 10007358).then((epoch) => {
+//   console.log('Arb epoch: ', epoch);
+// });
 
-contract.getCommittee(arbChainID, 9998228).then((current) => {
-  console.log('Arb Current committee: ', current[0]);
-  console.log('Arb Next committee: ', current[1]);
-});
+// contract.getCommittee(arbChainID, 10007358).then((current) => {
+//   console.log('Arb Current committee: ', current[0]);
+//   console.log('Arb Next committee: ', current[1]);
+// });
 
-contract.getEpochNumber(optChainID, 9998228).then((epoch) => {
-  console.log('Opt epoch: ', epoch);
-});
+// contract.getEpochNumber(optChainID, 10007358).then((epoch) => {
+//   console.log('Opt epoch: ', epoch);
+// });
 
-contract.isUpdatable(arbChainID, 2).then((updatable) => {
-  console.log('Arb updatable: ', updatable);
-});
+// contract.isUpdatable(arbChainID, 2).then((updatable) => {
+//   console.log('Arb updatable: ', updatable);
+// });
 
-contract.isUpdatable(arbChainID, 3).then((updatable) => {
-  console.log('Arb updatable: ', updatable);
-});
+// contract.isUpdatable(arbChainID, 3).then((updatable) => {
+//   console.log('Arb updatable: ', updatable);
+// });
 
-contract.updatedEpoch(arbChainID).then((epoch) => {
-  console.log('Arb updated epoch: ', epoch);
-});
+// contract.updatedEpoch(arbChainID).then((epoch) => {
+//   console.log('Arb updated epoch: ', epoch);
+// });
+
+counts = {};
+
+for (let i = 0; i < 151; i++) {
+  contract.committeeAddrs(arbChainID, i).then((addr) => {
+    console.log('Arb committee address: ', i, addr);
+    if (counts[addr]) {
+      console.log('Duplicate address: ', addr, i, counts[addr]);
+    } else {
+      counts[addr] = i + 1;
+    }
+  });
+}
