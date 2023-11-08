@@ -1,17 +1,17 @@
 {
   "lagrange": {
     "addresses": {
-      "AggVerify": "0x3A7c1812F4a849e8E7c2FD8452Ce1f009fB03ca9",
-      "AggVerifyImp": "0xd24F2a24bD4aCc35da3efd58B64E2bAC3d4B06bb",
-      "lagrangeCommittee": "0x0a5778650Be05B8b90c5559Cd052d288b9A1910f",
-      "lagrangeCommitteeImp": "0xEC99397F9Bc4f9eb7E70fdaD401a2138Fe2aB306",
-      "lagrangeService": "0x6c8783a7Cb1600038214bE99aC797e848F401449",
-      "lagrangeServiceImp": "0x1C99daD33b4203Fd5701333F88411D4c7879327A",
-      "lagrangeServiceManager": "0xcc0595CB6e9a378F7ac158E1c57Ec0b6D6C54d94",
-      "lagrangeServiceManagerImp": "0x623128B03F66A3A107388129Cf949EABC1D2F496",
-      "proxyAdmin": "0x6F5C696892C8429A2cbf723aa2032F1053664B33",
-      "stakeManager": "0xACA0d75c7209D538eE5aFf0CaF6e1Af43c1E2B03",
-      "stakeManagerImp": "0x9a631C10CBb650DC2642f0db46dBe72DFB7db3bB"
+      "AggVerify": "0x0C319Fe34AA9335F5509f8aBE650b1F21063231F",
+      "AggVerifyImp": "0x8DA871bb47C87CAb181524e696D7C0Dd3d30C575",
+      "lagrangeCommittee": "0x56606385C5Df0D6cC6297F51625072360b8993bA",
+      "lagrangeCommitteeImp": "0xcAa0572ee7627F833C151a79c5daAe7c6C628AB4",
+      "lagrangeService": "0x0419C81D66298fD08fB08767b0b67216d40613b0",
+      "lagrangeServiceImp": "0xD9BE58112A16861Ab13781274E2754313C1349dE",
+      "lagrangeServiceManager": "0x4e55438e60Ce3a3264BEe2604B31d58606C1505A",
+      "lagrangeServiceManagerImp": "0x179Cec1758B5dBAd9a2259AE55F78CAE955B6daE",
+      "proxyAdmin": "0x24151df8F063f2aDa181ea5dE356B86a92fbc7D4",
+      "stakeManager": "0x8E42b7f551bF14678adFA765DB459395a5615E4B",
+      "stakeManagerImp": "0xB08a5e9aD4F39cEa9ec8FCf56FEEE30ae922BB3E"
     }
   },
   "poseidon": {
@@ -33,26 +33,26 @@
   },
   "mantle": {
     "addresses": {
-      "AggVerify": "0xD21c54d94E0Be01ec4A31B7f423F6751E9839c90",
-      "AggVerifyImp": "0xb65d321BA9A03111e8146D648e32b9403edECBC1",
-      "lagrangeCommittee": "0x56dcCAA36CbfdF2C6cFE5d6af965240AAE0c205b",
-      "lagrangeCommitteeImp": "0xDd00eDA2BE44a8FA30D34eB1bae66Cc3DFE11aB5",
-      "lagrangeService": "0x1fEC4F4d1320c901f9Bac0ff7E198FaE80385edA",
-      "lagrangeServiceImp": "0x633292Ef2d095bC400255B785E0ad6E63E10CdBD",
-      "lagrangeServiceManager": "0xeFCF5188eE07e9880e5704C8C8e8540da5570976",
-      "lagrangeServiceManagerImp": "0xDe9826D439b7f6337B7A7485054b957F3AC62986",
-      "proxyAdmin": "0xEaF1CBe299c12a9134017567Fc67C5f760b74b60",
-      "stakeManager": "0x66A9F21597b7A14784685eF43b44C88466bB7B58",
-      "stakeManagerImp": "0x33F1FB2BE50c3488dce65a1092caD99ED514085D"
+      "AggVerify": "0x0C319Fe34AA9335F5509f8aBE650b1F21063231F",
+      "AggVerifyImp": "0x8DA871bb47C87CAb181524e696D7C0Dd3d30C575",
+      "lagrangeCommittee": "0x56606385C5Df0D6cC6297F51625072360b8993bA",
+      "lagrangeCommitteeImp": "0xcAa0572ee7627F833C151a79c5daAe7c6C628AB4",
+      "lagrangeService": "0x0419C81D66298fD08fB08767b0b67216d40613b0",
+      "lagrangeServiceImp": "0xD9BE58112A16861Ab13781274E2754313C1349dE",
+      "lagrangeServiceManager": "0x4e55438e60Ce3a3264BEe2604B31d58606C1505A",
+      "lagrangeServiceManagerImp": "0x179Cec1758B5dBAd9a2259AE55F78CAE955B6daE",
+      "proxyAdmin": "0x24151df8F063f2aDa181ea5dE356B86a92fbc7D4",
+      "stakeManager": "0x8E42b7f551bF14678adFA765DB459395a5615E4B",
+      "stakeManagerImp": "0xB08a5e9aD4F39cEa9ec8FCf56FEEE30ae922BB3E"
     },
     "poseidon": {
-      "1": "0x60de90199Ac0d5ABb016eDFF5Df60524fd850C86",
-      "2": "0x84D88Af7245802de4aD9bAdc8e9E9c0151eb6034",
-      "3": "0x0A7921fB31dFeaC5e7F1C5D40aba98E2DF8352a8",
-      "4": "0x014ed8bF5d85cAb88af723D668aa5fbdeAFb6fe2",
-      "5": "0x26b9fC478E4CC33b3CBeDA979BCa1fDe5b88885c",
-      "6": "0x2C47938A0263c248c44bc6e20C898C7F9215A610"
+      "1": "0xA3298c21DfB18403EBCec381292B6C247170b387",
+      "2": "0x00ADDD3E9f7c323Be3eb0Df47b71400291879AF7",
+      "3": "0x9E74451d2a44F50188F8B0CEf8b6df3e34A9130e",
+      "4": "0xD89A97123740bc69cf7676D8E389707B2e106D45",
+      "5": "0x4ec4E5041Cc80ec3706BAcF25B225EbFDBf64308",
+      "6": "0x373b41071c4163DBFBB5d6d257933f20b4a4B493"
     },
-    "weth9": "0x90157fE18534999a46CA52a2595fc92CA987A0Bd"
+    "weth9": "0x63FD0dD286fB8B48cbA22e136c4BaE70C6A24C6e"
   }
 }
