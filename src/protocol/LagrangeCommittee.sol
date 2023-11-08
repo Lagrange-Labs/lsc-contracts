@@ -147,6 +147,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             revert("The dedciated chain is while unsubscribing.");
         }
 
+        for (uint256 i = 0; i < opStatus.subscribedChains.length; i++) {
+            if (opStatus.subscribedChains[i] == chainID) {
+                revert("The dedicated chain is already subscribed.");
+            }
+        }
+
         opStatus.subscribedChains.push(chainID);
         _registerOperator(operator, chainID);
     }

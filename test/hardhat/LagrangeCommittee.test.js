@@ -64,13 +64,15 @@ describe('LagrangeCommittee', function () {
   });
 
   beforeEach(async function () {
-    const VoteWeigherFactory =
-      await ethers.getContractFactory('VoteWeigherMock');
+    const VoteWeigherFactory = await ethers.getContractFactory(
+      'VoteWeigherMock',
+    );
     const voteWeigher = await VoteWeigherFactory.deploy(admin.address);
     await voteWeigher.deployed();
 
-    const LagrangeCommitteeFactory =
-      await ethers.getContractFactory('LagrangeCommittee');
+    const LagrangeCommitteeFactory = await ethers.getContractFactory(
+      'LagrangeCommittee',
+    );
     const committee = await LagrangeCommitteeFactory.deploy(
       admin.address,
       voteWeigher.address,
@@ -79,8 +81,9 @@ describe('LagrangeCommittee', function () {
 
     console.log('Deploying empty contract...');
 
-    const EmptyContractFactory =
-      await ethers.getContractFactory('EmptyContract');
+    const EmptyContractFactory = await ethers.getContractFactory(
+      'EmptyContract',
+    );
     const emptyContract = await EmptyContractFactory.deploy();
     await emptyContract.deployed();
 

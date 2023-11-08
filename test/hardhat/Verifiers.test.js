@@ -27,8 +27,9 @@ describe('Lagrange Verifiers', function () {
   beforeEach(async function () {
     console.log('Deploying empty contract...');
 
-    const EmptyContractFactory =
-      await ethers.getContractFactory('EmptyContract');
+    const EmptyContractFactory = await ethers.getContractFactory(
+      'EmptyContract',
+    );
     const emptyContract = await EmptyContractFactory.deploy();
     await emptyContract.deployed();
 

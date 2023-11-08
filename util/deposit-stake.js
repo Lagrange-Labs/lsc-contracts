@@ -6,6 +6,20 @@ const accountsPath = './config/accounts.json';
 
 const rpcURL = process.env.RPC_URL;
 
+function executeCommand(command) {
+  return new Promise((resolve, reject) => {
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else if (stderr) {
+        resolve(stderr);
+      } else {
+        resolve(stdout);
+      }
+    });
+  });
+}
+
 fs.readFile(accountsPath, 'utf8', (err, data) => {
   if (err) {
     console.error('Error reading file:', err);
@@ -14,23 +28,25 @@ fs.readFile(accountsPath, 'utf8', (err, data) => {
 
   try {
     const accounts = JSON.parse(data);
-    Object.keys(accounts)
-      .splice(0, 10)
-      .forEach((address) => {
-        console.log('Starting to register operator for address: ', address);
-        const command = `forge script script/localnet/Deposit_Stake.s.sol:DepositStake --rpc-url ${rpcURL} --private-key ${accounts[address]} --broadcast -vvvvv`;
-        exec(command, (error, stdout, stderr) => {
-          console.log(`Command output: ${stdout}`);
-          if (error) {
-            console.error(`Error executing command: ${error.message}`);
-            return;
-          }
+    const addresses = Object.keys(accounts);
+    const batch_size = 10;
+    (async () => {
+      for (let i = 0; i < addresses.length; i += batch_size) {
+        const batch = addresses.slice(i, i + batch_size);
 
-          if (stderr) {
-            console.error(`Command stderr: ${stderr}`);
-            return;
-          }
+        const exec_batch = batch.map((address) => {
+          const command = `forge script script/localnet/Deposit_Stake.s.sol:DepositStake --rpc-url ${rpcURL} --private-key ${accounts[address]} --broadcast -vvvvv`;
+          console.log(`Starting to deposit stake for address: ${address}`);
+          return executeCommand(command);
         });
+        await Promise.all(exec_batch);
+      }
+    })()
+      .then(() => {
+        console.log('All done!');
+      })
+      .catch((err) => {
+        console.error('Error:', err);
       });
   } catch (err) {
     console.error('Error parsing JSON string:', err);
