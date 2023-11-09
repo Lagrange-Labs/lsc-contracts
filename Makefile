@@ -56,10 +56,13 @@ deploy-register:
 deploy-mock:
 	forge script script/Deploy_Mock.s.sol:DeployMock --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
+update-strategy-config:
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/update-strategy-config.js
+
 update-config:
 	node util/update-config.js
 
-.PHONY: deploy-mock deploy-register update-config
+.PHONY: deploy-mock deploy-register update-config update-strategy-config
 
 # Build docker image
 
@@ -80,7 +83,9 @@ test:
 clean: stop
 	sudo rm -rf docker/geth_db
 
-all: run-geth init-accounts deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange add-quorum register-lagrange init-committee
+deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange update-config add-quorum register-lagrange deploy-register init-committee
+
+deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange update-config add-quorum register-lagrange deploy-register init-committee
 
 all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deploy-register init-committee	
 

@@ -38,11 +38,6 @@ fs.readFile(operatorsPath, 'utf8', (err, data) => {
           process.env.RPC_URL,
         );
         const wallet = new ethers.Wallet(privKey, provider);
-        const contract = new ethers.Contract(
-          deployedAddresses.addresses.lagrangeService,
-          abi,
-          wallet,
-        );
 
         // call optIntoSlashing on slasher
         const slasher = new ethers.Contract(
@@ -59,26 +54,6 @@ fs.readFile(operatorsPath, 'utf8', (err, data) => {
               console.log(
                 `Transaction was mined in block ${receipt.blockNumber}`,
               );
-
-              // call register on lagrange service
-              contract
-                .register(
-                  chain.chain_id,
-                  convertBLSPubKey(chain.bls_pub_keys[index]),
-                  uint32Max,
-                )
-                .then((tx) => {
-                  console.log(
-                    'Starting to register operator for address: ',
-                    address,
-                  );
-                  console.log(`Transaction hash: ${tx.hash}`);
-                  tx.wait().then((receipt) => {
-                    console.log(
-                      `Transaction was mined in block ${receipt.blockNumber}`,
-                    );
-                  });
-                });
             });
           });
       });
