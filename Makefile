@@ -13,7 +13,7 @@ generate-accounts:
 
 .PHONY: run-geth init-accounts
 
-# Deploy contracts
+# Deploy scripts
 
 deploy-eigenlayer:
 	forge script script/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url ${RPC_URL}  --private-key ${PRIVATE_KEY} --broadcast -vvvv
@@ -62,7 +62,10 @@ update-strategy-config:
 update-config:
 	node util/update-config.js
 
-.PHONY: deploy-mock deploy-register update-config update-strategy-config
+distribute:
+	node util/distributor.js
+
+.PHONY: deploy-mock deploy-register update-config update-strategy-config distribute
 
 # Build docker image
 
@@ -83,6 +86,7 @@ test:
 clean: stop
 	sudo rm -rf docker/geth_db
 
+# Deploy
 deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange update-config add-quorum register-lagrange deploy-register init-committee
 
 deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange update-config add-quorum register-lagrange deploy-register init-committee
@@ -91,14 +95,11 @@ all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange upd
 
 all-native: run-geth init-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee	
 
-distribute:
-	node util/distributor.js
-
 deploy-native: generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum distribute deposit-stake deploy-register init-committee
 
 deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-mock deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
 
-.PHONY: all clean all-mock all-native
+.PHONY: deploy-eigen-localnet deploy-eigen-public clean all-mock all-native deploy-native deploy-staging
 
 # Formatter
 format:
@@ -106,3 +107,12 @@ format:
 	forge fmt
 
 .PHONY: format
+
+# Register one random operator
+generate-one-operator:
+	node util/generate-operator-config.js
+
+register-one-operator: generate-one-operator
+	export RPC_URL=${RPC_URL} && node util/register-one-operator.js
+
+.PHONY: generate-one-operator register-one-operator

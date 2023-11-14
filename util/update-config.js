@@ -1,38 +1,53 @@
-const { exec } = require('child_process');
+const deployedMock = require('../script/output/deployed_mock.json');
+const deployedWETH = require('../script/output/deployed_weth9.json');
+const deployedEigens = require('../script/output/M1_deployment_data.json');
+
 const fs = require('fs');
-require('dotenv').config();
 
-const rpcURL = process.env.RPC_URL;
+const filePath = './config/LagrangeService.json';
 
-const accountsPath = './config/accounts.json';
-
-fs.readFile(accountsPath, 'utf8', (err, data) => {
+// Read the JSON file and parse its contents
+fs.readFile(filePath, 'utf8', (err, data) => {
   if (err) {
-    console.error('Error reading file:', err);
+    console.error('Error reading JSON file:', err);
     return;
   }
 
   try {
-    const accounts = JSON.parse(data);
-    Object.keys(accounts)
-      .splice(0, 20)
-      .forEach((address) => {
-        console.log('Starting to register operator for address: ', address);
-        const command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url ${rpcURL} --private-key ${accounts[address]} --broadcast -vvvvv`;
-        exec(command, (error, stdout, stderr) => {
-          console.log(`Command output: ${stdout}`);
-          if (error) {
-            console.error(`Error executing command: ${error.message}`);
-            return;
-          }
+    // Parse the JSON data into a JavaScript object
+    const jsonObject = JSON.parse(data);
 
-          if (stderr) {
-            console.error(`Command stderr: ${stderr}`);
-            return;
-          }
-        });
-      });
+    // Update the desired field in the JavaScript object
+
+    if (jsonObject.isNative) {
+      const token = jsonObject.tokens[0];
+      token.token_address = deployedWETH.WETH9;
+      jsonObject.tokens = [token];
+    } else {
+      if (jsonObject.isMock) {
+        const strategy = jsonObject.strategies[0];
+        strategy.strategy_address = deployedMock.addresses.strategy;
+      } else {
+        for (const strategy of jsonObject.strategies) {
+          strategy.strategy_address =
+            deployedEigens.addresses.strategies[strategy.strategy_name];
+        }
+      }
+    }
+
+    // Convert the JavaScript object back to a JSON string
+    const updatedJsonString = JSON.stringify(jsonObject, null, 4);
+
+    // Write the updated JSON string back to the file
+    fs.writeFile(filePath, updatedJsonString, 'utf8', (err) => {
+      if (err) {
+        console.error('Error writing JSON file:', err);
+        return;
+      }
+
+      console.log('JSON file updated successfully.');
+    });
   } catch (err) {
-    console.error('Error parsing JSON string:', err);
+    console.error('Error parsing JSON:', err);
   }
 });

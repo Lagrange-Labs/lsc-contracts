@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const DEFAULT_MNEMONIC =
   'exchange holiday girl alone head gift unfair resist void voice people tobacco';
-const DEFAULT_NUM_ACCOUNTS = 150;
+const DEFAULT_NUM_ACCOUNTS = 10;
 
 async function genBLSKey() {
   await bls.init(bls.BLS12_381);
@@ -38,31 +38,17 @@ async function main() {
   }
 
   try {
-    await fs.promises.writeFile(
-      './config/accounts.json',
-      JSON.stringify(accounts, null, 2),
-    );
-    console.log(
-      `Accounts saved to ./config/accounts.json\n${JSON.stringify(
-        accounts,
-        null,
-        2,
-      )}`,
-    );
-  } catch (err) {
-    console.error('Error writing to file:', err);
-  }
-
-  try {
     const config = require('../config/LagrangeService.json');
     operators = [];
 
     op = [];
     bpubk = [];
     bprivk = [];
+    ecdsaprivk = [];
 
     await Object.entries(accounts).forEach(([k, v]) => {
       op.push(k);
+      ecdsaprivk.push(v);
       bpubk.push(blsPairs[k].pub);
       bprivk.push(blsPairs[k].priv);
     });
@@ -72,6 +58,7 @@ async function main() {
       operator.chain_name = config.chains[i].chain_name;
       operator.chain_id = config.chains[i].chain_id;
       operator.operators = op;
+      operator.ecdsa_priv_keys = ecdsaprivk;
       operator.bls_pub_keys = bpubk;
       operator.bls_priv_keys = bprivk;
       operators.push(operator);

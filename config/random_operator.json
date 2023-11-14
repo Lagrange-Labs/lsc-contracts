@@ -1,0 +1,10 @@
+{
+    "operator": {
+        "operator_address": "0xf0bFd22d72fDD7F731699d5873210cE5e032CA02",
+        "ecdsa_private_key": "0x9f0eba13f091a57f19cdf579c8365741b2180e570b08f18f72c116830f332dea",
+        "bls_public_key": "0x851f74bef72a88935ce9d5a4de8cad128d1d515d8e28658cc2d0466fd2ebd4dbe5dccbab37ce4c521c429c96b834cdad",
+        "bls_private_key": "0x362b683e7b0bab27ca07e93941b43639e3efb71eef9434819239cb1166dc2b8d",
+        "bls_public_point": "0x051f74bef72a88935ce9d5a4de8cad128d1d515d8e28658cc2d0466fd2ebd4dbe5dccbab37ce4c521c429c96b834cdad0bf2f47b7fe105186da97eada7bff6fbe8e7444c82fa27aafd352879cb6ba53a3d076e40a176f5334edab54d110c1dca",
+        "chain_id": 1337
+    }
+}
