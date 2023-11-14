@@ -27,9 +27,8 @@ describe('Lagrange Verifiers', function () {
   beforeEach(async function () {
     console.log('Deploying empty contract...');
 
-    const EmptyContractFactory = await ethers.getContractFactory(
-      'EmptyContract',
-    );
+    const EmptyContractFactory =
+      await ethers.getContractFactory('EmptyContract');
     const emptyContract = await EmptyContractFactory.deploy();
     await emptyContract.deployed();
 
@@ -341,10 +340,10 @@ describe('Lagrange Verifiers', function () {
     /*
      */
     /*
-	signature = await bls.sign(message, blsPriv.slice(2));
-	// convert coordinates to hex for verifier
+  signature = await bls.sign(message, blsPriv.slice(2));
+  // convert coordinates to hex for verifier
         coords = await bls.PointG2.fromSignature(signature);
-	*/
+  */
     affine = [
       coords.toAffine()[0].c0.value.toString(16).padStart(96, '0'),
       coords.toAffine()[0].c1.value.toString(16).padStart(96, '0'),
@@ -386,7 +385,7 @@ describe('Lagrange Verifiers', function () {
 
     console.log('Submitting evidence..');
 
-    tx = ev.verifySingle(evidence, newPubKey, 1);
+    tx = ev.verifySingle(evidence, newPubKey);
     res = await tx;
     expect(res).to.equal(true);
   });

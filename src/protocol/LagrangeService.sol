@@ -112,7 +112,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
             _freezeOperator(evidence.operator);
         }
 
-        //_freezeOperator(evidence.operator,evidence.chainID); // TODO what is this for (no condition)?
+        // TODO what is this for (no condition)?
 
         emit UploadEvidence(
             evidence.operator,
@@ -123,37 +123,30 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
             evidence.epochBlockNumber,
             evidence.blockSignature,
             evidence.commitSignature,
-            evidence.chainID //,
-                //evidence.sigProof,
-                //evidence.aggProof
+            evidence.chainID
         );
     }
 
     function _checkBlockSignature(EvidenceVerifier.Evidence memory _evidence) internal returns (bool) {
-        bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
-
         // establish that proofs are valid
-        (ILagrangeCommittee.CommitteeData memory cdata, uint256 next) =
+        (ILagrangeCommittee.CommitteeData memory cdata,) =
             committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
 
-        bool sigVerify = evidenceVerifier.verifySingle(_evidence, blsPubKey, cdata.height);
-
-        bool aggVerify = AggVerify.verify(
-            _evidence.aggProof,
-            _evidence.currentCommitteeRoot,
-            _evidence.nextCommitteeRoot,
-            _evidence.blockHash,
-            _evidence.blockNumber,
-            _evidence.chainID,
-            cdata.height
+        require(
+            AggVerify.verify(
+                _evidence.aggProof,
+                _evidence.currentCommitteeRoot,
+                _evidence.nextCommitteeRoot,
+                _evidence.blockHash,
+                _evidence.blockNumber,
+                _evidence.chainID,
+                cdata.height
+            ),
+            "Aggregate proof verification failed"
         );
 
-        // compare signingroot to evidence, extract values - TODO crossreference/confirm
-        bytes32 reconstructedSigningRoot = keccak256(
-            abi.encodePacked(
-                _evidence.currentCommitteeRoot, _evidence.nextCommitteeRoot, _evidence.blockNumber, _evidence.blockHash
-            )
-        );
+        bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
+        bool sigVerify = evidenceVerifier.verifySingle(_evidence, blsPubKey);
 
         return (sigVerify);
     }

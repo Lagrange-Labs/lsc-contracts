@@ -37,7 +37,6 @@ import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
-    //string(bytes("script/output/M1_deployment_data.json"));
     string public poseidonDataPath = string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
@@ -71,10 +70,15 @@ contract Deploy is Script, Test {
     L2OutputOracle public l2oo;
 
     function run() public {
-        string memory deployData = vm.readFile(deployDataPath);
         string memory configData = vm.readFile(serviceDataPath);
 
         bool isNative = stdJson.readBool(configData, ".isNative");
+        bool isMock = stdJson.readBool(configData, ".isMock");
+
+        if (!isMock) {
+            deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
+        }
+        string memory deployData = vm.readFile(deployDataPath);
 
         if (!isNative) {
             slasherAddress = stdJson.readAddress(deployData, ".addresses.slasher");
@@ -189,9 +193,6 @@ contract Deploy is Script, Test {
         outbox = new Outbox();
         IL2OutputOracle opt_L2OutputOracle =
             IL2OutputOracle(stdJson.readAddress(configData, ".settlement.opt_l2outputoracle"));
-        //L2OutputOracle l2oo = new L2OutputOracle();
-        //IL2OutputOracle opt_L2OutputOracle = IL2OutputOracle(l2oo.address);
-        //IOutbox arb_Outbox = IOutbox(stdJson.readAddress(configData, ".settlement.arb_outbox"));
         IOutbox arb_Outbox = IOutbox(address(outbox));
 
         // deploy evidence verifier
@@ -249,9 +250,6 @@ contract Deploy is Script, Test {
                 address(voteWeigherImp),
                 abi.encodeWithSelector(VoteWeigherBaseMock.initialize.selector, msg.sender)
             );
-
-            // opt into the lagrange service manager
-            ISlasher(slasherAddress).optIntoSlashing(address(lagrangeServiceManager));
         }
 
         vm.stopBroadcast();

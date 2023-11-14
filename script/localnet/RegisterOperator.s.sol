@@ -29,19 +29,19 @@ contract RegisterOperator is Script, Test {
 
         IERC20 WETH = WETHStrategy.underlyingToken();
 
-        // send 1e19 wei to the WETH contract to get WETH
-        (bool success,) = address(WETH).call{value: 1e19}(abi.encodeWithSelector(WETH_DEPOSIT_SELECTOR));
+        // send 1e15 wei to the WETH contract to get WETH
+        (bool success,) = address(WETH).call{value: 1e15}(abi.encodeWithSelector(WETH_DEPOSIT_SELECTOR));
         require(success, "WETH deposit failed");
 
         // approve strategy manager to spend WETH
         StrategyManager strategyManager = StrategyManager(stdJson.readAddress(deployData, ".addresses.strategyManager"));
         console.log("StrategyManager", address(strategyManager));
 
-        WETH.approve(address(strategyManager), 1e30);
+        WETH.approve(address(strategyManager), 1e15);
         console.log("WETH approved.");
 
-        // deposit 1e17 WETH into strategy
-        strategyManager.depositIntoStrategy(WETHStrategy, WETH, 1e17);
+        // deposit 1e15 WETH into strategy
+        strategyManager.depositIntoStrategy(WETHStrategy, WETH, 1e15);
 
         DelegationManager delegation = DelegationManager(stdJson.readAddress(deployData, ".addresses.delegation"));
         delegation.registerAsOperator(IDelegationTerms(msg.sender));

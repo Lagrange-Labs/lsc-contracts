@@ -78,13 +78,11 @@ contract EvidenceVerifier is Common {
         uint256 chainID
     ) public pure returns (bool) {
         bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
-        bool success = false;
         if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
             //            (success, checkpoint) = verifyArbBlock();
         } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
             //            (success, checkpoint) = verifyOptBlock();
         }
-        if (!success) {}
         return res;
     }
 
@@ -120,7 +118,7 @@ contract EvidenceVerifier is Common {
 
     function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID)
         internal
-        view
+        pure
         returns (uint256, uint256)
     {
         uint256 _chainHeader1;
@@ -149,7 +147,7 @@ contract EvidenceVerifier is Common {
         return routeIndex;
     }
 
-    function _bytes96tobytes48(bytes memory bpk) public view returns (bytes[2] memory) {
+    function _bytes96tobytes48(bytes memory bpk) public pure returns (bytes[2] memory) {
         require(bpk.length == 96, "BLS public key must be provided in a form that is 96 bytes.");
         bytes[2] memory gxy = [new bytes(48), new bytes(48)];
         for (uint256 i = 0; i < 48; i++) {
@@ -159,7 +157,7 @@ contract EvidenceVerifier is Common {
         return [abi.encodePacked(gxy[0]), abi.encodePacked(gxy[1])];
     }
 
-    function _bytes48toslices(bytes memory b48) internal view returns (uint256[7] memory) {
+    function _bytes48toslices(bytes memory b48) internal pure returns (uint256[7] memory) {
         // validate length
         require(b48.length == 48, "Input should be 48 bytes.");
         // resultant slices
@@ -203,7 +201,7 @@ contract EvidenceVerifier is Common {
         return res;
     }
 
-    function _bytes192tobytes48(bytes memory bpk) internal view returns (bytes[4] memory) {
+    function _bytes192tobytes48(bytes memory bpk) internal pure returns (bytes[4] memory) {
         require(bpk.length == 192, "Block signature must be in a form of length 192 bytes.");
         bytes[4] memory res = [new bytes(48), new bytes(48), new bytes(48), new bytes(48)];
         for (uint256 i = 0; i < 48; i++) {
@@ -215,7 +213,7 @@ contract EvidenceVerifier is Common {
         return res;
     }
 
-    function _getBLSPubKeySlices(bytes calldata blsPubKey) internal view returns (uint256[7][2] memory) {
+    function _getBLSPubKeySlices(bytes calldata blsPubKey) internal pure returns (uint256[7][2] memory) {
         //convert bls pubkey bytes (len 96) to bytes[2] (len 48)
         bytes[2] memory gxy = _bytes96tobytes48(blsPubKey);
         //conver to slices
@@ -223,7 +221,7 @@ contract EvidenceVerifier is Common {
         return slices;
     }
 
-    function verifySingle(EvidenceVerifier.Evidence memory _evidence, bytes calldata blsPubKey, uint256 committeeSize)
+    function verifySingle(EvidenceVerifier.Evidence memory _evidence, bytes calldata blsPubKey)
         external
         view
         returns (bool)
