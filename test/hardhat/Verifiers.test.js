@@ -65,10 +65,12 @@ describe('Lagrange Verifiers', function () {
     const verAggFactory = await ethers.getContractFactory('Verifier_16');
     const verAgg32Factory = await ethers.getContractFactory('Verifier_32');
     const verAgg64Factory = await ethers.getContractFactory('Verifier_64');
+    const verAgg256Factory = await ethers.getContractFactory('Verifier_256');
 
     const verAgg = await verAggFactory.deploy();
     const verAgg32 = await verAgg32Factory.deploy();
     const verAgg64 = await verAgg64Factory.deploy();
+    const verAgg256 = await verAgg256Factory.deploy();
 
     console.log('Deploying verifier triage contracts...');
 
@@ -108,10 +110,12 @@ describe('Lagrange Verifiers', function () {
     await taProxy.setRoute(16, verAgg.address);
     await taProxy.setRoute(32, verAgg32.address);
     await taProxy.setRoute(64, verAgg64.address);
+    await taProxy.setRoute(256, verAgg256.address);
 
     shared.SAV = verAgg;
     shared.SAV32 = verAgg32;
     shared.SAV64 = verAgg64;
+    shared.SAV256 = verAgg256;
     shared.SAVTimp = triAgg;
     shared.SAVT = taProxy;
   });
@@ -174,71 +178,41 @@ describe('Lagrange Verifiers', function () {
     res = await verAgg.verifyProof(a, b, c, input);
     expect(res).to.equal(true);
   });
-  /*
-    it("slashing_aggregate_32 verifier", async function () {
-        const verAgg = shared.SAV32;
-        pub = await getJSON("test/hardhat/slashing_aggregate_16/public.json");
-        proof = await getJSON("test/hardhat/slashing_aggregate_16/proof.json");
-        pubNumeric = Object.values(pub).map(ethers.BigNumber.from);
-        
-        a = [
-          ethers.BigNumber.from(proof.pi_a[0]),
-          ethers.BigNumber.from(proof.pi_a[1])
-        ];
-        b = [
-         [
-          ethers.BigNumber.from(proof.pi_b[0][1]),
-          ethers.BigNumber.from(proof.pi_b[0][0]),
-         ],
-         [
-          ethers.BigNumber.from(proof.pi_b[1][1]),
-          ethers.BigNumber.from(proof.pi_b[1][0]),
-         ]
-        ];
-        c = [
-          ethers.BigNumber.from(proof.pi_c[0]),
-          ethers.BigNumber.from(proof.pi_c[1])
-        ];
-        input = pubNumeric;
-        
-        res = await verAgg.verifyProof(a,b,c,input);
-        expect(res).to.equal(true);
-    });
-    it("slashing_aggregate_64 verifier", async function () {
-        const verAgg = shared.SAV64;
-        pub = await getJSON("test/hardhat/slashing_aggregate_16/public.json");
-        proof = await getJSON("test/hardhat/slashing_aggregate_16/proof.json");
-        pubNumeric = Object.values(pub).map(ethers.BigNumber.from);
-        
-        a = [
-          ethers.BigNumber.from(proof.pi_a[0]),
-          ethers.BigNumber.from(proof.pi_a[1])
-        ];
-        b = [
-         [
-          ethers.BigNumber.from(proof.pi_b[0][1]),
-          ethers.BigNumber.from(proof.pi_b[0][0]),
-         ],
-         [
-          ethers.BigNumber.from(proof.pi_b[1][1]),
-          ethers.BigNumber.from(proof.pi_b[1][0]),
-         ]
-        ];
-        c = [
-          ethers.BigNumber.from(proof.pi_c[0]),
-          ethers.BigNumber.from(proof.pi_c[1])
-        ];
-        input = pubNumeric;
-        
-        res = await verAgg.verifyProof(a,b,c,input);
-        expect(res).to.equal(true);
-    });
-    */
+  it("slashing_aggregate_256 verifier", async function () {
+    const verAgg256 = shared.SAV256;
+    pub = await getJSON("test/hardhat/slashing_aggregate_256/public.json");
+    proof = await getJSON("test/hardhat/slashing_aggregate_256/proof.json");
+    pubNumeric = Object.values(pub).map(ethers.BigNumber.from);
+    
+    a = [
+      ethers.BigNumber.from(proof.pi_a[0]),
+      ethers.BigNumber.from(proof.pi_a[1])
+    ];
+    b = [
+     [
+      ethers.BigNumber.from(proof.pi_b[0][1]),
+      ethers.BigNumber.from(proof.pi_b[0][0]),
+     ],
+     [
+      ethers.BigNumber.from(proof.pi_b[1][1]),
+      ethers.BigNumber.from(proof.pi_b[1][0]),
+     ]
+    ];
+    c = [
+      ethers.BigNumber.from(proof.pi_c[0]),
+      ethers.BigNumber.from(proof.pi_c[1])
+    ];
+    input = pubNumeric;
+    
+    res = await verAgg256.verifyProof(a,b,c,input);
+    expect(res).to.equal(true);
+});
   it('triage smoke tests', async function () {
     const verSig = shared.SSV;
     const verAgg = shared.SAV;
     const verAgg32 = shared.SAV32;
     const verAgg64 = shared.SAV64;
+    const verAgg256 = shared.SAV256;
     const triAgg = shared.SAVT;
     const ev = shared.EV;
 
@@ -262,7 +236,9 @@ describe('Lagrange Verifiers', function () {
     k = await triAgg.verifiers(64);
     expect(k).to.equal(verAgg64.address);
     l = await triAgg.verifiers(256);
-    expect(l).to.equal('0x0000000000000000000000000000000000000000');
+    expect(l).to.equal(verAgg256.address);
+    m = await triAgg.verifiers(512);
+    expect(m).to.equal('0x0000000000000000000000000000000000000000');
   });
   it('slashing_single triage', async function () {
     const ev = shared.EV;
