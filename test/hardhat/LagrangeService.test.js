@@ -166,7 +166,7 @@ describe('LagrangeService', function () {
     try {
       await lagrangeService.uploadEvidence(evidence);
       expect(false).to.equal(false);
-    } catch (error) {}
+    } catch (error) { }
   });
   it('Evidence submission (slashing)', async function () {
     const lagrangeService = await ethers.getContractAt(
@@ -180,6 +180,6 @@ describe('LagrangeService', function () {
     try {
       await lagrangeService.uploadEvidence(evidence);
       expect(false).to.equal(false);
-    } catch (error) {}
+    } catch (error) { }
   });
 });
