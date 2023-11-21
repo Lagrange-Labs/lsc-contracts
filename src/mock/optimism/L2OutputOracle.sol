@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: MIT
+
+/* eslint-disable */
+// forgefmt: disable-start
+
 pragma solidity ^0.8.12;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";

@@ -12,7 +12,7 @@ import "src/protocol/LagrangeServiceManager.sol";
 import "src/protocol/LagrangeCommittee.sol";
 import "src/library/StakeManager.sol";
 import "src/library/HermezHelpers.sol";
-import "src/library/SlashingAggregateVerifierTriage.sol";
+
 import {Verifier} from "src/library/slashing_single/verifier.sol";
 import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
 
@@ -44,7 +44,7 @@ contract LagrangeDeployer is Test {
         _registerChain();
     }
 
-    function testDeploy() public {
+    function testDeploy() public view {
         console.log("LagrangeServiceManager: ", address(lagrangeServiceManager));
     }
 
@@ -135,18 +135,12 @@ contract LagrangeDeployer is Test {
             abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, sender)
         );
 
-        Verifier verifier = new Verifier();
-
-        evidenceVerifier = new EvidenceVerifier(address(verifier));
-
-        SlashingAggregateVerifierTriage slashingAggregate = new SlashingAggregateVerifierTriage(address(0));
+        evidenceVerifier = new EvidenceVerifier();
 
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(
-                LagrangeService.initialize.selector, sender, address(slashingAggregate), evidenceVerifier
-            )
+            abi.encodeWithSelector(LagrangeService.initialize.selector, sender, evidenceVerifier)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(stakeManager))),

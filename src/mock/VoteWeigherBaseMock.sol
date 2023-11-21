@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: MIT
+
+/* eslint-disable */
+// forgefmt: disable-start
+
 pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";

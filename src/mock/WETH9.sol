@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
+
+/* eslint-disable */
+// forgefmt: disable-start
+
 pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/token/ERC20/ERC20Upgradeable.sol";
@@ -27,3 +31,4 @@ contract WETH9 is ERC20Upgradeable {
         emit Withdrawal(msg.sender, wad);
     }
 }
+// forgefmt: disable-end

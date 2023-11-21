@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {OptimismVerifier} from "./OptimismVerifier.sol";
-import {ArbitrumVerifier} from "./ArbitrumVerifier.sol";
-import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
-import {ISlashingSingleVerifier} from "../interfaces/ISlashingSingleVerifier.sol";
-import {Common} from "./Common.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-contract EvidenceVerifier is Common {
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+import {ISlashingAggregateVerifier} from "../interfaces/ISlashingAggregateVerifier.sol";
+import {ISlashingSingleVerifier} from "../interfaces/ISlashingSingleVerifier.sol";
+
+contract EvidenceVerifier is Initializable, OwnableUpgradeable {
     // Evidence is the data structure to store the slashing evidence.
     struct Evidence {
         address operator;
@@ -20,70 +21,39 @@ contract EvidenceVerifier is Common {
         bytes32 correctNextCommitteeRoot;
         uint256 blockNumber;
         uint256 epochBlockNumber;
-        bytes blockSignature; // 96-byte
+        bytes blockSignature; // 192-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
-        bytes attestBlockHeader;
-        //bytes checkpointBlockHeader;
         bytes sigProof;
         bytes aggProof;
     }
 
-    struct proofParamsSingle {
+    struct ProofParams {
         uint256[2] a;
         uint256[2][2] b;
         uint256[2] c;
-        uint256[47] input;
     }
-
-    ISlashingSingleVerifier public verifier;
 
     uint256 public constant CHAIN_ID_MAINNET = 1;
     uint256 public constant CHAIN_ID_OPTIMISM_BEDROCK = 420;
     uint256 public constant CHAIN_ID_BASE = 84531;
     uint256 public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
-    OptimismVerifier OptVerify;
-    ArbitrumVerifier ArbVerify;
+    // aggregate signature verifiers Triage
+    mapping(uint256 => ISlashingAggregateVerifier) public aggVerifiers;
+    // single signature verifier
+    ISlashingSingleVerifier public singleVerifier;
 
-    constructor(address verifierAddress) {
-        verifier = ISlashingSingleVerifier(verifierAddress);
+    function initialize(address initialOwner) external initializer {
+        _transferOwnership(initialOwner);
     }
 
-    function setArbAddr(ArbitrumVerifier _arb) public {
-        ArbVerify = _arb;
+    function setAggregateVerifierRoute(uint256 routeIndex, address _verifierAddress) external onlyOwner {
+        aggVerifiers[routeIndex] = ISlashingAggregateVerifier(_verifierAddress);
     }
 
-    function setOptAddr(OptimismVerifier _opt) public {
-        OptVerify = _opt;
-    }
-
-    function getArbAddr() public view returns (address /*onlyOwner*/ ) {
-        return address(ArbVerify);
-    }
-
-    function getOptAddr() public view returns (address /*onlyOwner*/ ) {
-        return address(OptVerify);
-    }
-
-    function calculateBlockHash(bytes memory rlpData) public pure returns (bytes32) {
-        return keccak256(rlpData);
-    }
-
-    // Verify that comparisonNumber (block number) is in raw block header (rlpData) and raw block header matches comparisonBlockHash.  ChainID provides for network segmentation.
-    function verifyBlockNumber(
-        uint256 comparisonNumber,
-        bytes memory rlpData,
-        bytes32 comparisonBlockHash,
-        uint256 chainID
-    ) public pure returns (bool) {
-        bool res = _verifyBlockNumber(comparisonNumber, rlpData, comparisonBlockHash, chainID);
-        if (chainID == CHAIN_ID_ARBITRUM_NITRO) {
-            //            (success, checkpoint) = verifyArbBlock();
-        } else if (chainID == CHAIN_ID_OPTIMISM_BEDROCK) {
-            //            (success, checkpoint) = verifyOptBlock();
-        }
-        return res;
+    function setSingleVerifier(address _verifierAddress) external onlyOwner {
+        singleVerifier = ISlashingSingleVerifier(_verifierAddress);
     }
 
     function toUint(bytes memory src) internal pure returns (uint256) {
@@ -221,12 +191,12 @@ contract EvidenceVerifier is Common {
         return slices;
     }
 
-    function verifySingle(EvidenceVerifier.Evidence memory _evidence, bytes calldata blsPubKey)
+    function verifySingleSignature(EvidenceVerifier.Evidence memory _evidence, bytes calldata blsPubKey)
         external
         view
         returns (bool)
     {
-        proofParamsSingle memory params = abi.decode(_evidence.sigProof, (proofParamsSingle));
+        ProofParams memory params = abi.decode(_evidence.sigProof, (ProofParams));
 
         uint256[47] memory input;
         input[0] = 1;
@@ -255,6 +225,32 @@ contract EvidenceVerifier is Common {
         input[44] = uint256(_evidence.nextCommitteeRoot);
 
         (input[45], input[46]) = _getChainHeader(_evidence.blockHash, _evidence.blockNumber, _evidence.chainID);
+
+        bool result = singleVerifier.verifyProof(params.a, params.b, params.c, input);
+
+        return result;
+    }
+
+    function verifyAggregateSignature(EvidenceVerifier.Evidence memory _evidence, uint256 _committeeSize)
+        external
+        view
+        returns (bool)
+    {
+        uint256 routeIndex = _computeRouteIndex(_committeeSize);
+        ISlashingAggregateVerifier verifier = aggVerifiers[routeIndex];
+
+        ProofParams memory params = abi.decode(_evidence.aggProof, (ProofParams));
+
+        (uint256 _chainHeader1, uint256 _chainHeader2) =
+            _getChainHeader(_evidence.blockHash, _evidence.blockNumber, _evidence.chainID);
+
+        uint256[5] memory input = [
+            1,
+            uint256(_evidence.currentCommitteeRoot),
+            uint256(_evidence.nextCommitteeRoot),
+            _chainHeader1,
+            _chainHeader2
+        ];
 
         bool result = verifier.verifyProof(params.a, params.b, params.c, input);
 

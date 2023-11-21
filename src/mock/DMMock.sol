@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
+
+/* eslint-disable */
+// forgefmt: disable-start
+
 pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/interfaces/IDelegationManager.sol";
@@ -32,39 +36,39 @@ contract DelegationManager is IDelegationManager {
         _operatorShares[address(dt)] = 100000000000000000;
     }
 
-    function delegateTo(address operator) external {}
+    function delegateTo(address /*operator*/) external {}
 
-    function delegateToBySignature(address staker, address operator, uint256 expiry, bytes memory signature) external {}
+    function delegateToBySignature(address /*staker*/, address /*operator*/, uint256 expiry, bytes memory signature) external {}
 
-    function undelegate(address staker) external {}
+    function undelegate(address /*staker*/) external {}
 
-    function delegatedTo(address staker) external view returns (address) {
+    function delegatedTo(address /*staker*/) external pure returns (address) {
         return address(0);
     }
 
-    function delegationTerms(address operator) external view returns (IDelegationTerms) {
+    function delegationTerms(address /*operator*/) external pure returns (IDelegationTerms) {
         return IDelegationTerms(address(0));
     }
 
-    function operatorShares(address operator, IStrategy strategy) external view returns (uint256) {
+    function operatorShares(address operator, IStrategy /*strategy*/) external view returns (uint256) {
         return _operatorShares[operator];
     }
 
-    function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external {}
+    function increaseDelegatedShares(address /*staker*/, IStrategy strategy, uint256 shares) external {}
 
-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
+    function decreaseDelegatedShares(address /*staker*/, IStrategy[] calldata strategies, uint256[] calldata shares)
         external
     {}
 
-    function isDelegated(address staker) external view returns (bool) {
+    function isDelegated(address /*staker*/) external pure returns (bool) {
         return false;
     }
 
-    function isNotDelegated(address staker) external view returns (bool) {
+    function isNotDelegated(address /*staker*/) external pure returns (bool) {
         return false;
     }
 
-    function isOperator(address operator) external view returns (bool) {
+    function isOperator(address /*operator*/) external pure returns (bool) {
         return false;
     }
 }

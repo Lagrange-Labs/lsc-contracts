@@ -14,7 +14,6 @@ import "forge-std/Test.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath = string(bytes("script/output/deployed_goerli.json"));
-    string public mockDataPath = string(bytes("script/output/deployed_mock.json"));
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;
@@ -25,7 +24,6 @@ contract Deploy is Script, Test {
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
-        string memory mockData = vm.readFile(mockDataPath);
 
         vm.startBroadcast(msg.sender);
 
