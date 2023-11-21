@@ -99,9 +99,8 @@ describe('Lagrange Verifiers', function () {
 
     console.log('Deploying verifier triage contracts...');
 
-    const evidenceVerifierFactory = await ethers.getContractFactory(
-      'EvidenceVerifier',
-    );
+    const evidenceVerifierFactory =
+      await ethers.getContractFactory('EvidenceVerifier');
     const evidenceVerifier = await evidenceVerifierFactory.deploy();
 
     console.log('Upgrading proxy...');
@@ -109,17 +108,16 @@ describe('Lagrange Verifiers', function () {
     await proxyAdmin.upgradeAndCall(
       evProxy.address,
       evidenceVerifier.address,
-      evidenceVerifier.interface.encodeFunctionData('initialize', [admin.address]),
+      evidenceVerifier.interface.encodeFunctionData('initialize', [
+        admin.address,
+      ]),
     );
 
     console.log('aggregate verifier:', verAgg.address);
 
     console.log('Linking verifier triage contracts to verifier contracts...');
 
-    evProxy = await ethers.getContractAt(
-      'EvidenceVerifier',
-      evProxy.address,
-    );
+    evProxy = await ethers.getContractAt('EvidenceVerifier', evProxy.address);
     await evProxy.setSingleVerifier(verSig.address);
     await evProxy.setAggregateVerifierRoute(16, verAgg.address);
     await evProxy.setAggregateVerifierRoute(32, verAgg32.address);
@@ -252,7 +250,7 @@ describe('Lagrange Verifiers', function () {
     const encoded = await ethers.utils.defaultAbiCoder.encode(verSigABI, [
       a,
       b,
-      c
+      c,
     ]);
     // use bls keypair, derived from query layer
     blsPriv =
@@ -314,7 +312,7 @@ describe('Lagrange Verifiers', function () {
     evidence.commitSignature = csig;
 
     res = await ev.getCommitHash(evidence);
-    console.log("commite hash: ", res);
+    console.log('commite hash: ', res);
 
     console.log('Submitting evidence..');
     tx = await ev.verifySingleSignature(evidence, newPubKey);
@@ -349,11 +347,7 @@ describe('Lagrange Verifiers', function () {
     ];
     input = pubNumeric;
 
-    const encoded = ethers.utils.defaultAbiCoder.encode(verAggABI, [
-      a,
-      b,
-      c
-    ]);
+    const encoded = ethers.utils.defaultAbiCoder.encode(verAggABI, [a, b, c]);
     evidence.aggProof = encoded;
 
     tx = await triAgg.verifyAggregateSignature(
@@ -362,6 +356,5 @@ describe('Lagrange Verifiers', function () {
     );
     console.log(tx);
     expect(tx).to.equal(true);
-
   });
 });
