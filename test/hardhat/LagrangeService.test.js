@@ -55,10 +55,6 @@ describe('LagrangeService', function () {
     proxyAdmin = shared.proxyAdmin;
     proxy = shared.proxy;
 
-    const Common = await ethers.getContractFactory('Common');
-    const common = await Common.deploy();
-    await common.deployed();
-
     console.log('Deploying Slasher mock...');
 
     const SlasherFactory = await ethers.getContractFactory('Slasher');
@@ -124,8 +120,9 @@ describe('LagrangeService', function () {
     await verSig.deployed();
     shared.SSV = verSig;
     evFactory = await ethers.getContractFactory('EvidenceVerifier');
-    ev = await evFactory.deploy(verSig.address);
+    ev = await evFactory.deploy();
     await ev.deployed();
+    ev.setSingleVerifier(verSig.address);
     shared.EV = ev;
 
     await proxyAdmin.upgradeAndCall(
@@ -133,7 +130,6 @@ describe('LagrangeService', function () {
       lagrangeService.address,
       lagrangeService.interface.encodeFunctionData('initialize', [
         admin.address,
-        '0x0000000000000000000000000000000000000000',
         ev.address,
       ]),
     );
@@ -150,61 +146,7 @@ describe('LagrangeService', function () {
     await lsmproxy.deployed();
     shared.lsmproxy = lsmproxy;
 
-    const outboxFactory = await ethers.getContractFactory('Outbox');
-    const outbox = await outboxFactory.deploy();
-    await outbox.deployed();
-    outboxAddr = outbox.address;
-
-    const l2ooFactory = await ethers.getContractFactory('L2OutputOracle');
-    const l2oo = await l2ooFactory.deploy(
-      1, //_submissionInterval
-      1, //_l2BlockTime
-      11991388 - 1, //_startingBlockNumber
-      1, //_startingTimestamp
-      '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', //_proposer
-      '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', //_challenger
-      5, //_finalizationPeriodSeconds
-    );
-    await l2oo.deployed();
-    l2ooAddr = l2oo.address;
-
-    const ovFactory = await ethers.getContractFactory('OptimismVerifier');
-    const opt = await ovFactory.deploy(l2oo.address);
-
-    const avFactory = await ethers.getContractFactory('ArbitrumVerifier');
-    const arb = await avFactory.deploy(outbox.address);
-
-    console.log('L2OutputOracle:', l2oo.address);
-    console.log('Outbox:', outbox.address);
-
-    evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
-
-    await ev.setOptAddr(opt.address);
-    await ev.setArbAddr(arb.address);
-
-    console.log('OptimismVerifier:', opt.address);
-    console.log('ArbitrumVerifier:', arb.address);
-
     shared.LagrangeService = lagrangeService;
-  });
-
-  it('Smoke test L2-L1 settlement interfaces', async function () {
-    const lagrangeService = await ethers.getContractAt(
-      'LagrangeService',
-      lsaddr,
-      admin,
-    );
-    lsproxy = shared.lsproxy;
-    evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
-    addr1 = await ev.getArbAddr();
-    addr2 = await ev.getOptAddr();
-    console.log(addr1, addr2);
-    expect(
-      addr1 != '0x0000000000000000000000000000000000000000' &&
-        addr2 != '0x0000000000000000000000000000000000000000',
-    ).to.equal(true);
   });
 
   it('Slashed status', async function () {
@@ -224,7 +166,7 @@ describe('LagrangeService', function () {
     try {
       await lagrangeService.uploadEvidence(evidence);
       expect(false).to.equal(false);
-    } catch (error) {}
+    } catch (error) { }
   });
   it('Evidence submission (slashing)', async function () {
     const lagrangeService = await ethers.getContractAt(
@@ -238,133 +180,6 @@ describe('LagrangeService', function () {
     try {
       await lagrangeService.uploadEvidence(evidence);
       expect(false).to.equal(false);
-    } catch (error) {}
+    } catch (error) { }
   });
-  it('Optimism Output Verification', async function () {
-    outputRoot =
-      '0x9c7c59dcfc75aa57697ae880a52f82f179150a7e24d208f7f7ad804ea99535cb';
-    const lagrangeService = await ethers.getContractAt(
-      'LagrangeService',
-      lsaddr,
-      admin,
-    );
-    lsproxy = shared.lsproxy;
-    evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
-    optAddr = await ev.getOptAddr();
-    const ov = await ethers.getContractAt('OptimismVerifier', optAddr, admin);
-    const l2oo = await ethers.getContractAt('IL2OutputOracle', l2ooAddr, admin);
-    //console.log(l2oo);
-    for (i = 0; i < 2; i++) {
-      try {
-        console.log('verifyOutputProof (pass ' + (i + 1) + ')');
-        outputProof = [
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-          '0xd0670aef39b98b172b625ca7dcb5823ba8b5be30e6832cb6a2d337d5b1038250',
-          '0xadb5d075466430af8891c4c88014ffb2e759752dde83a813713c4a5cd1fb3de6',
-          '0x061ec88a69acdc6f70289979cdb84d29f9024a09fabf6a48a11d7625078870b8',
-        ];
-        expect(i).to.equal(1);
-        hash = await ov.getOutputHash(outputProof);
-        expect(hash).to.equal(outputRoot);
-        res = await ov.verifyOutputProof(
-          11991348,
-          '0xdd0ababc17fd2e1b37941fe55302df7ee03672b1b8acd738d05eac8c75cddd74',
-          outputProof,
-        );
-        expect(res).to.equal(true);
-        console.log('result:', res);
-        // check against output
-      } catch (error) {
-        // no output, first pass
-        let provider = ethers.provider; // You can also use other providers
-        let block = await provider.getBlock('latest');
-
-        latest = await l2oo.latestBlockNumber();
-        next = await l2oo.nextBlockNumber();
-        console.log('latest:', latest);
-        console.log('next:', next);
-
-        if (i) console.log(error);
-
-        expect(i).to.equal(0);
-
-        // propose output
-        await l2oo.proposeL2Output(
-          outputRoot,
-          11991388,
-          block.hash,
-          block.number,
-        );
-        // confirm output exists
-        oi = await l2oo.getL2OutputAfter(11991348);
-        expect(oi.outputRoot).to.equal(outputRoot);
-        // proceed to second pass
-      }
-    }
-  });
-  it('Arbitrum Verification', async function () {
-    lsproxy = shared.lsproxy;
-    const lagrangeService = await ethers.getContractAt(
-      'LagrangeService',
-      lsaddr,
-      admin,
-    );
-    evAddr = await lsproxy.evidenceVerifier();
-    ev = await ethers.getContractAt('EvidenceVerifier', evAddr);
-    arbAddr = await ev.getArbAddr();
-    const av = await ethers.getContractAt('ArbitrumVerifier', arbAddr, admin);
-    const ob = await ethers.getContractAt('IOutbox', outboxAddr, admin);
-    // nonexistent root
-    res = await av.verifyArbBlock(
-      '0xf90224a06d44daee2a7d707dcd5cac574cba7ac880605be3d9cb090f8623f99120e13051a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794a4b000000000000000000073657175656e636572a0b1a27641b49b7410f847dd7403cbfc77fb330c4682e4352f297e5733af7356e9a0d55ce2c8b1bc257d8548a011a3ee08512efd3e8d92143c5cf93b57cffacb9f7ba0aa5128dfa53bd7927f53918ddd02e2cf6d088e9fd3c8542dadbf1129d33dcc68b90100000000000000000800000080000000000004000000000100008001001000000000000000800000000000000000401200000000004000240000000000002000000000000000800008020000082000000000000000100000000000000000000000000000000000000c0000000000000000000000000000000000000010200880000000020000000100000000000000000000000004000000000000000000010000020000000000000000000000200040000000000000000000080000800020000000000002000000000000000000000000000000000000000400000000000020000010000000008000002000000080000000000000000000000000000000000000018401f1407d870400000000000083068c058464c9296da089c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4a00000000000009c080000000000901ffe000000000000000a000000000000000088000000000008a7e38405f5e100',
-      32587901,
-      '0x550f72aec7c027aeb9ecb3a219dd7fb5792d246747e611a8c59c9da5f696fba3',
-      '0x00',
-      421613,
-    );
-    expect(res).to.equal(false);
-    await ob.updateSendRoot(
-      '0x89c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4',
-      '0x550f72aec7c027aeb9ecb3a219dd7fb5792d246747e611a8c59c9da5f696fba3',
-    );
-    // valid root
-    res = await av.verifyArbBlock(
-      '0xf90224a06d44daee2a7d707dcd5cac574cba7ac880605be3d9cb090f8623f99120e13051a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794a4b000000000000000000073657175656e636572a0b1a27641b49b7410f847dd7403cbfc77fb330c4682e4352f297e5733af7356e9a0d55ce2c8b1bc257d8548a011a3ee08512efd3e8d92143c5cf93b57cffacb9f7ba0aa5128dfa53bd7927f53918ddd02e2cf6d088e9fd3c8542dadbf1129d33dcc68b90100000000000000000800000080000000000004000000000100008001001000000000000000800000000000000000401200000000004000240000000000002000000000000000800008020000082000000000000000100000000000000000000000000000000000000c0000000000000000000000000000000000000010200880000000020000000100000000000000000000000004000000000000000000010000020000000000000000000000200040000000000000000000080000800020000000000002000000000000000000000000000000000000000400000000000020000010000000008000002000000080000000000000000000000000000000000000018401f1407d870400000000000083068c058464c9296da089c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4a00000000000009c080000000000901ffe000000000000000a000000000000000088000000000008a7e38405f5e100',
-      32587901,
-      '0x550f72aec7c027aeb9ecb3a219dd7fb5792d246747e611a8c59c9da5f696fba3',
-      '0x00',
-      421613,
-    );
-    expect(res).to.equal(true);
-    // invalid hash
-    try {
-      res = await av.verifyArbBlock(
-        '0xf90224a06d44daee2a7d707dcd5cac574cba7ac880605be3d9cb090f8623f99120e13051a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d4934794a4b000000000000000000073657175656e636572a0b1a27641b49b7410f847dd7403cbfc77fb330c4682e4352f297e5733af7356e9a0d55ce2c8b1bc257d8548a011a3ee08512efd3e8d92143c5cf93b57cffacb9f7ba0aa5128dfa53bd7927f53918ddd02e2cf6d088e9fd3c8542dadbf1129d33dcc68b90100000000000000000800000080000000000004000000000100008001001000000000000000800000000000000000401200000000004000240000000000002000000000000000800008020000082000000000000000100000000000000000000000000000000000000c0000000000000000000000000000000000000010200880000000020000000100000000000000000000000004000000000000000000010000020000000000000000000000200040000000000000000000080000800020000000000002000000000000000000000000000000000000000400000000000020000010000000008000002000000080000000000000000000000000000000000000018401f1407d870400000000000083068c058464c9296da089c534a1c0018f90b84c7af63945814995a590091958c64f5610dce5bce91ac4a00000000000009c080000000000901ffe000000000000000a000000000000000088000000000008a7e38405f5e100',
-        32587901,
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-        '0x00',
-        421613,
-      );
-      expect(true).to.equal(false);
-    } catch (error) {}
-  });
-  /*
-        it('Registration', async function() {
-            const lagrangeService = await ethers.getContractAt("LagrangeService", lsaddr, admin);
-            // Register
-            blsKey = await genBLSKey();
-            priv = blsKey.serializeToHexStr();
-            pub = blsKey.getPublicKey();
-            res = await lagrangeService.register(420,pub.serialize(),5);
-        });
-        */
-  /*
-        frozenStatus = await lsm.slasher.isFrozen("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
-        try {
-            await lagrangeService.freezeOperator("0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9");
-        } catch(error) {
-        freezeException = true;
-        }
-        */
 });

@@ -6,9 +6,9 @@ const bls = require('@noble/bls12-381');
 let { PointG1, PointG2 } = require('./zk-utils-index.js');
 const { poseidon } = require('@iden3/js-crypto');
 
-const verSigABI = ['uint[2]', 'uint[2][2]', 'uint[2]', 'uint[47]'];
+const verSigABI = ['uint[2]', 'uint[2][2]', 'uint[2]'];
 
-const verAggABI = ['uint[2]', 'uint[2][2]', 'uint[2]', 'uint[5]'];
+const verAggABI = ['uint[2]', 'uint[2][2]', 'uint[2]'];
 
 const chainHeaderABI = ['bytes32', 'uint256', 'uint32'];
 
@@ -19,7 +19,31 @@ async function getJSON(path) {
 }
 
 describe('Lagrange Verifiers', function () {
+  const evidence = {
+    operator: '0x5d51B4c1fb0c67d0e1274EC96c1B895F45505a3D',
+    blockHash:
+      '0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896',
+    correctBlockHash:
+      '0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896',
+    currentCommitteeRoot:
+      '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
+    correctCurrentCommitteeRoot:
+      '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
+    nextCommitteeRoot:
+      '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
+    correctNextCommitteeRoot:
+      '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
+    blockNumber: 28809913,
+    epochBlockNumber: 0,
+    blockSignature: '0x00',
+    commitSignature: '0x00',
+    chainID: 421613,
+    sigProof: '0x00',
+    aggProof: '0x00',
+  };
+
   let admin;
+
   before(async function () {
     [admin] = await ethers.getSigners();
   });
@@ -53,20 +77,21 @@ describe('Lagrange Verifiers', function () {
     TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
       'TransparentUpgradeableProxy',
     );
-    taProxy = await TransparentUpgradeableProxyFactory.deploy(
+    evProxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
       proxyAdmin.address,
       '0x',
     );
-    await taProxy.deployed();
+    await evProxy.deployed();
 
     console.log('Deploying verifier contracts...');
-
+    const verSigFactory = await ethers.getContractFactory('Verifier');
     const verAggFactory = await ethers.getContractFactory('Verifier_16');
     const verAgg32Factory = await ethers.getContractFactory('Verifier_32');
     const verAgg64Factory = await ethers.getContractFactory('Verifier_64');
     const verAgg256Factory = await ethers.getContractFactory('Verifier_256');
 
+    const verSig = await verSigFactory.deploy();
     const verAgg = await verAggFactory.deploy();
     const verAgg32 = await verAgg32Factory.deploy();
     const verAgg64 = await verAgg64Factory.deploy();
@@ -74,50 +99,39 @@ describe('Lagrange Verifiers', function () {
 
     console.log('Deploying verifier triage contracts...');
 
-    const triAggFactory = await ethers.getContractFactory(
-      'SlashingAggregateVerifierTriage',
+    const evidenceVerifierFactory = await ethers.getContractFactory(
+      'EvidenceVerifier',
     );
-    const triAgg = await triAggFactory.deploy(
-      '0x0000000000000000000000000000000000000000',
-    );
-
-    tx2 = await verAgg.deployed();
-    tx3 = await verAgg.deployed();
-    tx4 = await triAgg.deployed();
+    const evidenceVerifier = await evidenceVerifierFactory.deploy();
 
     console.log('Upgrading proxy...');
 
     await proxyAdmin.upgradeAndCall(
-      taProxy.address,
-      triAgg.address,
-      triAgg.interface.encodeFunctionData('initialize', [admin.address]),
+      evProxy.address,
+      evidenceVerifier.address,
+      evidenceVerifier.interface.encodeFunctionData('initialize', [admin.address]),
     );
 
     console.log('aggregate verifier:', verAgg.address);
-    console.log('aggregate triage:', taProxy.address);
 
     console.log('Linking verifier triage contracts to verifier contracts...');
 
-    taProxy = await ethers.getContractAt(
-      'SlashingAggregateVerifierTriage',
-      taProxy.address,
+    evProxy = await ethers.getContractAt(
+      'EvidenceVerifier',
+      evProxy.address,
     );
-
-    await taProxy.setRoute(1, verAgg.address);
-    await taProxy.setRoute(2, verAgg.address);
-    await taProxy.setRoute(4, verAgg.address);
-    await taProxy.setRoute(8, verAgg.address);
-    await taProxy.setRoute(16, verAgg.address);
-    await taProxy.setRoute(32, verAgg32.address);
-    await taProxy.setRoute(64, verAgg64.address);
-    await taProxy.setRoute(256, verAgg256.address);
+    await evProxy.setSingleVerifier(verSig.address);
+    await evProxy.setAggregateVerifierRoute(16, verAgg.address);
+    await evProxy.setAggregateVerifierRoute(32, verAgg32.address);
+    await evProxy.setAggregateVerifierRoute(64, verAgg64.address);
+    await evProxy.setAggregateVerifierRoute(256, verAgg256.address);
 
     shared.SAV = verAgg;
     shared.SAV32 = verAgg32;
     shared.SAV64 = verAgg64;
     shared.SAV256 = verAgg256;
-    shared.SAVTimp = triAgg;
-    shared.SAVT = taProxy;
+    shared.SAVTimp = evidenceVerifier;
+    shared.SAVT = evProxy;
   });
 
   it('slashing_single verifier', async function () {
@@ -207,41 +221,8 @@ describe('Lagrange Verifiers', function () {
     res = await verAgg256.verifyProof(a, b, c, input);
     expect(res).to.equal(true);
   });
-  it('triage smoke tests', async function () {
-    const verSig = shared.SSV;
-    const verAgg = shared.SAV;
-    const verAgg32 = shared.SAV32;
-    const verAgg64 = shared.SAV64;
-    const verAgg256 = shared.SAV256;
-    const triAgg = shared.SAVT;
-    const ev = shared.EV;
-
-    a = await ev.verifier();
-    expect(a).to.equal(verSig.address);
-
-    d = await triAgg.verifiers(0);
-    expect(d).to.equal('0x0000000000000000000000000000000000000000');
-    e = await triAgg.verifiers(1);
-    expect(e).to.equal(verAgg.address);
-    f = await triAgg.verifiers(2);
-    expect(f).to.equal(verAgg.address);
-    g = await triAgg.verifiers(4);
-    expect(g).to.equal(verAgg.address);
-    h = await triAgg.verifiers(8);
-    expect(h).to.equal(verAgg.address);
-    i = await triAgg.verifiers(16);
-    expect(i).to.equal(verAgg.address);
-    j = await triAgg.verifiers(32);
-    expect(j).to.equal(verAgg32.address);
-    k = await triAgg.verifiers(64);
-    expect(k).to.equal(verAgg64.address);
-    l = await triAgg.verifiers(256);
-    expect(l).to.equal(verAgg256.address);
-    m = await triAgg.verifiers(512);
-    expect(m).to.equal('0x0000000000000000000000000000000000000000');
-  });
   it('slashing_single triage', async function () {
-    const ev = shared.EV;
+    const ev = shared.SAVT;
     // load relevant contracts from shared
     // retrieve input and public statement
     pub = await getJSON('test/hardhat/slashing_single/public.json');
@@ -271,8 +252,7 @@ describe('Lagrange Verifiers', function () {
     const encoded = await ethers.utils.defaultAbiCoder.encode(verSigABI, [
       a,
       b,
-      c,
-      input,
+      c
     ]);
     // use bls keypair, derived from query layer
     blsPriv =
@@ -313,13 +293,7 @@ describe('Lagrange Verifiers', function () {
     console.log('aggsig___:', signature);
     coords = await bls.PointG2.fromHex(signature.slice(2));
     console.log(coords);
-    /*
-     */
-    /*
-  signature = await bls.sign(message, blsPriv.slice(2));
-  // convert coordinates to hex for verifier
-        coords = await bls.PointG2.fromSignature(signature);
-  */
+
     affine = [
       coords.toAffine()[0].c0.value.toString(16).padStart(96, '0'),
       coords.toAffine()[0].c1.value.toString(16).padStart(96, '0'),
@@ -334,36 +308,18 @@ describe('Lagrange Verifiers', function () {
     const Gy = await pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
     const newPubKey = '0x' + Gx + Gy;
 
-    const evidence = {
-      operator: '0x5d51B4c1fb0c67d0e1274EC96c1B895F45505a3D',
-      blockHash:
-        '0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896',
-      correctBlockHash:
-        '0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896',
-      currentCommitteeRoot:
-        '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
-      correctCurrentCommitteeRoot:
-        '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
-      nextCommitteeRoot:
-        '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
-      correctNextCommitteeRoot:
-        '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
-      blockNumber: 28809913,
-      epochBlockNumber:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      blockSignature: csig,
-      commitSignature: csig,
-      chainID: 421613,
-      attestBlockHeader: '0x00',
-      sigProof: encoded,
-      aggProof: '0x00',
-    };
+    evidence.sigProof = encoded;
+    evidence.aggProof = encoded;
+    evidence.blockSignature = csig;
+    evidence.commitSignature = csig;
+
+    res = await ev.getCommitHash(evidence);
+    console.log("commite hash: ", res);
 
     console.log('Submitting evidence..');
+    tx = await ev.verifySingleSignature(evidence, newPubKey);
 
-    tx = ev.verifySingle(evidence, newPubKey);
-    res = await tx;
-    expect(res).to.equal(true);
+    expect(tx).to.equal(true);
   });
 
   it('slashing_aggregate_16 triage', async function () {
@@ -396,113 +352,16 @@ describe('Lagrange Verifiers', function () {
     const encoded = ethers.utils.defaultAbiCoder.encode(verAggABI, [
       a,
       b,
-      c,
-      input,
+      c
     ]);
+    evidence.aggProof = encoded;
 
-    const indices = [1, 2, 3, 5, 8, 13];
-    for (i = 0; i < indices.length; i++) {
-      index = indices[i];
+    tx = await triAgg.verifyAggregateSignature(
+      evidence,
+      9, //committeeSize
+    );
+    console.log(tx);
+    expect(tx).to.equal(true);
 
-      tx = await triAgg.verify(
-        encoded, //aggProof
-        '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514', //currentCommitteeRoot
-        '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514', //nextCommitteeRoot
-        '0xd31e8eeac337ce066c9b6fedd907c4e0e0ac2fdd61078c61e8f0df9af0481896', //blockHash
-        28809913, //blockNumber
-        421613, //chainID
-        9, //committeeSize
-      );
-      console.log(tx);
-      expect(tx).to.equal(true);
-    }
   });
-  /*
-    it("slashing_aggregate_32 triage", async function () {
-        const triAgg = shared.SAVT;
-
-        pub = await getJSON("test/hardhat/slashing_aggregate_16/public.json");
-        proof = await getJSON("test/hardhat/slashing_aggregate_16/proof.json");
-        pubNumeric = Object.values(pub).map(ethers.BigNumber.from);
-        a = [
-          ethers.BigNumber.from(proof.pi_a[0]),
-          ethers.BigNumber.from(proof.pi_a[1])
-        ];
-        b = [
-         [
-          ethers.BigNumber.from(proof.pi_b[0][1]),
-          ethers.BigNumber.from(proof.pi_b[0][0]),
-         ],
-         [
-          ethers.BigNumber.from(proof.pi_b[1][1]),
-          ethers.BigNumber.from(proof.pi_b[1][0]),
-         ]
-        ];
-        c = [
-          ethers.BigNumber.from(proof.pi_c[0]),
-          ethers.BigNumber.from(proof.pi_c[1])
-        ];
-        input = pubNumeric;
-        
-        const encoded = ethers.utils.defaultAbiCoder.encode(verAggABI, [a,b,c,input]);
-        
-        const indices = [21];
-        for(i = 0; i < indices.length; i++) {
-          index = indices[i];
-          tx = await triAgg.verify(
-            encoded, //aggProof
-            "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //currentCommitteeRoot
-            "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //nextCommitteeRoot
-            "0x95aea085c0d4a908eed989c9f2c793477d53309ae3e9f0a28f29510ffeff2b91", //blockHash
-            28810640, //blockNumber
-            421613, //chainID
-            index //committeeSize
-          );
-          expect(tx).to.equal(true);
-        };
-    });
-    it("slashing_aggregate_64 triage", async function () {
-        const triAgg = shared.SAVT;
-
-        pub = await getJSON("test/hardhat/slashing_aggregate_16/public.json");
-        proof = await getJSON("test/hardhat/slashing_aggregate_16/proof.json");
-        pubNumeric = Object.values(pub).map(ethers.BigNumber.from);
-        a = [
-          ethers.BigNumber.from(proof.pi_a[0]),
-          ethers.BigNumber.from(proof.pi_a[1])
-        ];
-        b = [
-         [
-          ethers.BigNumber.from(proof.pi_b[0][1]),
-          ethers.BigNumber.from(proof.pi_b[0][0]),
-         ],
-         [
-          ethers.BigNumber.from(proof.pi_b[1][1]),
-          ethers.BigNumber.from(proof.pi_b[1][0]),
-         ]
-        ];
-        c = [
-          ethers.BigNumber.from(proof.pi_c[0]),
-          ethers.BigNumber.from(proof.pi_c[1])
-        ];
-        input = pubNumeric;
-        
-        const encoded = ethers.utils.defaultAbiCoder.encode(verAggABI, [a,b,c,input]);
-        
-        const indices = [34,55];
-        for(i = 0; i < indices.length; i++) {
-          index = indices[i];
-          tx = await triAgg.verify(
-            encoded, //aggProof
-            "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //currentCommitteeRoot
-            "0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514", //nextCommitteeRoot
-            "0x95aea085c0d4a908eed989c9f2c793477d53309ae3e9f0a28f29510ffeff2b91", //blockHash
-            28810640, //blockNumber
-            421613, //chainID
-            index //committeeSize
-          );
-          expect(tx).to.equal(true);
-        };
-    });
-    */
 });
