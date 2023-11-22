@@ -203,7 +203,7 @@ contract Deploy is Script, Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(evidenceVerifier))),
             address(evidenceVerifierImp),
-            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender)
+            abi.encodeWithSelector(EvidenceVerifier.initialize.selector, msg.sender)
         );
 
         if (isNative) {

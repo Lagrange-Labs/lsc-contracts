@@ -1,8 +1,6 @@
 const fs = require('fs');
 const { ethers } = require('hardhat');
-
-async function deployAgg() {}
-async function deploySig() {}
+const deployed_verifiers = require('../script/output/deployed_verifiers.json');
 
 async function main() {
   const raw = fs.readFileSync('script/output/deployed_lgr.json');
@@ -14,17 +12,17 @@ async function main() {
 
   // deploy - aggregate
 
-  triageABIraw = fs.readFileSync(
-    'out/SlashingAggregateVerifierTriage.sol/SlashingAggregateVerifierTriage.json',
-  );
-  triageABIjson = JSON.parse(triageABIraw);
-  triageABI = triageABIjson.abi;
-  triage = new ethers.Contract(addresses['AggVerify'], triageABI, wallet);
+  evABI = JSON.parse(
+    fs.readFileSync('out/EvidenceVerifier.sol/EvidenceVerifier.json'),
+  ).abi;
+  ev = new ethers.Contract(addresses['evidenceVerifier'], evABI, wallet);
 
-  const sizes = [16, 32, 64, 128, 256, 512];
+  const sizes = [0, 16, 32, 64, 128, 256, 512];
   for (size of sizes) {
-    // deploy
     path = `src/library/slashing_aggregate/verifier_${size}.sol:Verifier_${size}`;
+    if (size == 0) {
+      path = `src/library/slashing_single/verifier.sol:Verifier`;
+    }
     factory = await ethers.getContractFactory(path);
     verifier = await factory.deploy();
     tx = await verifier.deployed();
@@ -35,14 +33,25 @@ async function main() {
       verifier.address,
     );
 
+    deployed_verifiers[size] = verifier.address;
+
     // associate
-    tx = await triage.setRoute(size, verifier.address);
+    if (size == 0) {
+      tx = await ev.setSingleVerifier(verifier.address);
+    } else {
+      tx = await ev.setAggregateVerifierRoute(size, verifier.address);
+    }
     console.log(
       'verifier contract associated with triage contract at',
-      triage.address,
+      ev.address,
     );
     await tx.wait();
   }
+
+  fs.writeFileSync(
+    'script/output/deployed_verifiers.json',
+    JSON.stringify(deployed_verifiers, null, 4),
+  );
 }
 
 main();

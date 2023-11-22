@@ -44,6 +44,10 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
     // single signature verifier
     ISlashingSingleVerifier public singleVerifier;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address initialOwner) external initializer {
         _transferOwnership(initialOwner);
     }
