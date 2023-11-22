@@ -9,7 +9,6 @@ import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommitt
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
-import {ISlashingAggregateVerifierTriage} from "../interfaces/ISlashingAggregateVerifierTriage.sol";
 
 contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
     uint256 public constant UPDATE_TYPE_REGISTER = 1;
@@ -19,7 +18,6 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     ILagrangeCommittee public immutable committee;
     IServiceManager public immutable serviceManager;
 
-    ISlashingAggregateVerifierTriage AggVerify;
     EvidenceVerifier public evidenceVerifier;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
@@ -44,13 +42,8 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         _disableInitializers();
     }
 
-    function initialize(
-        address initialOwner,
-        ISlashingAggregateVerifierTriage _AggVerify,
-        EvidenceVerifier _evidenceVerifier
-    ) external initializer {
+    function initialize(address initialOwner, EvidenceVerifier _evidenceVerifier) external initializer {
         _transferOwnership(initialOwner);
-        AggVerify = _AggVerify;
         evidenceVerifier = _evidenceVerifier;
     }
 
@@ -133,20 +126,11 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
             committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
 
         require(
-            AggVerify.verify(
-                _evidence.aggProof,
-                _evidence.currentCommitteeRoot,
-                _evidence.nextCommitteeRoot,
-                _evidence.blockHash,
-                _evidence.blockNumber,
-                _evidence.chainID,
-                cdata.height
-            ),
-            "Aggregate proof verification failed"
+            evidenceVerifier.verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed"
         );
 
         bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
-        bool sigVerify = evidenceVerifier.verifySingle(_evidence, blsPubKey);
+        bool sigVerify = evidenceVerifier.verifySingleSignature(_evidence, blsPubKey);
 
         return (sigVerify);
     }

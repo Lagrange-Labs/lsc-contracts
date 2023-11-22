@@ -2,7 +2,9 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-// solhint-disable-next-line compiler-version
+/* eslint-disable */
+// forgefmt: disable-start
+
 pragma solidity ^0.8.12;
 
 interface IOutbox {

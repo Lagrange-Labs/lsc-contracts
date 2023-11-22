@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
+
+/* eslint-disable */
+// forgefmt: disable-start
+
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";

@@ -19,13 +19,9 @@ import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
 import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
 import {StakeManager} from "src/library/StakeManager.sol";
 import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
-import {OptimismVerifier} from "src/library/OptimismVerifier.sol";
-import {ArbitrumVerifier} from "src/library/ArbitrumVerifier.sol";
 
 import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
 import {Verifier} from "src/library/slashing_single/verifier.sol";
-
-import {SlashingAggregateVerifierTriage} from "src/library/SlashingAggregateVerifierTriage.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -55,19 +51,10 @@ contract Deploy is Script, Test {
     StakeManager public stakeManagerImp;
     VoteWeigherBaseMock public voteWeigher;
     VoteWeigherBaseMock public voteWeigherImp;
+    EvidenceVerifier public evidenceVerifier;
+    EvidenceVerifier public evidenceVerifierImp;
 
     EmptyContract public emptyContract;
-
-    EvidenceVerifier public evidenceVerifier;
-    OptimismVerifier public optimismVerifier;
-    ArbitrumVerifier public arbitrumVerifier;
-    Verifier public verifier;
-
-    SlashingAggregateVerifierTriage public AggVerify;
-    SlashingAggregateVerifierTriage public AggVerifyImp;
-
-    Outbox public outbox;
-    L2OutputOracle public l2oo;
 
     function run() public {
         string memory configData = vm.readFile(serviceDataPath);
@@ -119,8 +106,7 @@ contract Deploy is Script, Test {
                 )
             )
         );
-
-        AggVerify = SlashingAggregateVerifierTriage(
+        evidenceVerifier = EvidenceVerifier(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -186,18 +172,7 @@ contract Deploy is Script, Test {
             lagrangeCommittee,
             lagrangeServiceManager
         );
-
-        verifier = new Verifier();
-        AggVerifyImp = new SlashingAggregateVerifierTriage(address(0));
-
-        outbox = new Outbox();
-        IL2OutputOracle opt_L2OutputOracle =
-            IL2OutputOracle(stdJson.readAddress(configData, ".settlement.opt_l2outputoracle"));
-        IOutbox arb_Outbox = IOutbox(address(outbox));
-
-        // deploy evidence verifier
-        arbitrumVerifier = new ArbitrumVerifier(outbox);
-        optimismVerifier = new OptimismVerifier(opt_L2OutputOracle);
+        evidenceVerifierImp = new EvidenceVerifier();
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -221,22 +196,15 @@ contract Deploy is Script, Test {
         );
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(AggVerify))),
-            address(AggVerifyImp),
-            abi.encodeWithSelector(SlashingAggregateVerifierTriage.initialize.selector, msg.sender)
-        );
-
-        evidenceVerifier = new EvidenceVerifier(address(verifier));
-
-        proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, AggVerify, evidenceVerifier)
+            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, evidenceVerifier)
         );
-
-        EvidenceVerifier ev = lagrangeService.evidenceVerifier();
-        ev.setOptAddr(optimismVerifier);
-        ev.setArbAddr(arbitrumVerifier);
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(evidenceVerifier))),
+            address(evidenceVerifierImp),
+            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender)
+        );
 
         if (isNative) {
             proxyAdmin.upgradeAndCall(
@@ -264,8 +232,8 @@ contract Deploy is Script, Test {
         vm.serializeAddress(deployed_addresses, "lagrangeServiceImp", address(lagrangeServiceImp));
         vm.serializeAddress(deployed_addresses, "lagrangeService", address(lagrangeService));
         vm.serializeAddress(deployed_addresses, "lagrangeServiceManagerImp", address(lagrangeServiceManagerImp));
-        vm.serializeAddress(deployed_addresses, "AggVerify", address(AggVerify));
-        vm.serializeAddress(deployed_addresses, "AggVerifyImp", address(AggVerifyImp));
+        vm.serializeAddress(deployed_addresses, "evidenceVerifier", address(evidenceVerifier));
+        vm.serializeAddress(deployed_addresses, "evidenceVerifierImp", address(evidenceVerifierImp));
 
         if (isNative) {
             vm.serializeAddress(deployed_addresses, "stakeManager", address(stakeManager));

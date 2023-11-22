@@ -11,8 +11,7 @@ contract EvidenceVerifierTest is Test {
     EvidenceVerifier.Evidence evidence;
 
     function setUp() public {
-        Verifier v = new Verifier();
-        verifier = new EvidenceVerifier(address(v));
+        verifier = new EvidenceVerifier();
 
         evidence.operator = address(0x516D6C27C23CEd21BF7930E2a01F0BcA9A141a0d);
         evidence.blockHash = 0xafe58890693444d9116c940a5ff4418723e7f75869b30c9d8e4528e147cb4b7f;

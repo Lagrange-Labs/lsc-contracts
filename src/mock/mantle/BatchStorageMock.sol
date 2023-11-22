@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
+
+/* eslint-disable */
+// forgefmt: disable-start
+
 pragma solidity ^0.8.12;
 
 contract BatchStorageMock {
