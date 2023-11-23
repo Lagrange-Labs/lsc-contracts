@@ -230,7 +230,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         uint256 right;
         if (leafIndex & 1 == 1) {
             left = committeeNodes[chainID][height][leafIndex - 1];
-            right = committeeNodes[chainID][height][leafIndex];
+            if (committeeNodes[chainID][height][leafIndex] == 0) {
+                right = zeroHashes[height];
+            } else {
+                right = committeeNodes[chainID][height][leafIndex];
+            }
         } else {
             left = committeeNodes[chainID][height][leafIndex];
             if (committeeNodes[chainID][height][leafIndex + 1] == 0) {

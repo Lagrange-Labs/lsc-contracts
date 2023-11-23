@@ -145,7 +145,7 @@ describe('LagrangeCommittee', function () {
         await committee.addOperator(
           addr,
           '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' +
-            j,
+          j,
           4294967295,
         );
         tx = await committee.subscribeChain(addr, chainid);
@@ -332,8 +332,8 @@ describe('LagrangeCommittee', function () {
       operators[0].chain_id,
     );
 
-    await committee.registerChain(operators[0].chain_id, 10000, 1000);
-    let operatorCount = 5;
+    const tx = await committee.registerChain(operators[0].chain_id, 10000, 1000);
+    let operatorCount = operators[0].operators.length - 4;
 
     const leaves = await Promise.all(
       new Array(operatorCount).fill(0).map(async (_, index) => {
@@ -347,7 +347,7 @@ describe('LagrangeCommittee', function () {
     );
     const committeeRoot = await committee.getCommittee(
       operators[0].chain_id,
-      1000,
+      tx.blockNumber,
     );
     let count = 1;
     while (count < leaves.length) {

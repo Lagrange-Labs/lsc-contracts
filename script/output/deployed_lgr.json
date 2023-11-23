@@ -1,13 +1,15 @@
 {
   "addresses": {
-    "lagrangeCommittee": "0xdf482e95c33BfBC10312554627162462b3986365",
-    "lagrangeCommitteeImp": "0x179F90FB3253e9Ad9Df15842410DdC551d29ee72",
-    "lagrangeService": "0x388Cd440D202d39376117A109fC47b2FFF6Cea43",
-    "lagrangeServiceImp": "0xD776a1eFf4637f7A5E4240553784e193C76e5264",
-    "lagrangeServiceManager": "0xfF0d1700a4C41aB483a396844FAb52315b3fE35b",
-    "lagrangeServiceManagerImp": "0xFDd715E746b0d00ED29c77c5D434aF4E3317fc49",
-    "proxyAdmin": "0xeCA41274474c68043983Ad5157f2befBEA463C9c",
-    "stakeManager": "0x996a01150d4e45F2A3344FAef9f68Ff10fAd5395",
-    "stakeManagerImp": "0x5993874B1C435085709EeDC4d58A70c98A46E9de"
+    "evidenceVerifier": "0xFb7c846bD3285A9CC856eEa80792CAf51347befF",
+    "evidenceVerifierImp": "0x31be4ed224E76FF75A8FD323452253B5d5c0b74F",
+    "lagrangeCommittee": "0x0AEd0dC7f53CB452A34A3Fe4d6a7E4Fdd110ed0f",
+    "lagrangeCommitteeImp": "0xdE13D29456810eD75139240C2B4e5DfDab7A6f6f",
+    "lagrangeService": "0xe509Dea686816C3c64ed4950dA54792a70A25239",
+    "lagrangeServiceImp": "0xE40a113CA263C1D39D3930431a762517Dfc9a2C0",
+    "lagrangeServiceManager": "0x1387E373a9fe3c8DdF77ea9E66616678e5B9D918",
+    "lagrangeServiceManagerImp": "0xb5f6560d0F0323afF85fA33790BAdB99D65Aa613",
+    "proxyAdmin": "0x5bA2061A8ab6D0c61b3e29f5b49C37A5FDF4AE72",
+    "stakeManager": "0x9E6F4600a8C6c91EC5158D752824467B4c6B9c17",
+    "stakeManagerImp": "0x2008D5344b209B4DE89e5ba218A097FFc6DcdA99"
   }
 }
