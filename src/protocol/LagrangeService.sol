@@ -123,7 +123,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     function _checkBlockSignature(EvidenceVerifier.Evidence memory _evidence) internal returns (bool) {
         // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata,) =
-            committee.getCommittee(_evidence.chainID, _evidence.blockNumber);
+            committee.getCommittee(_evidence.chainID, _evidence.epochBlockNumber);
 
         require(
             evidenceVerifier.verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed"
