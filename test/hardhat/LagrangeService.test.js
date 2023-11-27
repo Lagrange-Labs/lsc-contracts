@@ -167,10 +167,12 @@ describe('LagrangeService', function () {
       await lagrangeService.uploadEvidence(evidence);
       expect('should have failed').to.be.false;
     } catch (error) {
-      console.log(error)
+      console.log(error);
       let revertReason = '';
       if (error.message) {
-        const messageMatch = error.message.match(/reverted with reason string '([^']+)'/);
+        const messageMatch = error.message.match(
+          /reverted with reason string '([^']+)'/,
+        );
         revertReason = messageMatch ? messageMatch[1] : '';
       }
       expect(revertReason).to.include('The operator is not registered');

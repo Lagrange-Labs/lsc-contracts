@@ -2,7 +2,6 @@ const ethers = require('ethers');
 const bls = require('@noble/bls12-381');
 require('dotenv').config();
 
-const accounts = require('../config/accounts.json');
 const abi = require('../out/LagrangeService.sol/LagrangeService.json').abi;
 const deployedAddresses = require('../script/output/deployed_lgr.json');
 
@@ -23,7 +22,7 @@ const convertBLSPubKey = (oldPubKey) => {
 (async () => {
   await Promise.all(
     operators[0].operators.map(async (operator, index) => {
-      const privKey = accounts[operator];
+      const privKey = operators[0].ecdsa_priv_keys[index];
       const wallet = new ethers.Wallet(privKey, provider);
       const contract = new ethers.Contract(
         deployedAddresses.addresses.lagrangeService,
@@ -48,7 +47,7 @@ const convertBLSPubKey = (oldPubKey) => {
   operators.forEach(async (chain, k) => {
     for (let index = 0; index < chain.operators.length; index++) {
       const address = chain.operators[index];
-      const privKey = accounts[address];
+      const privKey = operators[0].ecdsa_priv_keys[index];
       const wallet = new ethers.Wallet(privKey, provider);
       const contract = new ethers.Contract(
         deployedAddresses.addresses.lagrangeService,

@@ -181,7 +181,7 @@ describe('Lagrange Verifiers', function () {
       ethers.BigNumber.from(proof.pi_c[1]),
     ];
     input = pubNumeric;
-    input[0] = "1";
+    input[0] = '1';
 
     res = await verSig.verifyProof(a, b, c, input);
     expect(res).to.equal(false);
@@ -364,10 +364,15 @@ describe('Lagrange Verifiers', function () {
       ethers.BigNumber.from(proof.pi_c[1]),
     ];
 
-    const encoded = await ethers.utils.defaultAbiCoder.encode(verSigABI, [a, b, c]);
+    const encoded = await ethers.utils.defaultAbiCoder.encode(verSigABI, [
+      a,
+      b,
+      c,
+    ]);
     // sigProof is the encoded single slashing proof which changes upon every circuit run for the same block.
     // The following is the sigProof generated for the proof.json file used in this test.
-    const sigProof = "0x152d8a13a6a4a4023327ba9b68beb79cd7dcbf1b90eeddfa58a786ced1fca3980ac69e7f319f67a8bfb1e4500721192f22c594a162eaac0b0b71e83e8fed5ede2fa5988202dec5d9eff9d2dba69e0a8646d6e1f9da2e2cceec0ba13d29e6f889062071e05e21120c505d80f0e1f7374c0e262f97f87832cf08b7d734e68c790912c9d43e81ec81bbfd6757751bda7868c0418e9d3a7719dedc2016497a32e61b2c9718f224ae20ce9cd4ccc53ef343632e3b203c51e8ed1c41e67c35b6d4e9ea12ab5d66f0c1491b6b851136f29705e9c93d5eeba35a88a7fbbd994e6aa798ad0d2b60fd68cc4c6172d0c902a3e594426409fd3f17f0977da484fad41e130193";
+    const sigProof =
+      '0x152d8a13a6a4a4023327ba9b68beb79cd7dcbf1b90eeddfa58a786ced1fca3980ac69e7f319f67a8bfb1e4500721192f22c594a162eaac0b0b71e83e8fed5ede2fa5988202dec5d9eff9d2dba69e0a8646d6e1f9da2e2cceec0ba13d29e6f889062071e05e21120c505d80f0e1f7374c0e262f97f87832cf08b7d734e68c790912c9d43e81ec81bbfd6757751bda7868c0418e9d3a7719dedc2016497a32e61b2c9718f224ae20ce9cd4ccc53ef343632e3b203c51e8ed1c41e67c35b6d4e9ea12ab5d66f0c1491b6b851136f29705e9c93d5eeba35a88a7fbbd994e6aa798ad0d2b60fd68cc4c6172d0c902a3e594426409fd3f17f0977da484fad41e130193';
     expect(encoded).to.equal(sigProof);
   });
 
@@ -468,7 +473,8 @@ describe('Lagrange Verifiers', function () {
     const encoded = ethers.utils.defaultAbiCoder.encode(verAggABI, [a, b, c]);
     // aggProof is the encoded aggregated proof for committee size 256 which changes upon every circuit run for the same block.
     // The following is the aggProof generated for the proof.json file used in this test.
-    const aggProof = "0x2d52a126704d88b3d2c988907276ee5c5eee904ea399a60f79a281c8610327d80e703096feb4974edd3c47f576c918262297aa8d8e759d4689ae6dea85ef5df02a3de101bba862a0e620045373463ed5bb5ff361fd91e1a44d78d63bbf6b6095093b9d0de0d3c8060a3e6cae6fa6b1e0be8d4eaffdd5459de21ba80d9feb9dd2008b2ed2da4caaa4e94e738b63a75e7c705f4fce7561ed514e1ba183e2373c160f4cb44832965336ea82da6c704e45abea37b3294bd7f3d8ae5eed37f912ed0a0faca2a9793dd60e09d344122c8a9da04b7574cda39be390ea34b84d6ce6f3be1188dd5591df11990f9dfec9e7b8f8b9d320bf70533fc9d726916b41bda9875d";
+    const aggProof =
+      '0x2d52a126704d88b3d2c988907276ee5c5eee904ea399a60f79a281c8610327d80e703096feb4974edd3c47f576c918262297aa8d8e759d4689ae6dea85ef5df02a3de101bba862a0e620045373463ed5bb5ff361fd91e1a44d78d63bbf6b6095093b9d0de0d3c8060a3e6cae6fa6b1e0be8d4eaffdd5459de21ba80d9feb9dd2008b2ed2da4caaa4e94e738b63a75e7c705f4fce7561ed514e1ba183e2373c160f4cb44832965336ea82da6c704e45abea37b3294bd7f3d8ae5eed37f912ed0a0faca2a9793dd60e09d344122c8a9da04b7574cda39be390ea34b84d6ce6f3be1188dd5591df11990f9dfec9e7b8f8b9d320bf70533fc9d726916b41bda9875d';
     expect(encoded).to.equal(aggProof);
   });
 });
