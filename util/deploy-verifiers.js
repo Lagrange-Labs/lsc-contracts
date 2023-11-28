@@ -23,7 +23,7 @@ async function main() {
     if (size == 0) {
       path = `src/library/slashing_single/verifier.sol:Verifier`;
     }
-    factory = await ethers.getContractFactory(path);
+    factory = await ethers.getContractFactory(path, wallet);
     verifier = await factory.deploy();
     tx = await verifier.deployed();
     console.log(
