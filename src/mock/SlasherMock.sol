@@ -5,7 +5,7 @@
 
 pragma solidity ^0.8.12;
 
-import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
 contract Slasher is ISlasher {
     function optIntoSlashing(address /*contractAddress*/) external pure {}

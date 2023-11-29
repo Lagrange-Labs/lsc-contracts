@@ -6,20 +6,19 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "eigenlayer-contracts/interfaces/IETHPOSDeposit.sol";
-import "eigenlayer-contracts/interfaces/IBeaconChainOracle.sol";
-import "eigenlayer-contracts/core/StrategyManager.sol";
-import "eigenlayer-contracts/core/Slasher.sol";
-import "eigenlayer-contracts/core/DelegationManager.sol";
-import "eigenlayer-contracts/strategies/StrategyBaseTVLLimits.sol";
-import "eigenlayer-contracts/pods/EigenPod.sol";
-import "eigenlayer-contracts/pods/EigenPodManager.sol";
-import "eigenlayer-contracts/pods/DelayedWithdrawalRouter.sol";
-import "eigenlayer-contracts/permissions/PauserRegistry.sol";
-import "eigenlayer-contracts/middleware/BLSPublicKeyCompendium.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IETHPOSDeposit.sol";
+import "eigenlayer-contracts/src/contracts/interfaces/IBeaconChainOracle.sol";
+import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
+import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
+import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
+import "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
+import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
+import "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
+import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 
-import "eigenlayer-contracts-test/mocks/EmptyContract.sol";
-import "eigenlayer-contracts-test/mocks/ETHDepositMock.sol";
+import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
+import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";

@@ -82,14 +82,16 @@ describe('Lagrange Verifiers', function () {
 
     console.log('Deploying proxy...');
 
-    const ProxyAdminFactory = await ethers.getContractFactory('ProxyAdmin');
+    const ProxyAdminFactory = await ethers.getContractFactory(
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin',
+    );
     const proxyAdmin = await ProxyAdminFactory.deploy();
     await proxyAdmin.deployed();
 
     console.log('Deploying transparent proxy...');
 
-    TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
-      'TransparentUpgradeableProxy',
+    const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     );
     tsProxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
@@ -98,9 +100,6 @@ describe('Lagrange Verifiers', function () {
     );
     await tsProxy.deployed();
 
-    TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
-      'TransparentUpgradeableProxy',
-    );
     evProxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
       proxyAdmin.address,

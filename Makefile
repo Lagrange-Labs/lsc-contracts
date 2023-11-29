@@ -87,9 +87,9 @@ clean: stop
 	sudo rm -rf docker/geth_db
 
 # Deploy
-deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange update-config add-quorum register-lagrange deploy-register init-committee
+deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum register-lagrange deploy-register init-committee
 
-deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange update-config add-quorum register-lagrange deploy-register init-committee
+deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-poseidon deploy-lagrange deploy-verifiers update-config add-quorum register-lagrange deploy-register init-committee
 
 all-mock: run-geth init-accounts deploy-mock deploy-poseidon deploy-lagrange update-config add-quorum deploy-register init-committee	
 

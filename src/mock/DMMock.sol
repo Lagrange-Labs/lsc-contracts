@@ -5,9 +5,7 @@
 
 pragma solidity ^0.8.12;
 
-import {IDelegationManager} from "eigenlayer-contracts/interfaces/IDelegationManager.sol";
-import {IDelegationTerms} from "eigenlayer-contracts/interfaces/IDelegationTerms.sol";
-import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategy.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
@@ -32,8 +30,8 @@ contract DelegationManager is IDelegationManager {
         require(owner() == msg.sender, "Ownable: caller is not the owner");
     }
 
-    function registerAsOperator(IDelegationTerms dt) external onlyOwner {
-        _operatorShares[address(dt)] = 100000000000000000;
+    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external onlyOwner {
+        _operatorShares[msg.sender] = 100000000000000000;
     }
 
     function delegateTo(address /*operator*/) external {}

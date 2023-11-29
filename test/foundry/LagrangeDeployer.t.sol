@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {EmptyContract} from "eigenlayer-contracts-test/mocks/EmptyContract.sol";
+import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import "src/protocol/LagrangeService.sol";
 import "src/protocol/LagrangeServiceManager.sol";

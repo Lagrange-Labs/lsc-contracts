@@ -4,11 +4,11 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
-import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
-import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-import {EmptyContract} from "eigenlayer-contracts-test/mocks/EmptyContract.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
+import {IServiceManager} from "src/interfaces/IServiceManager.sol";
 import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
@@ -36,8 +36,8 @@ contract Deploy is Script, Test {
     string public poseidonDataPath = string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
-    address slasherAddress;
-    address strategyManagerAddress;
+    address public slasherAddress;
+    address public strategyManagerAddress;
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;

@@ -4,9 +4,9 @@ pragma solidity ^0.8.12;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
-import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategy.sol";
-import {VoteWeigherBaseStorage} from "eigenlayer-contracts/middleware/VoteWeigherBaseStorage.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IVoteWeigher} from "eigenlayer-middleware/interfaces/IVoteWeigher.sol";
 
 import {LagrangeService} from "src/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
@@ -59,13 +59,13 @@ contract AddQuorum is Script, Test {
             StrategyConfig[] memory strategies;
             bytes memory strategiesRaw = stdJson.parseRaw(configData, ".strategies");
             strategies = abi.decode(strategiesRaw, (StrategyConfig[]));
-            VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory newStrategiesConsideredAndMultipliers =
-            new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](
+            IVoteWeigher.StrategyAndWeightingMultiplier[] memory newStrategiesConsideredAndMultipliers =
+            new IVoteWeigher.StrategyAndWeightingMultiplier[](
                     strategies.length
                 );
 
             for (uint256 i = 0; i < strategies.length; i++) {
-                newStrategiesConsideredAndMultipliers[i] = VoteWeigherBaseStorage.StrategyAndWeightingMultiplier({
+                newStrategiesConsideredAndMultipliers[i] = IVoteWeigher.StrategyAndWeightingMultiplier({
                     strategy: IStrategy(strategies[i].strategyAddress),
                     multiplier: strategies[i].multiplier
                 });

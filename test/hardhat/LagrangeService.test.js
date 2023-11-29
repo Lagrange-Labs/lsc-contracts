@@ -107,7 +107,7 @@ describe('LagrangeService', function () {
     lsaddr = lagrangeService.address;
 
     const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
-      'TransparentUpgradeableProxy',
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     );
 
     lsproxy = await TransparentUpgradeableProxyFactory.deploy(
