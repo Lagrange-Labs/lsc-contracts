@@ -42,7 +42,8 @@
     },
     "eigenPod": {
         "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
-        "REQUIRED_BALANCE_WEI": "31000000000000000000"
+        "REQUIRED_BALANCE_WEI": "31000000000000000000",
+        "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": "31000000000"
     },
     "eigenPodManager": {
         "max_pods": 0,
@@ -53,10 +54,10 @@
         "init_withdrawal_delay_blocks": 50400
     },
     "slasher": {
-        "init_paused_status": 0
+        "init_paused_status": "0"
     },
     "delegation": {
-        "init_paused_status": 0
+        "init_paused_status": "0"
     },
     "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
 }

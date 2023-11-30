@@ -8,11 +8,11 @@ import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.s
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IVoteWeigher} from "eigenlayer-middleware/interfaces/IVoteWeigher.sol";
 
-import {LagrangeService} from "src/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
-import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
-import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
-import {StakeManager} from "src/library/StakeManager.sol";
+import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
+import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
+import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
+import {VoteWeigherBaseMock} from "../contracts/mock/VoteWeigherBaseMock.sol";
+import {StakeManager} from "../contracts/library/StakeManager.sol";
 
 contract AddQuorum is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));

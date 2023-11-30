@@ -7,16 +7,16 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
-import "src/protocol/LagrangeService.sol";
-import "src/protocol/LagrangeServiceManager.sol";
-import "src/protocol/LagrangeCommittee.sol";
-import "src/library/StakeManager.sol";
-import "src/library/HermezHelpers.sol";
+import "../../contracts/protocol/LagrangeService.sol";
+import "../../contracts/protocol/LagrangeServiceManager.sol";
+import "../../contracts/protocol/LagrangeCommittee.sol";
+import "../../contracts/library/StakeManager.sol";
+import "../../contracts/library/HermezHelpers.sol";
 
-import {Verifier} from "src/library/slashing_single/verifier.sol";
-import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
+import {Verifier} from "../../contracts/library/slashing_single/verifier.sol";
+import {ISlashingSingleVerifier} from "../../contracts/interfaces/ISlashingSingleVerifier.sol";
 
-import {WETH9} from "src/mock/WETH9.sol";
+import {WETH9} from "../../contracts/mock/WETH9.sol";
 
 // This contract is used to deploy LagrangeService contract to the testnet
 contract LagrangeDeployer is Test {

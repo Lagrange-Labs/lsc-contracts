@@ -49,7 +49,7 @@ contract RegisterOperator is Script, Test {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        delegation.registerAsOperator(operatorDetails, "");
 
         vm.stopBroadcast();
     }

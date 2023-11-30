@@ -28,6 +28,10 @@ contract Strategy is IStrategy {
         return 0;
     }
 
+    function shares(address /*user*/) external pure returns (uint256) {
+        return 0;
+    }
+
     function sharesToUnderlyingView(uint256 amountShares) external pure returns (uint256) {
         return amountShares;
     }

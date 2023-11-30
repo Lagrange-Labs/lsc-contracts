@@ -7,9 +7,9 @@ import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.s
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {VoteWeigherBaseStorage} from "eigenlayer-middleware/VoteWeigherBaseStorage.sol";
 
-import {LagrangeService} from "src/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
-import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
+import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
+import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
+import {VoteWeigherBaseMock} from "../contracts/mock/VoteWeigherBaseMock.sol";
 
 contract RemoveQuorum is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
@@ -21,11 +21,9 @@ contract RemoveQuorum is Script, Test {
 
         VoteWeigherBaseMock weigher = VoteWeigherBaseMock(stdJson.readAddress(deployLGRData, ".addresses.voteWeigher"));
 
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = IStrategy(0x91E333A3d61862B1FE976351cf0F3b30aff1D202);
         uint256[] memory indexes = new uint256[](1);
         indexes[0] = 0;
-        weigher.removeStrategiesConsideredAndMultipliers(1, strategies, indexes);
+        weigher.removeStrategiesConsideredAndMultipliers(1, indexes);
 
         vm.stopBroadcast();
     }

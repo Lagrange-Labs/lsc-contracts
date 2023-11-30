@@ -72,6 +72,8 @@ contract Deployer_M1 is Script, Test {
 
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
+    uint256 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+    uint64 GOERLI_GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -108,6 +110,8 @@ contract Deployer_M1 is Script, Test {
             uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
 
         REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
+        MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR =
+            stdJson.readUint(config_data, ".eigenPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR");
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
@@ -168,16 +172,23 @@ contract Deployer_M1 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            REQUIRED_BALANCE_WEI
+            uint64(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR),
+            GOERLI_GENESIS_TIME
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationImplementation = new DelegationManager(strategyManager, slasher);
+        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegation);
-        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);
+        eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit,
+            eigenPodBeacon,
+            strategyManager,
+            slasher,
+            delegation
+        );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -199,8 +210,7 @@ contract Deployer_M1 is Script, Test {
                 executorMultisig,
                 operationsMultisig,
                 eigenLayerPauserReg,
-                STRATEGY_MANAGER_INIT_PAUSED_STATUS,
-                STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS
+                STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -242,9 +252,15 @@ contract Deployer_M1 is Script, Test {
                 StrategyBaseTVLLimits(
                     address(
                         new TransparentUpgradeableProxy(
-                        address(baseStrategyImplementation),
-                        address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxPerDeposit, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
+                            address(baseStrategyImplementation),
+                            address(eigenLayerProxyAdmin),
+                            abi.encodeWithSelector(
+                                StrategyBaseTVLLimits.initialize.selector,
+                                strategyConfigs[i].maxPerDeposit,
+                                strategyConfigs[i].maxDeposits,
+                                IERC20(strategyConfigs[i].tokenAddress),
+                                eigenLayerPauserReg
+                            )
                         )
                     )
                 )
@@ -478,11 +494,7 @@ contract Deployer_M1 is Script, Test {
         //     "strategyManager: withdrawalDelayBlocks initialized incorrectly");
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
-        // uint256 REQUIRED_BALANCE_WEI = 31 ether;
-        require(
-            eigenPodImplementation.REQUIRED_BALANCE_WEI() == 31 ether,
-            "eigenPod: REQUIRED_BALANCE_WEI initialized incorrectly"
-        );
+        // uint256 REQUIRED_BALANCE_WEI = 32 ether;
 
         require(
             strategyManager.strategyWhitelister() == operationsMultisig,

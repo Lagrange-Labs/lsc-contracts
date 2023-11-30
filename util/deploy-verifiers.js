@@ -19,9 +19,9 @@ async function main() {
 
   const sizes = [0, 16, 32, 64, 128, 256, 512];
   for (size of sizes) {
-    path = `src/library/slashing_aggregate/verifier_${size}.sol:Verifier_${size}`;
+    path = `contracts/library/slashing_aggregate/verifier_${size}.sol:Verifier_${size}`;
     if (size == 0) {
-      path = `src/library/slashing_single/verifier.sol:Verifier`;
+      path = `contracts/library/slashing_single/verifier.sol:Verifier`;
     }
     factory = await ethers.getContractFactory(path, wallet);
     verifier = await factory.deploy();

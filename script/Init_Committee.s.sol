@@ -7,9 +7,9 @@ import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.s
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {VoteWeigherBaseStorage} from "eigenlayer-middleware/VoteWeigherBaseStorage.sol";
 
-import {LagrangeService} from "src/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
-import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
+import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
+import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
+import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
 
 contract InitCommittee is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
