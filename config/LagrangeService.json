@@ -31,6 +31,6 @@
         "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
         "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
     },
-    "isNative": true,
+    "isNative": false,
     "isMock": false
 }
