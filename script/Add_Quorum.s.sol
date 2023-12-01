@@ -50,7 +50,7 @@ contract AddQuorum is Script, Test {
             }
             uint8[] memory quorumIndexes = new uint8[](1);
             quorumIndexes[0] = 0;
-            stakeManager.setQuorumIndexes(1, quorumIndexes);
+            stakeManager.setQuorumIndexes(0, quorumIndexes);
         } else {
             VoteWeigherBaseMock voteWeigher =
                 VoteWeigherBaseMock(stdJson.readAddress(deployLGRData, ".addresses.voteWeigher"));
@@ -70,7 +70,7 @@ contract AddQuorum is Script, Test {
                     multiplier: strategies[i].multiplier
                 });
             }
-            voteWeigher.addStrategiesConsideredAndMultipliers(1, newStrategiesConsideredAndMultipliers);
+            voteWeigher.createQuorum(newStrategiesConsideredAndMultipliers);
         }
 
         vm.stopBroadcast();
