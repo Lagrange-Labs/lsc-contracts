@@ -3,9 +3,9 @@ pragma solidity ^0.8.12;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategy.sol";
-import {StrategyManager} from "eigenlayer-contracts/core/StrategyManager.sol";
-import {DelegationManager} from "eigenlayer-contracts/core/DelegationManager.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
+import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 
 contract AddStrategy is Script, Test {
     string public deployDataPath = string(bytes("script/output/M1_deployment_data.json"));

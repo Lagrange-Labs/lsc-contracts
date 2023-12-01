@@ -5,14 +5,16 @@
 
 pragma solidity ^0.8.12;
 
-import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 contract Slasher is ISlasher {
     function optIntoSlashing(address /*contractAddress*/) external pure {}
 
     function freezeOperator(address /*toBeFrozen*/) external pure {}
 
-    function resetFrozenStatus(address[] calldata frozenAddresses) external pure {}
+    function resetFrozenStatus(address[] calldata /*frozenAddresses*/) external pure {}
 
     function recordFirstStakeUpdate(address /*operator*/, uint32 /*serveUntilBlock*/) external pure {}
 
@@ -21,6 +23,10 @@ contract Slasher is ISlasher {
     {}
 
     function recordLastStakeUpdateAndRevokeSlashingAbility(address /*operator*/, uint32 /*serveUntilBlock*/) external pure {}
+
+    function strategyManager() external pure returns (IStrategyManager) {}
+
+    function delegation() external pure returns (IDelegationManager) {}
 
     function isFrozen(address /*staker*/) external pure returns (bool) {
         return false;
@@ -51,7 +57,7 @@ contract Slasher is ISlasher {
         returns (bool)
     {}
 
-    function operatorToMiddlewareTimes(address /*operator*/, uint256 arrayIndex)
+    function operatorToMiddlewareTimes(address /*operator*/, uint256 /*arrayIndex*/)
         external
         pure
         returns (MiddlewareTimes memory)
@@ -61,7 +67,7 @@ contract Slasher is ISlasher {
         return 0;
     }
 
-    function getMiddlewareTimesIndexBlock(address /*operator*/, uint32 /*index*/) external pure returns (uint32) {
+    function getMiddlewareTimesIndexStalestUpdateBlock(address /*operator*/, uint32 /*index*/) external pure returns (uint32) {
         return 0;
     }
 

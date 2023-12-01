@@ -3,11 +3,11 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
-import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
-import {LagrangeService} from "src/protocol/LagrangeService.sol";
-import {StakeManager} from "src/library/StakeManager.sol";
+import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
+import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
+import {StakeManager} from "../contracts/library/StakeManager.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";

@@ -4,40 +4,40 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
-import {IStrategyManager} from "eigenlayer-contracts/interfaces/IStrategyManager.sol";
-import {IServiceManager} from "eigenlayer-contracts/interfaces/IServiceManager.sol";
-import {EmptyContract} from "eigenlayer-contracts-test/mocks/EmptyContract.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
+import {IServiceManager} from "eigenlayer-middleware/interfaces/IServiceManager.sol";
 
-import {LagrangeService} from "src/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
-import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
+import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
+import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
+import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
 
-import {IStakeManager} from "src/interfaces/IStakeManager.sol";
-import {IVoteWeigher} from "src/interfaces/IVoteWeigher.sol";
+import {IStakeManager} from "../contracts/interfaces/IStakeManager.sol";
+import {IVoteWeigher} from "../contracts/interfaces/IVoteWeigher.sol";
 
-import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
-import {StakeManager} from "src/library/StakeManager.sol";
-import {EvidenceVerifier} from "src/library/EvidenceVerifier.sol";
+import {VoteWeigherBaseMock} from "../contracts/mock/VoteWeigherBaseMock.sol";
+import {StakeManager} from "../contracts/library/StakeManager.sol";
+import {EvidenceVerifier} from "../contracts/library/EvidenceVerifier.sol";
 
-import {ISlashingSingleVerifier} from "src/interfaces/ISlashingSingleVerifier.sol";
-import {Verifier} from "src/library/slashing_single/verifier.sol";
+import {ISlashingSingleVerifier} from "../contracts/interfaces/ISlashingSingleVerifier.sol";
+import {Verifier} from "../contracts/library/slashing_single/verifier.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {IOutbox} from "src/mock/arbitrum/IOutbox.sol";
-import {Outbox} from "src/mock/arbitrum/Outbox.sol";
-import {L2OutputOracle} from "src/mock/optimism/L2OutputOracle.sol";
-import {IL2OutputOracle} from "src/mock/optimism/IL2OutputOracle.sol";
+import {IOutbox} from "../contracts/mock/arbitrum/IOutbox.sol";
+import {Outbox} from "../contracts/mock/arbitrum/Outbox.sol";
+import {L2OutputOracle} from "../contracts/mock/optimism/L2OutputOracle.sol";
+import {IL2OutputOracle} from "../contracts/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
     string public poseidonDataPath = string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
-    address slasherAddress;
-    address strategyManagerAddress;
+    address public slasherAddress;
+    address public strategyManagerAddress;
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;

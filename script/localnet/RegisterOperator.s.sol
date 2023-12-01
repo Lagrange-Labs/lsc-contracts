@@ -3,11 +3,11 @@ pragma solidity =0.8.12;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategy.sol";
-import {ISlasher} from "eigenlayer-contracts/interfaces/ISlasher.sol";
-import {IDelegationTerms} from "eigenlayer-contracts/interfaces/IDelegationTerms.sol";
-import {DelegationManager} from "eigenlayer-contracts/core/DelegationManager.sol";
-import {StrategyManager} from "eigenlayer-contracts/core/StrategyManager.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {DelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
+import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -44,7 +44,12 @@ contract RegisterOperator is Script, Test {
         strategyManager.depositIntoStrategy(WETHStrategy, WETH, 1e15);
 
         DelegationManager delegation = DelegationManager(stdJson.readAddress(deployData, ".addresses.delegation"));
-        delegation.registerAsOperator(IDelegationTerms(msg.sender));
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: msg.sender,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        delegation.registerAsOperator(operatorDetails, "");
 
         vm.stopBroadcast();
     }

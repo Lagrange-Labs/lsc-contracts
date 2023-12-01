@@ -2,9 +2,9 @@
 pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
-import "../../src/library/EvidenceVerifier.sol";
-import "../../src/interfaces/ISlashingSingleVerifier.sol";
-import "../../src/library/slashing_single/verifier.sol";
+import "../../contracts/library/EvidenceVerifier.sol";
+import "../../contracts/interfaces/ISlashingSingleVerifier.sol";
+import "../../contracts/library/slashing_single/verifier.sol";
 
 contract EvidenceVerifierTest is Test {
     EvidenceVerifier public verifier;

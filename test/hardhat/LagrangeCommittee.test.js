@@ -86,14 +86,16 @@ describe('LagrangeCommittee', function () {
 
     console.log('Deploying proxy...');
 
-    const ProxyAdminFactory = await ethers.getContractFactory('ProxyAdmin');
+    const ProxyAdminFactory = await ethers.getContractFactory(
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin',
+    );
     const proxyAdmin = await ProxyAdminFactory.deploy();
     await proxyAdmin.deployed();
 
     console.log('Deploying transparent proxy...');
 
     const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
-      'TransparentUpgradeableProxy',
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     );
     proxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,

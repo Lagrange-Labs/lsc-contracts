@@ -5,7 +5,7 @@
 
 pragma solidity ^0.8.12;
 
-import {IStrategy} from "eigenlayer-contracts/interfaces/IStrategy.sol";
+import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -25,6 +25,10 @@ contract Strategy is IStrategy {
     }
 
     function userUnderlying(address /*user*/) external pure returns (uint256) {
+        return 0;
+    }
+
+    function shares(address /*user*/) external pure returns (uint256) {
         return 0;
     }
 

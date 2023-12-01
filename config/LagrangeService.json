@@ -1,7 +1,7 @@
 {
     "strategies": [
         {
-            "strategy_address": "0xF2740f6A6333c7B405aD7EfC68c74adAd83cC30D",
+            "strategy_address": "0xf32358f5C8FFfCF1a7bDb58b270a082abb7Ba1A6",
             "strategy_name": "Wrapped Ether",
             "multiplier": 1000000000
         }
@@ -31,6 +31,6 @@
         "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
         "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
     },
-    "isNative": true,
-    "isMock": true
+    "isNative": false,
+    "isMock": false
 }

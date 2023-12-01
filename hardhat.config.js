@@ -30,7 +30,7 @@ module.exports = {
     }),
   },
   paths: {
-    sources: './src',
+    sources: './contracts',
     cache: './cache_hardhat',
     tests: './test/hardhat',
   },
