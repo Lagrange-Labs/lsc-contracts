@@ -71,11 +71,11 @@ contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager, IVote
         quorumIndexes[quorumNumber] = indexes;
     }
 
-    function weightOfOperator(address operator, uint256 quorumNumber) external view override returns (uint96) {
+    function weightOfOperator(uint8 quorumNumber, address operator) external view override returns (uint96) {
         require(quorumNumber < numberOfQuorums, "Invalid quorum number");
         uint256 weight = 0;
-        for (uint256 i = 0; i < quorumIndexes[uint8(quorumNumber)].length; i++) {
-            uint8 index = quorumIndexes[uint8(quorumNumber)][i];
+        for (uint256 i = 0; i < quorumIndexes[quorumNumber].length; i++) {
+            uint8 index = quorumIndexes[quorumNumber][i];
             weight += (operatorStakes[tokenMultipliers[index].token][operator] * tokenMultipliers[index].multiplier)
                 / _WEIGHTING_DIVISOR;
         }

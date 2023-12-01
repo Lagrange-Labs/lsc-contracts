@@ -109,7 +109,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     // Adds address stake data and flags it for committee addition
     function addOperator(address operator, bytes memory blsPubKey, uint32 serveUntilBlock) public onlyService {
-        uint96 stakeAmount = voteWeigher.weightOfOperator(operator, 1);
+        uint96 stakeAmount = voteWeigher.weightOfOperator(0, operator);
         OperatorStatus storage opStatus = operators[operator];
         require(opStatus.amount == 0, "Operator is already registered.");
         opStatus.amount = stakeAmount;
@@ -131,7 +131,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
             return;
         }
         for (uint256 i = 0; i < operators[operator].subscribedChains.length; i++) {
-            _updateAmount(operator, voteWeigher.weightOfOperator(operator, 1), operators[operator].subscribedChains[i]);
+            _updateAmount(operator, voteWeigher.weightOfOperator(0, operator), operators[operator].subscribedChains[i]);
         }
     }
 

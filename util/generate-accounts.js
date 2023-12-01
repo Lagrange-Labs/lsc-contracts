@@ -10,10 +10,10 @@ const DEFAULT_MNEMONIC =
   'exchange holiday girl alone head gift unfair resist void voice people tobacco';
 const DEFAULT_NUM_ACCOUNTS = 10;
 
-async function genBLSKey() {
+async function genBLSKey(i) {
   await bls.init(bls.BLS12_381);
   blsKey = new bls.SecretKey();
-  await blsKey.setByCSPRNG();
+  await blsKey.setInt(i + 1);
   return blsKey;
 }
 
@@ -29,7 +29,7 @@ async function main() {
     );
     accounts[accountWallet.address] = accountWallet.privateKey;
 
-    blsPair = await genBLSKey();
+    blsPair = await genBLSKey(i);
     pub = await blsPair.getPublicKey();
     blsPairs[accountWallet.address] = {
       pub: '0x' + (await pub.serializeToHexStr()),
