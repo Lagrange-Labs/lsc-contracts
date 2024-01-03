@@ -34,7 +34,7 @@ describe('Lagrange Verifiers', function () {
     correctNextCommitteeRoot:
       '0x2e3d2e5c97ee5320cccfd50434daeab6b0072558b693bb0e7f2eeca97741e514',
     blockNumber: 28809913,
-    epochBlockNumber: 0,
+    l1BlockNumber: 0,
     blockSignature: '0x00',
     commitSignature: '0x00',
     chainID: 421613,
@@ -57,7 +57,7 @@ describe('Lagrange Verifiers', function () {
     correctNextCommitteeRoot:
       '0x246cfc16271ed6cdc211e0502afa19c73d2fff009a744d16d0106b7f83a8d288',
     blockNumber: 26138881,
-    epochBlockNumber: 10050864,
+    l1BlockNumber: 10050864,
     blockSignature: '0x00',
     commitSignature: '0x00',
     chainID: 5001,

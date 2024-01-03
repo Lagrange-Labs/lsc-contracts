@@ -32,7 +32,7 @@ async function getSampleEvidence() {
     '0x246cfc16271ed6cdc211e0502afa19c73d2fff009a744d16d0106b7f83a8d288', //nextCommitteeRoot
     '0x246cfc16271ed6cdc211e0502afa19c73d2fff009a744d16d0106b7f83a8d288', //correctNextCommitteeRoot
     '0x' + BigInt('0x1051f54').toString(16), //blockNumber
-    '0x' + BigInt('0x0').toString(16), //epochBlockNumber
+    '0x' + BigInt('0x0').toString(16), //l1BlockNumber
     '0x075f5ec21e913a3859149db05db009fb07a90a5f892c1aa29e0ab203c19ee2d5e8b1cb77edccfe677b68a8360a7879e90689902657fc60647dbbe68a576ed87477526b04d7deb962dc8f6f642d43beb3cd67acf589023bae744cfee70cd132681154189dc6069f496be1275e4b278a4ebe3ffa16a0c95750ef764b69f41fdbf27cb7e93952ea0239079834c61c9cf7f908c808507211dff1d09edd9384b2e36e20922126f26afe40cfbdce89ae5ed34402b590e5148c8a9cd582ebe8e7c7c730', //blockSignature
     '0x997ae075bec7d4ad12b16c64a31b0298f16f3d6fee8ec1bd044805e77631c64c7d2990d7d590aac58217dc6064ce0e459649a91a6b82f3e95c4d0f31bb44b7c21b', //commitSignature
     '0x1389', //chainID
