@@ -19,10 +19,9 @@ async function deployPoseidon() {
     currentProvider,
   );
   poseidonAddrs = {};
-  hashNums = [1, 2, 3, 4, 5, 6];
+  hashNums = [2, 5, 6];
   for (it = 0; it < hashNums.length; it++) {
     i = hashNums[it];
-    console.log(i);
     poseidonCode = null;
     poseidonABI = null;
     try {

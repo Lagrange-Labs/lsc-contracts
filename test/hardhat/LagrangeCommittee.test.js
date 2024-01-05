@@ -10,7 +10,7 @@ const sponge = 0;
 
 const deployPoseidon = async (signerNode) => {
   const poseidonAddrs = {};
-  const params = [1, 2, 3, 4, 5, 6];
+  const params = [2, 5, 6];
   await Promise.all(
     params.map(async (i) => {
       let poseidonCode = null;
@@ -111,10 +111,7 @@ describe('LagrangeCommittee', function () {
       committee.address,
       committee.interface.encodeFunctionData('initialize', [
         admin.address,
-        poseidonAddresses[1],
         poseidonAddresses[2],
-        poseidonAddresses[3],
-        poseidonAddresses[4],
         poseidonAddresses[5],
         poseidonAddresses[6],
       ]),

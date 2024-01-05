@@ -69,21 +69,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // Initializer: Accepts poseidon contracts for 2, 3, and 4 elements
     function initialize(
         address initialOwner,
-        address _poseidon1Elements,
         address _poseidon2Elements,
-        address _poseidon3Elements,
-        address _poseidon4Elements,
         address _poseidon5Elements,
         address _poseidon6Elements
     ) external initializer {
-        _initializeHelpers(
-            _poseidon1Elements,
-            _poseidon2Elements,
-            _poseidon3Elements,
-            _poseidon4Elements,
-            _poseidon5Elements,
-            _poseidon6Elements
-        );
+        _initializeHelpers(_poseidon2Elements, _poseidon5Elements, _poseidon6Elements);
 
         // Initialize zero hashes
         for (uint8 i = 1; i <= 20; i++) {

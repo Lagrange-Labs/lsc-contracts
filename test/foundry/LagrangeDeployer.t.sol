@@ -121,10 +121,7 @@ contract LagrangeDeployer is Test {
             abi.encodeWithSelector(
                 LagrangeCommittee.initialize.selector,
                 sender,
-                new PoseidonUnit1(),
                 new PoseidonUnit2(),
-                new PoseidonUnit3(),
-                new PoseidonUnit4(),
                 new PoseidonUnit5(),
                 new PoseidonUnit6()
             )
