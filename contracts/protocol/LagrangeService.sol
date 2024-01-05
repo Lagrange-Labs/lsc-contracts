@@ -98,7 +98,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
                 evidence.currentCommitteeRoot,
                 evidence.correctNextCommitteeRoot,
                 evidence.nextCommitteeRoot,
-                evidence.epochBlockNumber,
+                evidence.l1BlockNumber,
                 evidence.chainID
             )
         ) {
@@ -113,7 +113,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
             evidence.currentCommitteeRoot,
             evidence.nextCommitteeRoot,
             evidence.blockNumber,
-            evidence.epochBlockNumber,
+            evidence.l1BlockNumber,
             evidence.blockSignature,
             evidence.commitSignature,
             evidence.chainID
@@ -123,7 +123,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     function _checkBlockSignature(EvidenceVerifier.Evidence memory _evidence) internal returns (bool) {
         // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata,) =
-            committee.getCommittee(_evidence.chainID, _evidence.epochBlockNumber);
+            committee.getCommittee(_evidence.chainID, _evidence.l1BlockNumber);
 
         require(
             evidenceVerifier.verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed"

@@ -20,7 +20,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
         bytes32 nextCommitteeRoot;
         bytes32 correctNextCommitteeRoot;
         uint256 blockNumber;
-        uint256 epochBlockNumber;
+        uint256 l1BlockNumber;
         bytes blockSignature; // 192-byte
         bytes commitSignature; // 65-byte
         uint32 chainID;
@@ -83,7 +83,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
                 evidence.currentCommitteeRoot,
                 evidence.nextCommitteeRoot,
                 evidence.blockNumber,
-                evidence.epochBlockNumber,
+                evidence.l1BlockNumber,
                 evidence.blockSignature,
                 evidence.chainID
             )
