@@ -144,13 +144,10 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         uint256 blockNumber,
         uint32 chainID
     ) internal returns (bool) {
-        (ILagrangeCommittee.CommitteeData memory currentCommittee, uint256 nextRoot) =
+        (ILagrangeCommittee.CommitteeData memory currentCommittee, bytes32 nextRoot) =
             committee.getCommittee(chainID, blockNumber);
-        require(
-            correctCurrentCommitteeRoot == bytes32(currentCommittee.root),
-            "Reference current committee roots do not match."
-        );
-        require(correctNextCommitteeRoot == bytes32(nextRoot), "Reference next committee roots do not match.");
+        require(correctCurrentCommitteeRoot == currentCommittee.root, "Reference current committee roots do not match.");
+        require(correctNextCommitteeRoot == nextRoot, "Reference next committee roots do not match.");
 
         return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
     }

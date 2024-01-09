@@ -20,7 +20,7 @@ interface ILagrangeCommittee {
     }
 
     struct CommitteeData {
-        uint256 root;
+        bytes32 root;
         uint256 height;
         uint256 totalVotingPower;
     }
@@ -29,7 +29,7 @@ interface ILagrangeCommittee {
 
     function getSlashed(address operator) external returns (bool);
 
-    function getCommittee(uint32 chainID, uint256 blockNumber) external returns (CommitteeData memory, uint256);
+    function getCommittee(uint32 chainID, uint256 blockNumber) external returns (CommitteeData memory, bytes32);
 
     function addOperator(address operator, bytes memory blsPubKey, uint32 serveUntilBlock) external;
 

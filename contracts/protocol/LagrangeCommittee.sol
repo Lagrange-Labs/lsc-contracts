@@ -4,12 +4,11 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-import "../library/HermezHelpers.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
 import "../interfaces/IVoteWeigher.sol";
 
-contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, ILagrangeCommittee {
+contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommittee {
     ILagrangeService public immutable service;
     IVoteWeigher public immutable voteWeigher;
 
@@ -28,7 +27,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     /* Live Committee Data */
     // ChainID => Tree Depth => Leaf Index => Node Value
     // Note: Leaf Index is 0-indexed
-    mapping(uint32 => mapping(uint8 => mapping(uint256 => uint256))) public committeeNodes;
+    mapping(uint32 => mapping(uint8 => mapping(uint256 => bytes32))) public committeeNodes;
     // ChainID => Address => CommitteeLeaf Index
     mapping(uint32 => mapping(address => uint32)) public committeeLeavesMap;
     // ChainID => Tree Height
@@ -36,7 +35,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     // ChainID => address[]
     mapping(uint32 => address[]) public committeeAddrs;
     // Tree Depth => Node Value
-    mapping(uint8 => uint256) zeroHashes;
+    mapping(uint8 => bytes32) zeroHashes;
 
     mapping(address => OperatorStatus) public operators;
 
@@ -66,17 +65,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     }
 
     // Initializer: Accepts poseidon contracts for 2, 3, and 4 elements
-    function initialize(
-        address initialOwner,
-        address _poseidon2Elements,
-        address _poseidon5Elements,
-        address _poseidon6Elements
-    ) external initializer {
-        _initializeHelpers(_poseidon2Elements, _poseidon5Elements, _poseidon6Elements);
-
+    function initialize(address initialOwner) external initializer {
         // Initialize zero hashes
         for (uint8 i = 1; i <= 20; i++) {
-            zeroHashes[i] = _hash2Elements([zeroHashes[i - 1], zeroHashes[i - 1]]);
+            zeroHashes[i] = keccak256(abi.encodePacked(zeroHashes[i - 1], zeroHashes[i - 1]));
         }
 
         _transferOwnership(initialOwner);
@@ -196,7 +188,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
     function getCommittee(uint32 chainID, uint256 blockNumber)
         public
         view
-        returns (CommitteeData memory currentCommittee, uint256 nextRoot)
+        returns (CommitteeData memory currentCommittee, bytes32 nextRoot)
     {
         uint256 epochNumber = getEpochNumber(chainID, blockNumber);
         uint256 nextEpoch = getEpochNumber(chainID, blockNumber + 1);
@@ -215,8 +207,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
 
     // Updates the parent node from the given height and index
     function _updateParent(uint32 chainID, uint8 height, uint256 leafIndex) internal {
-        uint256 left;
-        uint256 right;
+        bytes32 left;
+        bytes32 right;
         if (leafIndex & 1 == 1) {
             left = committeeNodes[chainID][height][leafIndex - 1];
             if (committeeNodes[chainID][height][leafIndex] == 0) {
@@ -232,7 +224,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
                 right = committeeNodes[chainID][height][leafIndex + 1];
             }
         }
-        committeeNodes[chainID][height + 1][leafIndex / 2] = _hash2Elements([left, right]);
+        committeeNodes[chainID][height + 1][leafIndex / 2] = keccak256(abi.encodePacked(left, right));
     }
 
     // Initializes a new committee, and optionally associates addresses with it.
@@ -348,43 +340,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, HermezHelpers, 
         return (blockNumber - startBlockNumber) / epochPeriod + 1;
     }
 
-    function getLeafHash(address opAddr) public view returns (uint256) {
-        uint96[11] memory slices;
+    function getLeafHash(address opAddr) public view returns (bytes32) {
         OperatorStatus storage opStatus = operators[opAddr];
-        for (uint256 i = 0; i < 8; i++) {
-            bytes memory addr = new bytes(12);
-            for (uint256 j = 0; j < 12; j++) {
-                addr[j] = opStatus.blsPubKey[(i * 12) + j];
-            }
-            bytes12 addrChunk = bytes12(addr);
-            slices[i] = uint96(addrChunk);
-        }
-        bytes memory addrBytes = abi.encodePacked(opAddr, uint128(opStatus.amount));
-        for (uint256 i = 0; i < 3; i++) {
-            bytes memory addr = new bytes(12);
-            for (uint256 j = 0; j < 12; j++) {
-                addr[j] = addrBytes[(i * 12) + j];
-            }
-            bytes12 addrChunk = bytes12(addr);
-            slices[i + 8] = uint96(addrChunk);
-        }
-
-        return _hash2Elements(
-            [
-                _hash6Elements(
-                    [
-                        uint256(slices[0]),
-                        uint256(slices[1]),
-                        uint256(slices[2]),
-                        uint256(slices[3]),
-                        uint256(slices[4]),
-                        uint256(slices[5])
-                    ]
-                ),
-                _hash5Elements(
-                    [uint256(slices[6]), uint256(slices[7]), uint256(slices[8]), uint256(slices[9]), uint256(slices[10])]
-                )
-            ]
-        );
+        return keccak256(abi.encodePacked(opStatus.blsPubKey, opAddr, uint128(opStatus.amount)));
     }
 }
