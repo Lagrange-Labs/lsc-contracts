@@ -12,6 +12,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     ILagrangeService public immutable service;
     IVoteWeigher public immutable voteWeigher;
 
+    // Leaf Node Prefix
+    bytes1 public constant LEAF_NODE_PREFIX = 0x00;
+    // Inner Node Prefix
+    bytes1 public constant INNER_NODE_PREFIX = 0x01;
+
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
     // Frozen Committee - Next "Current" Committee
@@ -68,7 +73,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     function initialize(address initialOwner) external initializer {
         // Initialize zero hashes
         for (uint8 i = 1; i <= 20; i++) {
-            zeroHashes[i] = keccak256(abi.encodePacked(zeroHashes[i - 1], zeroHashes[i - 1]));
+            zeroHashes[i] = _innerHash(zeroHashes[i - 1], zeroHashes[i - 1]);
         }
 
         _transferOwnership(initialOwner);
@@ -205,6 +210,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         }
     }
 
+    // Calculate the inner node hash from left and right children
+    function _innerHash(bytes32 left, bytes32 right) internal pure returns (bytes32) {
+        return keccak256(abi.encode(INNER_NODE_PREFIX, left, right));
+    }
+
     // Updates the parent node from the given height and index
     function _updateParent(uint32 chainID, uint8 height, uint256 leafIndex) internal {
         bytes32 left;
@@ -224,7 +234,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
                 right = committeeNodes[chainID][height][leafIndex + 1];
             }
         }
-        committeeNodes[chainID][height + 1][leafIndex / 2] = keccak256(abi.encodePacked(left, right));
+        committeeNodes[chainID][height + 1][leafIndex / 2] = _innerHash(left, right);
     }
 
     // Initializes a new committee, and optionally associates addresses with it.
@@ -278,7 +288,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         totalVotingPower[chainID] += operators[operator].amount;
         uint32 leafIndex = uint32(committeeAddrs[chainID].length);
         committeeAddrs[chainID].push(operator);
-        committeeNodes[chainID][0][leafIndex] = getLeafHash(operator);
+        committeeNodes[chainID][0][leafIndex] = _leafHash(operator);
         committeeLeavesMap[chainID][operator] = leafIndex;
         if (leafIndex == 0 || leafIndex == 1 << (committeeHeights[chainID] - 1)) {
             committeeHeights[chainID] = committeeHeights[chainID] + 1;
@@ -289,7 +299,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     function _updateAmount(address operator, uint256 updatedAmount, uint32 chainID) internal {
         uint256 leafIndex = committeeLeavesMap[chainID][operator];
-        committeeNodes[chainID][0][leafIndex] = getLeafHash(operator);
+        committeeNodes[chainID][0][leafIndex] = _leafHash(operator);
         totalVotingPower[chainID] -= operators[operator].amount;
         totalVotingPower[chainID] += updatedAmount;
         operators[operator].amount = updatedAmount;
@@ -340,8 +350,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return (blockNumber - startBlockNumber) / epochPeriod + 1;
     }
 
-    function getLeafHash(address opAddr) public view returns (bytes32) {
+    // Returns the leaf hash for a given operator
+    function _leafHash(address opAddr) internal view returns (bytes32) {
         OperatorStatus storage opStatus = operators[opAddr];
-        return keccak256(abi.encodePacked(opStatus.blsPubKey, opAddr, uint128(opStatus.amount)));
+        return keccak256(abi.encode(LEAF_NODE_PREFIX, opStatus.blsPubKey, opAddr, uint128(opStatus.amount)));
     }
 }
