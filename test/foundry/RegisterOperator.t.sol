@@ -7,7 +7,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
     function testDepositAndWithdraw() public {
         address operator = vm.addr(333);
         vm.deal(operator, 1e19);
-        bytes memory blsPubKey = new bytes(96);
+        uint256[2] memory blsPubKey;
         uint256 amount = 1e15;
 
         vm.startPrank(operator);
@@ -52,7 +52,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
     function testFreezePeriod() public {
         address operator = vm.addr(555);
-        bytes memory blsPubKey = new bytes(96);
+        uint256[2] memory blsPubKey;
 
         vm.startPrank(operator);
 

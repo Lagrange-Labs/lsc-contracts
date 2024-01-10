@@ -187,15 +187,15 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
         return res;
     }
 
-    function _getBLSPubKeySlices(bytes calldata blsPubKey) internal pure returns (uint256[7][2] memory) {
+    function _getBLSPubKeySlices(uint256[2] memory blsPubKey) internal pure returns (uint256[7][2] memory) {
         //convert bls pubkey bytes (len 96) to bytes[2] (len 48)
-        bytes[2] memory gxy = _bytes96tobytes48(blsPubKey);
+        bytes[2] memory gxy = _bytes96tobytes48(abi.encodePacked(blsPubKey[0], blsPubKey[1]));
         //conver to slices
         uint256[7][2] memory slices = [_bytes48toslices(gxy[0]), _bytes48toslices(gxy[1])];
         return slices;
     }
 
-    function verifySingleSignature(EvidenceVerifier.Evidence memory _evidence, bytes calldata blsPubKey)
+    function verifySingleSignature(EvidenceVerifier.Evidence memory _evidence, uint256[2] memory blsPubKey)
         external
         view
         returns (bool)

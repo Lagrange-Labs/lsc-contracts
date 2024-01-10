@@ -13,9 +13,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     IVoteWeigher public immutable voteWeigher;
 
     // Leaf Node Prefix
-    bytes1 public constant LEAF_NODE_PREFIX = 0x00;
+    bytes1 public constant LEAF_NODE_PREFIX = 0x01;
     // Inner Node Prefix
-    bytes1 public constant INNER_NODE_PREFIX = 0x01;
+    bytes1 public constant INNER_NODE_PREFIX = 0x02;
 
     // Active Committee
     uint256 public constant COMMITTEE_CURRENT = 0;
@@ -94,7 +94,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Adds address stake data and flags it for committee addition
-    function addOperator(address operator, bytes memory blsPubKey, uint32 serveUntilBlock) public onlyService {
+    function addOperator(address operator, uint256[2] memory blsPubKey, uint32 serveUntilBlock) public onlyService {
         uint96 stakeAmount = voteWeigher.weightOfOperator(0, operator);
         OperatorStatus storage opStatus = operators[operator];
         require(opStatus.amount == 0, "Operator is already registered.");
@@ -185,7 +185,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return operators[operator].slashed;
     }
 
-    function getBlsPubKey(address operator) public view returns (bytes memory) {
+    function getBlsPubKey(address operator) public view returns (uint256[2] memory) {
         return operators[operator].blsPubKey;
     }
 
@@ -353,6 +353,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // Returns the leaf hash for a given operator
     function _leafHash(address opAddr) internal view returns (bytes32) {
         OperatorStatus storage opStatus = operators[opAddr];
-        return keccak256(abi.encode(LEAF_NODE_PREFIX, opStatus.blsPubKey, opAddr, uint128(opStatus.amount)));
+        return keccak256(
+            abi.encode(LEAF_NODE_PREFIX, opStatus.blsPubKey[0], opStatus.blsPubKey[1], opAddr, uint128(opStatus.amount))
+        );
     }
 }

@@ -48,7 +48,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add the operator to the service.
-    function register(bytes memory _blsPubKey, uint32 serveUntilBlock) external {
+    function register(uint256[2] memory _blsPubKey, uint32 serveUntilBlock) external {
         require(_blsPubKey.length == 96, "LagrangeService: Inappropriately preformatted BLS public key.");
 
         committee.addOperator(msg.sender, _blsPubKey, serveUntilBlock);
@@ -129,7 +129,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
             evidenceVerifier.verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed"
         );
 
-        bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
+        uint256[2] memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
         bool sigVerify = evidenceVerifier.verifySingleSignature(_evidence, blsPubKey);
 
         return (sigVerify);

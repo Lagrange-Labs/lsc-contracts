@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 struct OperatorStatus {
     uint256 amount;
-    bytes blsPubKey;
+    uint256[2] blsPubKey;
     bool slashed;
     uint32 serveUntilBlock;
     uint32[] subscribedChains;
@@ -31,7 +31,7 @@ interface ILagrangeCommittee {
 
     function getCommittee(uint32 chainID, uint256 blockNumber) external returns (CommitteeData memory, bytes32);
 
-    function addOperator(address operator, bytes memory blsPubKey, uint32 serveUntilBlock) external;
+    function addOperator(address operator, uint256[2] memory blsPubKey, uint32 serveUntilBlock) external;
 
     function freezeOperator(address operator) external;
 
@@ -47,5 +47,5 @@ interface ILagrangeCommittee {
 
     function update(uint32 chainID, uint256 epochNumber) external;
 
-    function getBlsPubKey(address operator) external returns (bytes memory);
+    function getBlsPubKey(address operator) external returns (uint256[2] memory);
 }
