@@ -90,27 +90,8 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
         );
     }
 
-    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID)
-        internal
-        pure
-        returns (uint256, uint256)
-    {
-        uint256 _chainHeader1;
-        uint256 _chainHeader2;
-
-        bytes memory chainHeader = abi.encodePacked(blockHash, uint256(blockNumber), uint32(chainID));
-
-        bytes32 chHash = keccak256(chainHeader);
-        bytes16 ch1 = bytes16(chHash);
-        bytes16 ch2 = bytes16(chHash << 128);
-
-        bytes32 _ch1 = bytes32(ch1) >> 128;
-        bytes32 _ch2 = bytes32(ch2) >> 128;
-
-        _chainHeader1 = uint256(_ch1);
-        _chainHeader2 = uint256(_ch2);
-
-        return (_chainHeader1, _chainHeader2);
+    function _getChainHeader(bytes32 blockHash, uint256 blockNumber, uint32 chainID) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(blockHash, uint256(blockNumber), uint32(chainID)));
     }
 
     function _computeRouteIndex(uint256 committeeSize) internal pure returns (uint256) {
@@ -228,7 +209,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
         input[43] = uint256(_evidence.currentCommitteeRoot);
         input[44] = uint256(_evidence.nextCommitteeRoot);
 
-        (input[45], input[46]) = _getChainHeader(_evidence.blockHash, _evidence.blockNumber, _evidence.chainID);
+        input[45] = uint256(_getChainHeader(_evidence.blockHash, _evidence.blockNumber, _evidence.chainID));
 
         bool result = singleVerifier.verifyProof(params.a, params.b, params.c, input);
 
@@ -245,15 +226,12 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
 
         ProofParams memory params = abi.decode(_evidence.aggProof, (ProofParams));
 
-        (uint256 _chainHeader1, uint256 _chainHeader2) =
-            _getChainHeader(_evidence.blockHash, _evidence.blockNumber, _evidence.chainID);
-
         uint256[5] memory input = [
             1,
             uint256(_evidence.currentCommitteeRoot),
             uint256(_evidence.nextCommitteeRoot),
-            _chainHeader1,
-            _chainHeader2
+            uint256(_getChainHeader(_evidence.blockHash, _evidence.blockNumber, _evidence.chainID)),
+            0
         ];
 
         bool result = verifier.verifyProof(params.a, params.b, params.c, input);

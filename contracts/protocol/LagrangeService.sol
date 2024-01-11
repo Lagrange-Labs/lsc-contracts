@@ -49,12 +49,8 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
 
     /// Add the operator to the service.
     function register(uint256[2] memory _blsPubKey, uint32 serveUntilBlock) external {
-        require(_blsPubKey.length == 96, "LagrangeService: Inappropriately preformatted BLS public key.");
-
         committee.addOperator(msg.sender, _blsPubKey, serveUntilBlock);
-
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
-
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
 

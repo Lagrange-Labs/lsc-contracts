@@ -1,66 +1,18 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const { poseidon } = require('circomlib');
-const bls = require('@noble/bls12-381');
+const { bn254 } = require('@noble/curves/bn254');
 const shared = require('./shared');
-
-const poseidonUnit = require('circomlibjs').poseidonContract;
-
-const sponge = 0;
-
-const deployPoseidon = async (signerNode) => {
-  const poseidonAddrs = {};
-  const params = [2, 5, 6];
-  await Promise.all(
-    params.map(async (i) => {
-      let poseidonCode = null;
-      let poseidonABI = null;
-      try {
-        if (sponge) {
-          poseidonCode = await poseidonUnit.createCode('mimcsponge', 220);
-          poseidonABI = await poseidonUnit.abi;
-        } else {
-          poseidonCode = await poseidonUnit.createCode(i);
-          poseidonABI = await poseidonUnit.generateABI(i);
-        }
-      } catch (err) {
-        console.log(err);
-      }
-
-      const cf = new ethers.ContractFactory(
-        poseidonABI,
-        poseidonCode,
-        signerNode,
-      );
-      const cd = await cf.deploy();
-      if (i == 2) {
-        const res = await cd['poseidon(uint256[2])']([1, 2]);
-        const resString = res.toString();
-        const target = String(
-          '7853200120776062878684798364095072458815029376092732009249414926327459813530',
-        );
-        console.log('Result:', resString);
-        console.log('Expected:', target);
-        console.log('Hash check:', resString == target);
-      }
-      await cd.deployed();
-      poseidonAddrs[i] = cd.address;
-    }),
-  );
-
-  return poseidonAddrs;
-};
 
 const serveUntilBlock = 4294967295;
 const operators = require('../../config/operators.json');
+const { keccak256 } = require('js-sha3');
 const stake = 100000000;
 
 describe('LagrangeCommittee', function () {
-  let admin, proxy, poseidonAddresses;
+  let admin, proxy;
 
   before(async function () {
     [admin] = await ethers.getSigners();
-    poseidonAddresses = await deployPoseidon(admin);
   });
 
   beforeEach(async function () {
@@ -109,18 +61,12 @@ describe('LagrangeCommittee', function () {
     await proxyAdmin.upgradeAndCall(
       proxy.address,
       committee.address,
-      committee.interface.encodeFunctionData('initialize', [
-        admin.address,
-        poseidonAddresses[2],
-        poseidonAddresses[5],
-        poseidonAddresses[6],
-      ]),
+      committee.interface.encodeFunctionData('initialize', [admin.address]),
     );
 
     shared.LagrangeCommittee = committee;
     shared.proxy = proxy;
     shared.proxyAdmin = proxyAdmin;
-    shared.poseidonAddresses = poseidonAddresses;
     shared.voteWeigher = voteWeigher;
     shared.emptyContract = emptyContract;
   });
@@ -141,10 +87,10 @@ describe('LagrangeCommittee', function () {
         '0x000000000000000000000000000000000000000000000000000000000000000' + i;
       for (j = 1; j <= i; j++) {
         addr = '0x000000000000000000000000000000000000000' + j;
+        bls_pub_key = '0x' + '0'.repeat(63) + j;
         await committee.addOperator(
           addr,
-          '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' +
-            j,
+          [bls_pub_key, bls_pub_key],
           4294967295,
         );
         tx = await committee.subscribeChain(addr, chainid);
@@ -162,8 +108,7 @@ describe('LagrangeCommittee', function () {
 
     const leaves = await Promise.all(
       addrs.map(async (op, index) => {
-        const leaf = await committee.committeeNodes(4, 0, index);
-        return BigInt(leaf.toHexString());
+        return await committee.committeeNodes(4, 0, index);
       }),
     );
     croot = await committee.committees(chainid, 1);
@@ -186,10 +131,13 @@ describe('LagrangeCommittee', function () {
       proxy.address,
       admin,
     );
-    const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[0].slice(2));
-    const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
-    const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
-    const newPubKey = '0x' + Gx + Gy;
+    const pubKey = bn254.ProjectivePoint.fromHex(
+      operators[0].bls_pub_keys[0].slice(2),
+    );
+    const Gx = pubKey.toAffine()[0].value.toString(16);
+    const Gy = pubKey.toAffine()[1].value.toString(16);
+    console.log(Gx, Gy);
+    const newPubKey = [Gx, Gy];
     const address = operators[0].operators[0];
 
     await committee.addOperator(address, newPubKey, serveUntilBlock);
@@ -209,9 +157,9 @@ describe('LagrangeCommittee', function () {
     chunks.push(BigInt('0x' + address.slice(26, 42) + stakeStr.slice(0, 8)));
     chunks.push(BigInt('0x' + stakeStr.slice(8, 32)));
 
-    const left = poseidon(chunks.slice(0, 6));
-    const right = poseidon(chunks.slice(6, 11));
-    const leaf = poseidon([left, right]);
+    const left = keccak256(chunks.slice(0, 6));
+    const right = keccak256(chunks.slice(6, 11));
+    const leaf = keccak256([left, right]);
     console.log(
       chunks.map((e) => {
         return e.toString(16);
@@ -246,7 +194,7 @@ describe('LagrangeCommittee', function () {
     );
     for (let i = 0; i < operators[0].operators.length; i++) {
       const op = operators[0].operators[i];
-      const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[i].slice(2));
+      const pubKey = bn254.ProjectivePoint.fromHex(operators[0].bls_pub_keys[i].slice(2));
       const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
       const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
       const newPubKey = '0x' + Gx + Gy;
@@ -258,12 +206,11 @@ describe('LagrangeCommittee', function () {
 
     const leaves = await Promise.all(
       operators[0].operators.map(async (op, index) => {
-        const leaf = await committee.committeeNodes(
+        return (leaf = await committee.committeeNodes(
           operators[0].chain_id,
           0,
           index,
-        );
-        return BigInt(leaf.toHexString());
+        ));
       }),
     );
     const committeeRoot = await committee.getCommittee(
@@ -284,7 +231,7 @@ describe('LagrangeCommittee', function () {
       for (let i = 0; i < count; i += 2) {
         const left = leaves[i];
         const right = leaves[i + 1];
-        const hash = poseidon([left, right]);
+        const hash = keccak256([left, right]);
         leaves[i / 2] = hash;
       }
       count /= 2;
@@ -302,7 +249,7 @@ describe('LagrangeCommittee', function () {
     );
     for (let i = 0; i < operators[0].operators.length; i++) {
       const op = operators[0].operators[i];
-      const pubKey = bls.PointG1.fromHex(operators[0].bls_pub_keys[i].slice(2));
+      const pubKey = bn254.ProjectivePoint.fromHex(operators[0].bls_pub_keys[i].slice(2));
       const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
       const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
       const newPubKey = '0x' + Gx + Gy;
@@ -364,14 +311,14 @@ describe('LagrangeCommittee', function () {
       for (let i = 0; i < count; i += 2) {
         const left = leaves[i];
         const right = leaves[i + 1];
-        const hash = poseidon([left, right]);
+        const hash = keccak256([left, right]);
         leaves[i / 2] = hash;
       }
       count /= 2;
     }
     console.log(leaves[0].toString(16));
     expect('0x' + leaves[0].toString(16).padStart(64, '0')).to.equal(
-      committeeRoot.currentCommittee.root.toHexString(),
+      committeeRoot.currentCommittee.root,
     );
   });
 });

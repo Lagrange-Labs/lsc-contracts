@@ -69,7 +69,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _disableInitializers();
     }
 
-    // Initializer: Accepts poseidon contracts for 2, 3, and 4 elements
+    // Initializer: sets owner
     function initialize(address initialOwner) external initializer {
         // Initialize zero hashes
         for (uint8 i = 1; i <= 20; i++) {
@@ -212,7 +212,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     // Calculate the inner node hash from left and right children
     function _innerHash(bytes32 left, bytes32 right) internal pure returns (bytes32) {
-        return keccak256(abi.encode(INNER_NODE_PREFIX, left, right));
+        return keccak256(abi.encodePacked(INNER_NODE_PREFIX, left, right));
     }
 
     // Updates the parent node from the given height and index
@@ -354,7 +354,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     function _leafHash(address opAddr) internal view returns (bytes32) {
         OperatorStatus storage opStatus = operators[opAddr];
         return keccak256(
-            abi.encode(LEAF_NODE_PREFIX, opStatus.blsPubKey[0], opStatus.blsPubKey[1], opAddr, uint128(opStatus.amount))
+            abi.encodePacked(
+                LEAF_NODE_PREFIX, opStatus.blsPubKey[0], opStatus.blsPubKey[1], opAddr, uint128(opStatus.amount)
+            )
         );
     }
 }

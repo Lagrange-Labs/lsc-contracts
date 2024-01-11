@@ -33,7 +33,6 @@ import {IL2OutputOracle} from "../contracts/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
     string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
-    string public poseidonDataPath = string(bytes("script/output/deployed_poseidon.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
     address public slasherAddress;
@@ -138,7 +137,6 @@ contract Deploy is Script, Test {
             );
         }
         // deploy implementation contracts
-        string memory poseidonData = vm.readFile(poseidonDataPath);
         if (isNative) {
             lagrangeCommitteeImp = new LagrangeCommittee(
                 lagrangeService,
@@ -178,16 +176,7 @@ contract Deploy is Script, Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
             address(lagrangeCommitteeImp),
-            abi.encodeWithSelector(
-                LagrangeCommittee.initialize.selector,
-                msg.sender,
-                stdJson.readAddress(poseidonData, ".1"),
-                stdJson.readAddress(poseidonData, ".2"),
-                stdJson.readAddress(poseidonData, ".3"),
-                stdJson.readAddress(poseidonData, ".4"),
-                stdJson.readAddress(poseidonData, ".5"),
-                stdJson.readAddress(poseidonData, ".6")
-            )
+            abi.encodeWithSelector(LagrangeCommittee.initialize.selector, msg.sender)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeServiceManager))),
