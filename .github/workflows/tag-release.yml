@@ -39,6 +39,8 @@ jobs:
           git tag $NEW_TAG
           git push origin $NEW_TAG
           echo "::set-output name=tag::$NEW_TAG"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get Title For Release
         id: get_pr_details
@@ -59,3 +61,5 @@ jobs:
           release_name: ${{ steps.get_pr_details.outputs.title }}
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
