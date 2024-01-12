@@ -3,13 +3,13 @@ pragma solidity ^0.8.12;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {IDelegationTerms} from "eigenlayer-contracts/interfaces/IDelegationTerms.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {DelegationManager} from "src/mock/DMMock.sol";
-import {StrategyManager} from "src/mock/SMMock.sol";
-import {Slasher} from "src/mock/SlasherMock.sol";
-import {Strategy} from "src/mock/STMock.sol";
-import {BatchStorageMock} from "src/mock/mantle/BatchStorageMock.sol";
+import {DelegationManager} from "../contracts/mock/DMMock.sol";
+import {StrategyManager} from "../contracts/mock/SMMock.sol";
+import {Slasher} from "../contracts/mock/SlasherMock.sol";
+import {Strategy} from "../contracts/mock/STMock.sol";
+import {BatchStorageMock} from "../contracts/mock/mantle/BatchStorageMock.sol";
 
 contract DeployMock is Script {
     string public operatorsPath = string(bytes("config/operators.json"));
@@ -47,14 +47,24 @@ contract DeployMock is Script {
             address[] memory arbOperators = abi.decode(arbitrumRaw, (address[]));
 
             for (uint256 i = 0; i < arbOperators.length; i++) {
-                dm.registerAsOperator(IDelegationTerms(arbOperators[i]));
+                IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+                    earningsReceiver: arbOperators[i],
+                    delegationApprover: address(0),
+                    stakerOptOutWindowBlocks: 0
+                });
+                dm.registerAsOperator(operatorDetails, "");
             }
 
             bytes memory optimismRaw = stdJson.parseRaw(operatorsData, ".[1].operators");
             address[] memory optOperators = abi.decode(optimismRaw, (address[]));
 
             for (uint256 i = 0; i < optOperators.length; i++) {
-                dm.registerAsOperator(IDelegationTerms(optOperators[i]));
+                IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+                    earningsReceiver: optOperators[i],
+                    delegationApprover: address(0),
+                    stakerOptOutWindowBlocks: 0
+                });
+                dm.registerAsOperator(operatorDetails, "");
             }
 
             vm.stopBroadcast();
