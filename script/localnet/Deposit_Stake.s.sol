@@ -3,13 +3,13 @@ pragma solidity ^0.8.12;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {WETH9} from "src/mock/WETH9.sol";
+import {WETH9} from "../../contracts/mock/WETH9.sol";
 
-import {LagrangeService} from "src/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "src/protocol/LagrangeServiceManager.sol";
-import {LagrangeCommittee} from "src/protocol/LagrangeCommittee.sol";
-import {VoteWeigherBaseMock} from "src/mock/VoteWeigherBaseMock.sol";
-import {StakeManager} from "src/library/StakeManager.sol";
+import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
+import {LagrangeServiceManager} from "../../contracts/protocol/LagrangeServiceManager.sol";
+import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
+import {VoteWeigherBaseMock} from "../../contracts/mock/VoteWeigherBaseMock.sol";
+import {StakeManager} from "../../contracts/library/StakeManager.sol";
 
 contract DepositStake is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));

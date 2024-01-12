@@ -1,5 +1,7 @@
 const deployedMock = require('../script/output/deployed_mock.json');
 const deployedWETH = require('../script/output/deployed_weth9.json');
+const deployedEigens = require('../script/output/M1_deployment_data.json');
+
 const fs = require('fs');
 
 const filePath = './config/LagrangeService.json';
@@ -22,9 +24,15 @@ fs.readFile(filePath, 'utf8', (err, data) => {
       token.token_address = deployedWETH.WETH9;
       jsonObject.tokens = [token];
     } else {
-      const strategy = jsonObject.strategies[0];
-      strategy.strategy_address = deployedMock.addresses.strategy;
-      jsonObject.strategies = [strategy];
+      if (jsonObject.isMock) {
+        const strategy = jsonObject.strategies[0];
+        strategy.strategy_address = deployedMock.addresses.strategy;
+      } else {
+        for (const strategy of jsonObject.strategies) {
+          strategy.strategy_address =
+            deployedEigens.addresses.strategies[strategy.strategy_name];
+        }
+      }
     }
 
     // Convert the JavaScript object back to a JSON string

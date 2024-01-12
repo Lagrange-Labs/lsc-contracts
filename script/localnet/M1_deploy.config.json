@@ -1,62 +1,63 @@
 {
-  "multisig_addresses": {
-    "communityMultisig": "",
-    "operationsMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
-    "pauserMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
-    "executorMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
-    "timelock": ""
-  },
-  "strategies": [
-    {
-      "token_address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
-      "token_name": "Coinbase Wrapped Staked ETH",
-      "token_symbol": "cbETH",
-      "max_per_deposit": 0,
-      "max_deposits": 0
+    "multisig_addresses": {
+        "communityMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
+        "operationsMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
+        "pauserMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
+        "executorMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
+        "timelock": ""
     },
-    {
-      "token_address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
-      "token_name": "Liquid staked Ether 2.0",
-      "token_symbol": "stETH",
-      "max_per_deposit": 0,
-      "max_deposits": 0
+    "strategies": [
+        {
+            "token_address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+            "token_name": "Coinbase Wrapped Staked ETH",
+            "token_symbol": "cbETH",
+            "max_per_deposit": 0,
+            "max_deposits": 0
+        },
+        {
+            "token_address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+            "token_name": "Liquid staked Ether 2.0",
+            "token_symbol": "stETH",
+            "max_per_deposit": 0,
+            "max_deposits": 0
+        },
+        {
+            "token_address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+            "token_name": "Rocket Pool ETH",
+            "token_symbol": "rETH",
+            "max_per_deposit": 0,
+            "max_deposits": 0
+        },
+        {
+            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
+            "token_name": "Wrapped Ether",
+            "token_symbol": "WETH",
+            "max_per_deposit": 1000000000000000000,
+            "max_deposits": 10000000000000000000
+        }
+    ],
+    "strategyManager": {
+        "init_paused_status": 0,
+        "init_withdrawal_delay_blocks": 50400
     },
-    {
-      "token_address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
-      "token_name": "Rocket Pool ETH",
-      "token_symbol": "rETH",
-      "max_per_deposit": 0,
-      "max_deposits": 0
+    "eigenPod": {
+        "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
+        "REQUIRED_BALANCE_WEI": "31000000000000000000",
+        "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": "31000000000"
     },
-    {
-      "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
-      "token_name": "Wrapped Ether",
-      "token_symbol": "WETH",
-      "max_per_deposit": 1000000000000000000,
-      "max_deposits": 10000000000000000000
-    }
-  ],
-  "strategyManager": {
-    "init_paused_status": 0,
-    "init_withdrawal_delay_blocks": 50400
-  },
-  "eigenPod": {
-    "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
-    "REQUIRED_BALANCE_WEI": "31000000000000000000"
-  },
-  "eigenPodManager": {
-    "max_pods": 0,
-    "init_paused_status": 30
-  },
-  "delayedWithdrawalRouter": {
-    "init_paused_status": 0,
-    "init_withdrawal_delay_blocks": 50400
-  },
-  "slasher": {
-    "init_paused_status": 0
-  },
-  "delegation": {
-    "init_paused_status": 0
-  },
-  "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+    "eigenPodManager": {
+        "max_pods": 0,
+        "init_paused_status": 30
+    },
+    "delayedWithdrawalRouter": {
+        "init_paused_status": 0,
+        "init_withdrawal_delay_blocks": 50400
+    },
+    "slasher": {
+        "init_paused_status": "0"
+    },
+    "delegation": {
+        "init_paused_status": "0"
+    },
+    "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
 }

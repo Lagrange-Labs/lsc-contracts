@@ -9,7 +9,7 @@ const deployedAddresses = require('../../script/output/deployed_lgr.json');
 require('dotenv').config();
 
 const address = '0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9';
-const tokenAddress = '0x1D7Acca2751281Bd27d8254fC2fCd71a5243626c';
+const tokenAddress = '0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956';
 const privKey = accounts[address];
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(privKey, provider);
@@ -28,7 +28,7 @@ provider.getNetwork().then((network) => {
   console.log('chainID: ', network.chainId);
 });
 
-stake.weightOfOperator(address, 1).then((weight) => {
+stake.weightOfOperator(0, address).then((weight) => {
   console.log('Weight: ', weight);
 });
 

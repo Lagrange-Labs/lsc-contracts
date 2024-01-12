@@ -5,15 +5,18 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {EmptyContract} from "eigenlayer-contracts-test/mocks/EmptyContract.sol";
+import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
-import "src/protocol/LagrangeService.sol";
-import "src/protocol/LagrangeServiceManager.sol";
-import "src/protocol/LagrangeCommittee.sol";
-import "src/library/StakeManager.sol";
-import "src/library/HermezHelpers.sol";
+import "../../contracts/protocol/LagrangeService.sol";
+import "../../contracts/protocol/LagrangeServiceManager.sol";
+import "../../contracts/protocol/LagrangeCommittee.sol";
+import "../../contracts/library/StakeManager.sol";
+import "../../contracts/library/HermezHelpers.sol";
 
-import {WETH9} from "src/mock/WETH9.sol";
+import {Verifier} from "../../contracts/library/slashing_single/verifier.sol";
+import {ISlashingSingleVerifier} from "../../contracts/interfaces/ISlashingSingleVerifier.sol";
+
+import {WETH9} from "../../contracts/mock/WETH9.sol";
 
 // This contract is used to deploy LagrangeService contract to the testnet
 contract LagrangeDeployer is Test {
@@ -25,6 +28,7 @@ contract LagrangeDeployer is Test {
     LagrangeCommittee public lagrangeCommitteeImp;
     StakeManager public stakeManager;
     StakeManager public stakeManagerImp;
+    EvidenceVerifier public evidenceVerifier;
 
     WETH9 public token;
     ProxyAdmin public proxyAdmin;
@@ -40,7 +44,7 @@ contract LagrangeDeployer is Test {
         _registerChain();
     }
 
-    function testDeploy() public {
+    function testDeploy() public view {
         console.log("LagrangeServiceManager: ", address(lagrangeServiceManager));
     }
 
@@ -117,10 +121,7 @@ contract LagrangeDeployer is Test {
             abi.encodeWithSelector(
                 LagrangeCommittee.initialize.selector,
                 sender,
-                new PoseidonUnit1(),
                 new PoseidonUnit2(),
-                new PoseidonUnit3(),
-                new PoseidonUnit4(),
                 new PoseidonUnit5(),
                 new PoseidonUnit6()
             )
@@ -130,10 +131,13 @@ contract LagrangeDeployer is Test {
             address(lagrangeServiceManagerImp),
             abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, sender)
         );
+
+        evidenceVerifier = new EvidenceVerifier();
+
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(LagrangeService.initialize.selector, sender)
+            abi.encodeWithSelector(LagrangeService.initialize.selector, sender, evidenceVerifier)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(stakeManager))),

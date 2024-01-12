@@ -22,7 +22,7 @@ forge install
 The following walks through the necessary steps to deploy the Lagrange contracts, interfacing with mock contracts for EigenLayer, as well as Arbitrum Nitro and Optimism Bedrock settlement mock contracts.
 
 ```
-bash make all-mock
+make deploy-eigen-localnet
 ```
 
 ## Local Deployment
@@ -38,13 +38,14 @@ bash make all-mock
      ```
 
    - Execute `make init-accounts` to initialize the accounts
-   - Deploy the mock `WETH9` smart contract and update the `strategies/token_address` of `script/localnet/M1_deploy.config.json` with the deployed address
+   - Execute `make generate-accounts` to create the accounts configuration file
+   - Deploy the mock `WETH9` smart contract for the virtual strategy
 
      ```bash
      make deploy-weth9
      ```
 
-   - Update the `communityMultisig` of `eigenlayer-contracts/script/M1_deploy.config.json` with the first addres of the above list
+   - Execute `make update-strategy-config` to update the strategy config of Eigenlayer Deployment
 
    - Deploy the `Eigenlayer` smart contracts,
 
@@ -76,6 +77,8 @@ bash make all-mock
    make deploy-lagrange
    ```
 
+   - Execute `make update-config` to update the token config of `Add Quorum`
+
 4. Add the quorum to the `Lagrange` smart contracts
 
    ```bash
@@ -88,12 +91,23 @@ bash make all-mock
    make register-lagrange
    ```
 
-6. Init the committee
+6. Register operators and subscribe the given chains
+
+   ```bash
+   make deploy-register
+   ```
+
+7. Init the committee
 
    ```bash
    make init-committee
-   ``
    ```
+
+To clean up the deployment, run the following command
+
+```bash
+make clean
+```
 
 ## Build the docker image
 

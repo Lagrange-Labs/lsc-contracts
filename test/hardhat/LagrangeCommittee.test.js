@@ -10,7 +10,7 @@ const sponge = 0;
 
 const deployPoseidon = async (signerNode) => {
   const poseidonAddrs = {};
-  const params = [1, 2, 3, 4, 5, 6];
+  const params = [2, 5, 6];
   await Promise.all(
     params.map(async (i) => {
       let poseidonCode = null;
@@ -86,14 +86,16 @@ describe('LagrangeCommittee', function () {
 
     console.log('Deploying proxy...');
 
-    const ProxyAdminFactory = await ethers.getContractFactory('ProxyAdmin');
+    const ProxyAdminFactory = await ethers.getContractFactory(
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin',
+    );
     const proxyAdmin = await ProxyAdminFactory.deploy();
     await proxyAdmin.deployed();
 
     console.log('Deploying transparent proxy...');
 
     const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
-      'TransparentUpgradeableProxy',
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     );
     proxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
@@ -109,16 +111,18 @@ describe('LagrangeCommittee', function () {
       committee.address,
       committee.interface.encodeFunctionData('initialize', [
         admin.address,
-        poseidonAddresses[1],
         poseidonAddresses[2],
-        poseidonAddresses[3],
-        poseidonAddresses[4],
         poseidonAddresses[5],
         poseidonAddresses[6],
       ]),
     );
 
     shared.LagrangeCommittee = committee;
+    shared.proxy = proxy;
+    shared.proxyAdmin = proxyAdmin;
+    shared.poseidonAddresses = poseidonAddresses;
+    shared.voteWeigher = voteWeigher;
+    shared.emptyContract = emptyContract;
   });
 
   it('trie construction/deconstruction', async function () {
@@ -327,8 +331,12 @@ describe('LagrangeCommittee', function () {
       operators[0].chain_id,
     );
 
-    await committee.registerChain(operators[0].chain_id, 10000, 1000);
-    let operatorCount = 5;
+    const tx = await committee.registerChain(
+      operators[0].chain_id,
+      10000,
+      1000,
+    );
+    let operatorCount = operators[0].operators.length - 4;
 
     const leaves = await Promise.all(
       new Array(operatorCount).fill(0).map(async (_, index) => {
@@ -342,7 +350,7 @@ describe('LagrangeCommittee', function () {
     );
     const committeeRoot = await committee.getCommittee(
       operators[0].chain_id,
-      1000,
+      tx.blockNumber,
     );
     let count = 1;
     while (count < leaves.length) {
