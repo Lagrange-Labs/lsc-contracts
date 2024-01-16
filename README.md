@@ -65,13 +65,7 @@ make deploy-eigen-localnet
      make register-operator
      ```
 
-2. Deploy the `Poseidon` smart contracts
-
-   ```bash
-   make deploy-poseidon
-   ```
-
-3. Deploy the `Lagrange` smart contracts
+2. Deploy the `Lagrange` smart contracts
 
    ```bash
    make deploy-lagrange
@@ -79,25 +73,25 @@ make deploy-eigen-localnet
 
    - Execute `make update-config` to update the token config of `Add Quorum`
 
-4. Add the quorum to the `Lagrange` smart contracts
+3. Add the quorum to the `Lagrange` smart contracts
 
    ```bash
    make add-quorum
    ```
 
-5. Opt into the `Lagrange` smart contracts
+4. Opt into the `Lagrange` smart contracts
 
    ```bash
    make register-lagrange
    ```
 
-6. Register operators and subscribe the given chains
+5. Register operators and subscribe the given chains
 
    ```bash
    make deploy-register
    ```
 
-7. Init the committee
+6. Init the committee
 
    ```bash
    make init-committee

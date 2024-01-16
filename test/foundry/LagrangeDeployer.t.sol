@@ -11,7 +11,6 @@ import "../../contracts/protocol/LagrangeService.sol";
 import "../../contracts/protocol/LagrangeServiceManager.sol";
 import "../../contracts/protocol/LagrangeCommittee.sol";
 import "../../contracts/library/StakeManager.sol";
-import "../../contracts/library/HermezHelpers.sol";
 
 import {Verifier} from "../../contracts/library/slashing_single/verifier.sol";
 import {ISlashingSingleVerifier} from "../../contracts/interfaces/ISlashingSingleVerifier.sol";
@@ -118,13 +117,7 @@ contract LagrangeDeployer is Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
             address(lagrangeCommitteeImp),
-            abi.encodeWithSelector(
-                LagrangeCommittee.initialize.selector,
-                sender,
-                new PoseidonUnit2(),
-                new PoseidonUnit5(),
-                new PoseidonUnit6()
-            )
+            abi.encodeWithSelector(LagrangeCommittee.initialize.selector, sender)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeServiceManager))),

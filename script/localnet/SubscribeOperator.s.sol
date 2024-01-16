@@ -14,7 +14,7 @@ contract SubscribeOperator is Script, Test {
     struct Operator {
         bytes32 blsPrivateKey;
         bytes blsPublicKey;
-        bytes blsPublicPoint;
+        uint256[2] blsPublicPoint;
         uint32 chainId;
         bytes32 ecdsaPrivateKey;
         address operatorAddress;

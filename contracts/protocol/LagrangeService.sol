@@ -48,13 +48,9 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add the operator to the service.
-    function register(bytes memory _blsPubKey, uint32 serveUntilBlock) external {
-        require(_blsPubKey.length == 96, "LagrangeService: Inappropriately preformatted BLS public key.");
-
+    function register(uint256[2] memory _blsPubKey, uint32 serveUntilBlock) external {
         committee.addOperator(msg.sender, _blsPubKey, serveUntilBlock);
-
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
-
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
 
@@ -129,7 +125,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
             evidenceVerifier.verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed"
         );
 
-        bytes memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
+        uint256[2] memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
         bool sigVerify = evidenceVerifier.verifySingleSignature(_evidence, blsPubKey);
 
         return (sigVerify);
@@ -144,13 +140,10 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         uint256 blockNumber,
         uint32 chainID
     ) internal returns (bool) {
-        (ILagrangeCommittee.CommitteeData memory currentCommittee, uint256 nextRoot) =
+        (ILagrangeCommittee.CommitteeData memory currentCommittee, bytes32 nextRoot) =
             committee.getCommittee(chainID, blockNumber);
-        require(
-            correctCurrentCommitteeRoot == bytes32(currentCommittee.root),
-            "Reference current committee roots do not match."
-        );
-        require(correctNextCommitteeRoot == bytes32(nextRoot), "Reference next committee roots do not match.");
+        require(correctCurrentCommitteeRoot == currentCommittee.root, "Reference current committee roots do not match.");
+        require(correctNextCommitteeRoot == nextRoot, "Reference next committee roots do not match.");
 
         return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
     }
