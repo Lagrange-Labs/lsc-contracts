@@ -8,8 +8,6 @@ import {IServiceManager} from "../interfaces/IServiceManager.sol";
 import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
-import {EvidenceVerifier} from "../library/EvidenceVerifier.sol";
-
 contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
     uint256 public constant UPDATE_TYPE_REGISTER = 1;
     uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
@@ -18,23 +16,10 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     ILagrangeCommittee public immutable committee;
     IServiceManager public immutable serviceManager;
 
-    EvidenceVerifier public evidenceVerifier;
-
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
-
-    event OperatorSlashed(address operator);
-
-    event UploadEvidence(
-        address operator,
-        bytes32 blockHash,
-        bytes32 currentCommitteeRoot,
-        bytes32 nextCommitteeRoot,
-        uint256 blockNumber,
-        uint256 epochNumber,
-        bytes blockSignature,
-        bytes commitSignature,
-        uint32 chainID
-    );
+    event OperatorDeregistered(address operator);
+    event OperatorSubscribed(address operator, uint32 chainID);
+    event OperatorUnsubscribed(address operator, uint32 chainID);
 
     constructor(ILagrangeCommittee _committee, IServiceManager _serviceManager) {
         committee = _committee;
@@ -42,9 +27,8 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, EvidenceVerifier _evidenceVerifier) external initializer {
+    function initialize(address initialOwner) external initializer {
         _transferOwnership(initialOwner);
-        evidenceVerifier = _evidenceVerifier;
     }
 
     /// Add the operator to the service.
@@ -57,10 +41,12 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     /// Subscribe the dedicated chain.
     function subscribe(uint32 chainID) external {
         committee.subscribeChain(msg.sender, chainID);
+        emit OperatorSubscribed(msg.sender, chainID);
     }
 
     function unsubscribe(uint32 chainID) external {
         committee.unsubscribeChain(msg.sender, chainID);
+        emit OperatorUnsubscribed(msg.sender, chainID);
     }
 
     /// deregister the operator from the service.
@@ -68,91 +54,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         (bool possible, uint256 unsubscribeBlockNumber) = committee.isUnregisterable(msg.sender);
         require(possible, "The operator is not able to deregister");
         serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(msg.sender, uint32(unsubscribeBlockNumber));
-    }
-
-    /// upload the evidence to punish the operator.
-    function uploadEvidence(EvidenceVerifier.Evidence calldata evidence) external {
-        // check the operator is registered or not
-        require(committee.getServeUntilBlock(evidence.operator) > 0, "The operator is not registered");
-
-        // check the operator is slashed or not
-        require(!committee.getSlashed(evidence.operator), "The operator is slashed");
-
-        require(evidenceVerifier.checkCommitSignature(evidence), "The commit signature is not correct");
-
-        if (!_checkBlockSignature(evidence)) {
-            _freezeOperator(evidence.operator);
-        }
-
-        if (evidence.correctBlockHash == evidence.blockHash) {
-            _freezeOperator(evidence.operator);
-        }
-
-        if (
-            !_checkCommitteeRoots(
-                evidence.correctCurrentCommitteeRoot,
-                evidence.currentCommitteeRoot,
-                evidence.correctNextCommitteeRoot,
-                evidence.nextCommitteeRoot,
-                evidence.l1BlockNumber,
-                evidence.chainID
-            )
-        ) {
-            _freezeOperator(evidence.operator);
-        }
-
-        // TODO what is this for (no condition)?
-
-        emit UploadEvidence(
-            evidence.operator,
-            evidence.blockHash,
-            evidence.currentCommitteeRoot,
-            evidence.nextCommitteeRoot,
-            evidence.blockNumber,
-            evidence.l1BlockNumber,
-            evidence.blockSignature,
-            evidence.commitSignature,
-            evidence.chainID
-        );
-    }
-
-    function _checkBlockSignature(EvidenceVerifier.Evidence memory _evidence) internal returns (bool) {
-        // establish that proofs are valid
-        (ILagrangeCommittee.CommitteeData memory cdata,) =
-            committee.getCommittee(_evidence.chainID, _evidence.l1BlockNumber);
-
-        require(
-            evidenceVerifier.verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed"
-        );
-
-        uint256[2] memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
-        bool sigVerify = evidenceVerifier.verifySingleSignature(_evidence, blsPubKey);
-
-        return (sigVerify);
-    }
-
-    // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
-    function _checkCommitteeRoots(
-        bytes32 correctCurrentCommitteeRoot,
-        bytes32 currentCommitteeRoot,
-        bytes32 correctNextCommitteeRoot,
-        bytes32 nextCommitteeRoot,
-        uint256 blockNumber,
-        uint32 chainID
-    ) internal returns (bool) {
-        (ILagrangeCommittee.CommitteeData memory currentCommittee, bytes32 nextRoot) =
-            committee.getCommittee(chainID, blockNumber);
-        require(correctCurrentCommitteeRoot == currentCommittee.root, "Reference current committee roots do not match.");
-        require(correctNextCommitteeRoot == nextRoot, "Reference next committee roots do not match.");
-
-        return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
-    }
-
-    /// Slash the given operator
-    function _freezeOperator(address operator) internal {
-        serviceManager.freezeOperator(operator);
-
-        emit OperatorSlashed(operator);
+        emit OperatorDeregistered(msg.sender);
     }
 
     function owner() public view override(OwnableUpgradeable, ILagrangeService) returns (address) {

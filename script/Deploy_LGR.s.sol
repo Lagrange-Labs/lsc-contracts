@@ -12,13 +12,13 @@ import {IServiceManager} from "eigenlayer-middleware/interfaces/IServiceManager.
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
 import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
+import {EvidenceVerifier} from "../contracts/protocol/EvidenceVerifier.sol";
 
 import {IStakeManager} from "../contracts/interfaces/IStakeManager.sol";
 import {IVoteWeigher} from "../contracts/interfaces/IVoteWeigher.sol";
 
 import {VoteWeigherBaseMock} from "../contracts/mock/VoteWeigherBaseMock.sol";
 import {StakeManager} from "../contracts/library/StakeManager.sol";
-import {EvidenceVerifier} from "../contracts/library/EvidenceVerifier.sol";
 
 import {ISlashingSingleVerifier} from "../contracts/interfaces/ISlashingSingleVerifier.sol";
 import {Verifier} from "../contracts/library/slashing_single/verifier.sol";
@@ -170,7 +170,10 @@ contract Deploy is Script, Test {
             lagrangeCommittee,
             lagrangeServiceManager
         );
-        evidenceVerifierImp = new EvidenceVerifier();
+        evidenceVerifierImp = new EvidenceVerifier(
+            lagrangeCommittee,
+            lagrangeServiceManager
+        );
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(

@@ -10,6 +10,7 @@ import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.s
 import "../../contracts/protocol/LagrangeService.sol";
 import "../../contracts/protocol/LagrangeServiceManager.sol";
 import "../../contracts/protocol/LagrangeCommittee.sol";
+import "../../contracts/protocol/EvidenceVerifier.sol";
 import "../../contracts/library/StakeManager.sol";
 
 import {Verifier} from "../../contracts/library/slashing_single/verifier.sol";
@@ -28,6 +29,7 @@ contract LagrangeDeployer is Test {
     StakeManager public stakeManager;
     StakeManager public stakeManagerImp;
     EvidenceVerifier public evidenceVerifier;
+    EvidenceVerifier public evidenceVerifierImp;
 
     WETH9 public token;
     ProxyAdmin public proxyAdmin;
@@ -93,6 +95,15 @@ contract LagrangeDeployer is Test {
                     )
             )
         );
+        evidenceVerifier = EvidenceVerifier(
+            address(
+                new TransparentUpgradeableProxy(
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
+            )
+        );
 
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
@@ -112,6 +123,10 @@ contract LagrangeDeployer is Test {
             lagrangeCommittee,
             lagrangeServiceManager
         );
+        evidenceVerifierImp = new EvidenceVerifier(
+            lagrangeCommittee,
+            lagrangeServiceManager
+        );
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -124,9 +139,6 @@ contract LagrangeDeployer is Test {
             address(lagrangeServiceManagerImp),
             abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, sender)
         );
-
-        evidenceVerifier = new EvidenceVerifier();
-
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
@@ -135,6 +147,11 @@ contract LagrangeDeployer is Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(stakeManager))),
             address(stakeManagerImp),
+            abi.encodeWithSelector(StakeManager.initialize.selector, sender)
+        );
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(evidenceVerifier))),
+            address(evidenceVerifierImp),
             abi.encodeWithSelector(StakeManager.initialize.selector, sender)
         );
 

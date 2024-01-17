@@ -8,43 +8,40 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {ISlashingAggregateVerifier} from "../interfaces/ISlashingAggregateVerifier.sol";
 import {ISlashingSingleVerifier} from "../interfaces/ISlashingSingleVerifier.sol";
+import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommittee.sol";
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
+import {IEvidenceVerifier, Evidence, ProofParams} from "../interfaces/IEvidenceVerifier.sol";
 
-contract EvidenceVerifier is Initializable, OwnableUpgradeable {
-    // Evidence is the data structure to store the slashing evidence.
-    struct Evidence {
-        address operator;
-        bytes32 blockHash;
-        bytes32 correctBlockHash;
-        bytes32 currentCommitteeRoot;
-        bytes32 correctCurrentCommitteeRoot;
-        bytes32 nextCommitteeRoot;
-        bytes32 correctNextCommitteeRoot;
-        uint256 blockNumber;
-        uint256 l1BlockNumber;
-        bytes blockSignature; // 192-byte
-        bytes commitSignature; // 65-byte
-        uint32 chainID;
-        bytes sigProof;
-        bytes aggProof;
-    }
-
-    struct ProofParams {
-        uint256[2] a;
-        uint256[2][2] b;
-        uint256[2] c;
-    }
-
+contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifier {
     uint256 public constant CHAIN_ID_MAINNET = 1;
     uint256 public constant CHAIN_ID_OPTIMISM_BEDROCK = 420;
     uint256 public constant CHAIN_ID_BASE = 84531;
     uint256 public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
+    ILagrangeCommittee public immutable committee;
+    IServiceManager public immutable serviceManager;
     // aggregate signature verifiers Triage
     mapping(uint256 => ISlashingAggregateVerifier) public aggVerifiers;
     // single signature verifier
     ISlashingSingleVerifier public singleVerifier;
 
-    constructor() {
+    event OperatorSlashed(address operator);
+
+    event UploadEvidence(
+        address operator,
+        bytes32 blockHash,
+        bytes32 currentCommitteeRoot,
+        bytes32 nextCommitteeRoot,
+        uint256 blockNumber,
+        uint256 epochNumber,
+        bytes blockSignature,
+        bytes commitSignature,
+        uint32 chainID
+    );
+
+    constructor(ILagrangeCommittee _committee, IServiceManager _serviceManager) {
+        committee = _committee;
+        serviceManager = _serviceManager;
         _disableInitializers();
     }
 
@@ -58,6 +55,88 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
 
     function setSingleVerifier(address _verifierAddress) external onlyOwner {
         singleVerifier = ISlashingSingleVerifier(_verifierAddress);
+    }
+
+    /// upload the evidence to punish the operator.
+    function uploadEvidence(Evidence calldata evidence) external {
+        // check the operator is registered or not
+        require(committee.getServeUntilBlock(evidence.operator) > 0, "The operator is not registered");
+
+        // check the operator is slashed or not
+        require(!committee.getSlashed(evidence.operator), "The operator is slashed");
+
+        require(checkCommitSignature(evidence), "The commit signature is not correct");
+
+        if (!_checkBlockSignature(evidence)) {
+            _freezeOperator(evidence.operator);
+        }
+
+        if (evidence.correctBlockHash == evidence.blockHash) {
+            _freezeOperator(evidence.operator);
+        }
+
+        if (
+            !_checkCommitteeRoots(
+                evidence.correctCurrentCommitteeRoot,
+                evidence.currentCommitteeRoot,
+                evidence.correctNextCommitteeRoot,
+                evidence.nextCommitteeRoot,
+                evidence.l1BlockNumber,
+                evidence.chainID
+            )
+        ) {
+            _freezeOperator(evidence.operator);
+        }
+
+        // TODO what is this for (no condition)?
+
+        emit UploadEvidence(
+            evidence.operator,
+            evidence.blockHash,
+            evidence.currentCommitteeRoot,
+            evidence.nextCommitteeRoot,
+            evidence.blockNumber,
+            evidence.l1BlockNumber,
+            evidence.blockSignature,
+            evidence.commitSignature,
+            evidence.chainID
+        );
+    }
+
+    /// Slash the given operator
+    function _freezeOperator(address operator) internal {
+        serviceManager.freezeOperator(operator);
+        emit OperatorSlashed(operator);
+    }
+
+    function _checkBlockSignature(Evidence memory _evidence) internal returns (bool) {
+        // establish that proofs are valid
+        (ILagrangeCommittee.CommitteeData memory cdata,) =
+            committee.getCommittee(_evidence.chainID, _evidence.l1BlockNumber);
+
+        require(_verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed");
+
+        uint256[2] memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
+        bool sigVerify = _verifySingleSignature(_evidence, blsPubKey);
+
+        return (sigVerify);
+    }
+
+    // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
+    function _checkCommitteeRoots(
+        bytes32 correctCurrentCommitteeRoot,
+        bytes32 currentCommitteeRoot,
+        bytes32 correctNextCommitteeRoot,
+        bytes32 nextCommitteeRoot,
+        uint256 blockNumber,
+        uint32 chainID
+    ) internal returns (bool) {
+        (ILagrangeCommittee.CommitteeData memory currentCommittee, bytes32 nextRoot) =
+            committee.getCommittee(chainID, blockNumber);
+        require(correctCurrentCommitteeRoot == currentCommittee.root, "Reference current committee roots do not match.");
+        require(correctNextCommitteeRoot == nextRoot, "Reference next committee roots do not match.");
+
+        return (currentCommitteeRoot == correctCurrentCommitteeRoot) && (nextCommitteeRoot == correctNextCommitteeRoot);
     }
 
     function toUint(bytes memory src) internal pure returns (uint256) {
@@ -176,8 +255,8 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
         return slices;
     }
 
-    function verifySingleSignature(EvidenceVerifier.Evidence memory _evidence, uint256[2] memory blsPubKey)
-        external
+    function _verifySingleSignature(Evidence memory _evidence, uint256[2] memory blsPubKey)
+        internal
         view
         returns (bool)
     {
@@ -216,8 +295,8 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable {
         return result;
     }
 
-    function verifyAggregateSignature(EvidenceVerifier.Evidence memory _evidence, uint256 _committeeSize)
-        external
+    function _verifyAggregateSignature(Evidence memory _evidence, uint256 _committeeSize)
+        internal
         view
         returns (bool)
     {
