@@ -9,9 +9,7 @@ import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommitt
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
-    uint256 public constant UPDATE_TYPE_REGISTER = 1;
-    uint256 public constant UPDATE_TYPE_AMOUNT_CHANGE = 2;
-    uint256 public constant UPDATE_TYPE_UNREGISTER = 3;
+    mapping(address => bool) public operatorWhitelist;
 
     ILagrangeCommittee public immutable committee;
     IServiceManager public immutable serviceManager;
@@ -20,6 +18,11 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     event OperatorDeregistered(address operator);
     event OperatorSubscribed(address operator, uint32 chainID);
     event OperatorUnsubscribed(address operator, uint32 chainID);
+
+    modifier onlyWhitelisted() {
+        require(operatorWhitelist[msg.sender], "Operator is not whitelisted");
+        _;
+    }
 
     constructor(ILagrangeCommittee _committee, IServiceManager _serviceManager) {
         committee = _committee;
@@ -31,26 +34,37 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         _transferOwnership(initialOwner);
     }
 
+    /// Add the operator to the whitelist.
+    function addOperatorToWhitelist(address operator) external onlyOwner {
+        operatorWhitelist[operator] = true;
+    }
+
+    /// Remove the operator from the whitelist.
+    function removeOperatorFromWhitelist(address operator) external onlyOwner {
+        operatorWhitelist[operator] = false;
+    }
+
     /// Add the operator to the service.
-    function register(uint256[2] memory _blsPubKey, uint32 serveUntilBlock) external {
+    function register(uint256[2] memory _blsPubKey, uint32 serveUntilBlock) external onlyWhitelisted {
         committee.addOperator(msg.sender, _blsPubKey, serveUntilBlock);
         serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
 
     /// Subscribe the dedicated chain.
-    function subscribe(uint32 chainID) external {
+    function subscribe(uint32 chainID) external onlyWhitelisted {
         committee.subscribeChain(msg.sender, chainID);
         emit OperatorSubscribed(msg.sender, chainID);
     }
 
-    function unsubscribe(uint32 chainID) external {
+    /// Unsubscribe the dedicated chain.
+    function unsubscribe(uint32 chainID) external onlyWhitelisted {
         committee.unsubscribeChain(msg.sender, chainID);
         emit OperatorUnsubscribed(msg.sender, chainID);
     }
 
-    /// deregister the operator from the service.
-    function deregister() external {
+    /// Deregister the operator from the service.
+    function deregister() external onlyWhitelisted {
         (bool possible, uint256 unsubscribeBlockNumber) = committee.isUnregisterable(msg.sender);
         require(possible, "The operator is not able to deregister");
         serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(msg.sender, uint32(unsubscribeBlockNumber));
