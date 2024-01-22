@@ -194,7 +194,9 @@ describe('LagrangeCommittee', function () {
     );
     for (let i = 0; i < operators[0].operators.length; i++) {
       const op = operators[0].operators[i];
-      const pubKey = bn254.ProjectivePoint.fromHex(operators[0].bls_pub_keys[i].slice(2));
+      const pubKey = bn254.ProjectivePoint.fromHex(
+        operators[0].bls_pub_keys[i].slice(2),
+      );
       const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
       const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
       const newPubKey = '0x' + Gx + Gy;
@@ -249,7 +251,9 @@ describe('LagrangeCommittee', function () {
     );
     for (let i = 0; i < operators[0].operators.length; i++) {
       const op = operators[0].operators[i];
-      const pubKey = bn254.ProjectivePoint.fromHex(operators[0].bls_pub_keys[i].slice(2));
+      const pubKey = bn254.ProjectivePoint.fromHex(
+        operators[0].bls_pub_keys[i].slice(2),
+      );
       const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
       const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
       const newPubKey = '0x' + Gx + Gy;

@@ -10,6 +10,10 @@ contract RegisterOperatorTest is LagrangeDeployer {
         uint256[2] memory blsPubKey;
         uint256 amount = 1e15;
 
+        // add operator to whitelist
+        vm.prank(vm.addr(1));
+        lagrangeService.addOperatorToWhitelist(operator);
+
         vm.startPrank(operator);
 
         token.deposit{value: amount}();
@@ -53,6 +57,10 @@ contract RegisterOperatorTest is LagrangeDeployer {
     function testFreezePeriod() public {
         address operator = vm.addr(555);
         uint256[2] memory blsPubKey;
+
+        // add operator to whitelist
+        vm.prank(vm.addr(1));
+        lagrangeService.addOperatorToWhitelist(operator);
 
         vm.startPrank(operator);
 

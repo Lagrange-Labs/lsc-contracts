@@ -50,17 +50,13 @@ describe('LagrangeService', function () {
   });
 
   beforeEach(async function () {
-    const overrides = {
-      gasLimit: 5000000,
-    };
-
     proxyAdmin = shared.proxyAdmin;
     proxy = shared.proxy;
 
     console.log('Deploying Slasher mock...');
 
     const SlasherFactory = await ethers.getContractFactory('Slasher');
-    const slasher = await SlasherFactory.deploy(overrides);
+    const slasher = await SlasherFactory.deploy();
     await slasher.deployed();
     shared.slasher = slasher;
 
@@ -77,7 +73,6 @@ describe('LagrangeService', function () {
       slasher.address,
       lc.address,
       admin.address,
-      overrides,
     );
     await lsm.deployed();
 
@@ -86,23 +81,19 @@ describe('LagrangeService', function () {
     console.log('Deploying DelegationManager mock...');
 
     const DMFactory = await ethers.getContractFactory('DelegationManager');
-    const dm = await DMFactory.deploy(overrides);
+    const dm = await DMFactory.deploy();
     await dm.deployed();
 
     console.log('Deploying StrategyManager mock...');
 
     const SMFactory = await ethers.getContractFactory('StrategyManager');
-    const sm = await SMFactory.deploy(dm.address, overrides);
+    const sm = await SMFactory.deploy(dm.address);
     await sm.deployed();
 
     console.log('Deploying Lagrange Service...');
 
     const LSFactory = await ethers.getContractFactory('LagrangeService', {});
-    const lagrangeService = await LSFactory.deploy(
-      lc.address,
-      lsm.address,
-      overrides,
-    );
+    const lagrangeService = await LSFactory.deploy(lc.address, lsm.address);
     await lagrangeService.deployed();
     lsaddr = lagrangeService.address;
 
@@ -122,7 +113,7 @@ describe('LagrangeService', function () {
     await verSig.deployed();
     shared.SSV = verSig;
     evFactory = await ethers.getContractFactory('EvidenceVerifier');
-    ev = await evFactory.deploy();
+    ev = await evFactory.deploy(lc.address, lsm.address);
     await ev.deployed();
     ev.setSingleVerifier(verSig.address);
     shared.EV = ev;
@@ -132,7 +123,6 @@ describe('LagrangeService', function () {
       lagrangeService.address,
       lagrangeService.interface.encodeFunctionData('initialize', [
         admin.address,
-        ev.address,
       ]),
     );
 
@@ -157,14 +147,10 @@ describe('LagrangeService', function () {
     expect(slashed).to.equal(false);
   });
   it('Evidence submission (no registration)', async function () {
-    const lagrangeService = await ethers.getContractAt(
-      'LagrangeService',
-      lsaddr,
-      admin,
-    );
+    const ev = shared.EV;
     const evidence = await getSampleEvidence();
     try {
-      await lagrangeService.uploadEvidence(evidence);
+      await ev.uploadEvidence(evidence);
       expect('should have failed').to.be.false;
     } catch (error) {
       console.log(error);
