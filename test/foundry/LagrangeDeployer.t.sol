@@ -121,6 +121,10 @@ contract LagrangeDeployer is Test {
             lagrangeCommittee,
             stakeManager
         );
+        evidenceVerifierImp = new EvidenceVerifier(
+            lagrangeCommittee,
+            lagrangeServiceManager
+        );
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
