@@ -3,11 +3,9 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {StakeManager} from "../contracts/library/StakeManager.sol";
+import {VoteWeigher} from "../contracts/protocol/VoteWeigher.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -20,7 +18,7 @@ contract Deploy is Script, Test {
     LagrangeCommittee public lagrangeCommittee;
     LagrangeCommittee public lagrangeCommitteeImp;
     LagrangeService public lagrangeService;
-    StakeManager public stakeManager;
+    VoteWeigher public voteWeigher;
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
@@ -31,11 +29,11 @@ contract Deploy is Script, Test {
         proxyAdmin = ProxyAdmin(stdJson.readAddress(deployData, ".lagrange.addresses.proxyAdmin"));
         lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeService"));
         lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeCommittee"));
-        stakeManager = StakeManager(stdJson.readAddress(deployData, ".lagrange.addresses.stakeManager"));
+        voteWeigher = VoteWeigher(stdJson.readAddress(deployData, ".lagrange.addresses.voteWeigher"));
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
             lagrangeService,
-            stakeManager
+            voteWeigher
         );
 
         // upgrade proxy contracts

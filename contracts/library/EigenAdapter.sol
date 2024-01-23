@@ -35,7 +35,7 @@ contract EigenAdapter is Initializable, OwnableUpgradeable, IStakeManager {
 
     function withdraw(IERC20 token, uint256 amount) external pure {}
 
-    function lockStakeUntil(address operator, uint256 serveUntilBlock) external pure onlyService {}
+    function lockStakeUntil(address operator, uint256 serveUntilBlock) external pure {}
 
     function operatorShares(address operator, address token) external view returns (uint256) {
         return delegationManager.operatorShares(operator, IStrategy(token));

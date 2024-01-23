@@ -105,7 +105,7 @@ contract LagrangeDeployer is Test {
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
                 lagrangeService,
-                IVoteWeigher(stakeManager)
+                IVoteWeigher(voteWeigher)
             );
         voteWeigherImp = new VoteWeigher(
                 IStakeManager(stakeManager)
@@ -120,10 +120,6 @@ contract LagrangeDeployer is Test {
         evidenceVerifierImp = new EvidenceVerifier(
             lagrangeCommittee,
             stakeManager
-        );
-        evidenceVerifierImp = new EvidenceVerifier(
-            lagrangeCommittee,
-            lagrangeServiceManager
         );
 
         // upgrade proxy contracts
@@ -161,14 +157,12 @@ contract LagrangeDeployer is Test {
         vm.startPrank(vm.addr(1));
 
         // register chains
-        lagrangeCommittee.registerChain(CHAIN_ID, EPOCH_PERIOD, FREEZE_DURATION);
-        lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2);
+        lagrangeCommittee.registerChain(CHAIN_ID, EPOCH_PERIOD, FREEZE_DURATION, 0);
+        lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2, 0);
         // register token multiplier
-        stakeManager.setTokenMultiplier(address(token), 1e9);
-        // register quorum
-        uint8[] memory quorumIndexes = new uint8[](1);
-        quorumIndexes[0] = 0;
-        stakeManager.setQuorumIndexes(1, quorumIndexes);
+        IVoteWeigher.TokenMultiplier[] memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
+        multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e15);
+        voteWeigher.addQuorumMultiplier(0, multipliers);
 
         vm.stopPrank();
     }

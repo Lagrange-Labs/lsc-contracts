@@ -35,7 +35,7 @@ contract InitCommittee is Script, Test {
 
         for (uint256 i = 0; i < initialChains.length; i++) {
             lagrangeCommittee.registerChain(
-                initialChains[i].chainId, initialChains[i].epochPeriod, initialChains[i].freezeDuration
+                initialChains[i].chainId, initialChains[i].epochPeriod, initialChains[i].freezeDuration, 0
             );
         }
 
