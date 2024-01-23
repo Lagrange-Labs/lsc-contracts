@@ -6,9 +6,8 @@ import "forge-std/Test.sol";
 import {WETH9} from "../../contracts/mock/WETH9.sol";
 
 import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "../../contracts/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
-import {VoteWeigherBaseMock} from "../../contracts/mock/VoteWeigherBaseMock.sol";
+import {VoteWeigher} from "../../contracts/protocol/VoteWeigher.sol";
 import {StakeManager} from "../../contracts/library/StakeManager.sol";
 
 contract DepositStake is Script, Test {

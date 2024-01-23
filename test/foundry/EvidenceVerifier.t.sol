@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import "forge-std/Test.sol";
 import "../../contracts/protocol/EvidenceVerifier.sol";
 import "../../contracts/interfaces/ILagrangeCommittee.sol";
-import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/IEvidenceVerifier.sol";
 
 contract EvidenceVerifierTest is Test {
@@ -12,7 +11,7 @@ contract EvidenceVerifierTest is Test {
     Evidence evidence;
 
     function setUp() public {
-        verifier = new EvidenceVerifier(ILagrangeCommittee(address(0)), IServiceManager(address(0)));
+        verifier = new EvidenceVerifier(ILagrangeCommittee(address(0)), IStakeManager(address(0)));
 
         evidence.operator = address(0x516D6C27C23CEd21BF7930E2a01F0BcA9A141a0d);
         evidence.blockHash = 0xafe58890693444d9116c940a5ff4418723e7f75869b30c9d8e4528e147cb4b7f;

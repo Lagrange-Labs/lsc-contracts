@@ -6,13 +6,11 @@ import "forge-std/Test.sol";
 
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IVoteWeigher} from "eigenlayer-middleware/interfaces/IVoteWeigher.sol";
 
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
-import {VoteWeigherBaseMock} from "../contracts/mock/VoteWeigherBaseMock.sol";
 import {StakeManager} from "../contracts/library/StakeManager.sol";
+import {IVoteWeigher} from "../contracts/interfaces/IVoteWeigher.sol";
 
 contract AddQuorum is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
@@ -52,25 +50,7 @@ contract AddQuorum is Script, Test {
             quorumIndexes[0] = 0;
             stakeManager.setQuorumIndexes(0, quorumIndexes);
         } else {
-            VoteWeigherBaseMock voteWeigher =
-                VoteWeigherBaseMock(stdJson.readAddress(deployLGRData, ".addresses.voteWeigher"));
-
-            // add strategy multipliers to lagrange service
-            StrategyConfig[] memory strategies;
-            bytes memory strategiesRaw = stdJson.parseRaw(configData, ".strategies");
-            strategies = abi.decode(strategiesRaw, (StrategyConfig[]));
-            IVoteWeigher.StrategyAndWeightingMultiplier[] memory newStrategiesConsideredAndMultipliers =
-            new IVoteWeigher.StrategyAndWeightingMultiplier[](
-                    strategies.length
-                );
-
-            for (uint256 i = 0; i < strategies.length; i++) {
-                newStrategiesConsideredAndMultipliers[i] = IVoteWeigher.StrategyAndWeightingMultiplier({
-                    strategy: IStrategy(strategies[i].strategyAddress),
-                    multiplier: strategies[i].multiplier
-                });
-            }
-            voteWeigher.createQuorum(newStrategiesConsideredAndMultipliers);
+            // TODO
         }
 
         vm.stopBroadcast();

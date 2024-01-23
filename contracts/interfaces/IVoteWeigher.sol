@@ -2,7 +2,16 @@
 pragma solidity ^0.8.12;
 
 interface IVoteWeigher {
-    function serviceManager() external view returns (address);
+    struct TokenMultiplier {
+        address token;
+        uint96 multiplier;
+    }
+
+    function addQuorumMultiplier(uint8 quorumNumber, TokenMultiplier[] memory multipliers) external;
+
+    function removeQuorumMultiplier(uint8 quorumNumber) external;
+
+    function updateQuorumMultiplier(uint8 quorumNumber, uint256 index, TokenMultiplier memory multiplier) external;
 
     function weightOfOperator(uint8 quorumNumber, address operator) external returns (uint96);
 }

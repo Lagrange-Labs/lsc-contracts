@@ -4,24 +4,19 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
-import {IServiceManager} from "eigenlayer-middleware/interfaces/IServiceManager.sol";
 
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
+import {VoteWeigher} from "../contracts/protocol/VoteWeigher.sol";
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
 import {EvidenceVerifier} from "../contracts/protocol/EvidenceVerifier.sol";
 
 import {IStakeManager} from "../contracts/interfaces/IStakeManager.sol";
 import {IVoteWeigher} from "../contracts/interfaces/IVoteWeigher.sol";
 
-import {VoteWeigherBaseMock} from "../contracts/mock/VoteWeigherBaseMock.sol";
+import {EigenAdapter} from "../contracts/library/EigenAdapter.sol";
 import {StakeManager} from "../contracts/library/StakeManager.sol";
-
-import {ISlashingSingleVerifier} from "../contracts/interfaces/ISlashingSingleVerifier.sol";
-import {Verifier} from "../contracts/library/slashing_single/verifier.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -35,8 +30,7 @@ contract Deploy is Script, Test {
     string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
-    address public slasherAddress;
-    address public strategyManagerAddress;
+    address public delegationManagerAddress;
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;
@@ -44,12 +38,12 @@ contract Deploy is Script, Test {
     LagrangeCommittee public lagrangeCommitteeImp;
     LagrangeService public lagrangeService;
     LagrangeService public lagrangeServiceImp;
-    LagrangeServiceManager public lagrangeServiceManager;
-    LagrangeServiceManager public lagrangeServiceManagerImp;
+    VoteWeigher public voteWeigher;
+    VoteWeigher public voteWeigherImp;
     StakeManager public stakeManager;
     StakeManager public stakeManagerImp;
-    VoteWeigherBaseMock public voteWeigher;
-    VoteWeigherBaseMock public voteWeigherImp;
+    EigenAdapter public eigenAdapter;
+    EigenAdapter public eigenAdapterImp;
     EvidenceVerifier public evidenceVerifier;
     EvidenceVerifier public evidenceVerifierImp;
 
@@ -67,8 +61,7 @@ contract Deploy is Script, Test {
         string memory deployData = vm.readFile(deployDataPath);
 
         if (!isNative) {
-            slasherAddress = stdJson.readAddress(deployData, ".addresses.slasher");
-            strategyManagerAddress = stdJson.readAddress(deployData, ".addresses.strategyManager");
+            delegationManagerAddress = stdJson.readAddress(deployData, ".addresses.delegationManager");
         }
 
         vm.startBroadcast(msg.sender);
@@ -96,15 +89,6 @@ contract Deploy is Script, Test {
                 )
             )
         );
-        lagrangeServiceManager = LagrangeServiceManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
         evidenceVerifier = EvidenceVerifier(
             address(
                 new TransparentUpgradeableProxy(
@@ -114,7 +98,15 @@ contract Deploy is Script, Test {
                 )
             )
         );
-
+        voteWeigher = VoteWeigher(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
         if (isNative) {
             stakeManager = StakeManager(
                 address(
@@ -126,7 +118,7 @@ contract Deploy is Script, Test {
                 )
             );
         } else {
-            voteWeigher = VoteWeigherBaseMock(
+            eigenAdapter = EigenAdapter(
                 address(
                     new TransparentUpgradeableProxy(
                         address(emptyContract),
@@ -137,43 +129,42 @@ contract Deploy is Script, Test {
             );
         }
         // deploy implementation contracts
+        lagrangeCommitteeImp = new LagrangeCommittee(
+            lagrangeService,
+            IVoteWeigher(voteWeigher)
+        );
         if (isNative) {
-            lagrangeCommitteeImp = new LagrangeCommittee(
-                lagrangeService,
-                IVoteWeigher(stakeManager)
+            voteWeigherImp = new VoteWeigher(
+                IStakeManager(stakeManager)
             );
-            lagrangeServiceManagerImp = new LagrangeServiceManager(
-                IStakeManager(stakeManager),
+            lagrangeServiceImp = new LagrangeService(
                 lagrangeCommittee,
-                lagrangeService
+                IStakeManager(stakeManager)
             );
             stakeManagerImp = new StakeManager(
-                address(lagrangeServiceManager),
-                5
+                address(lagrangeService)
+            );
+            evidenceVerifierImp = new EvidenceVerifier(
+                lagrangeCommittee,
+                IStakeManager(stakeManager)
             );
         } else {
-            lagrangeCommitteeImp = new LagrangeCommittee(
-                lagrangeService,
-                IVoteWeigher(address(voteWeigher))
+            voteWeigherImp = new VoteWeigher(
+                IStakeManager(eigenAdapter)
             );
-            lagrangeServiceManagerImp = new LagrangeServiceManager(
-                IStakeManager(slasherAddress),
+            lagrangeServiceImp = new LagrangeService(
                 lagrangeCommittee,
-                lagrangeService
+                IStakeManager(eigenAdapter)
             );
-            voteWeigherImp = new VoteWeigherBaseMock(
-                IServiceManager(address(lagrangeServiceManager)),
-                IStrategyManager(strategyManagerAddress)
+            eigenAdapterImp = new EigenAdapter(
+                address(lagrangeService),
+                IDelegationManager(delegationManagerAddress)
+            );
+            evidenceVerifierImp = new EvidenceVerifier(
+                lagrangeCommittee,
+                IStakeManager(eigenAdapter)
             );
         }
-        lagrangeServiceImp = new LagrangeService(
-            lagrangeCommittee,
-            lagrangeServiceManager
-        );
-        evidenceVerifierImp = new EvidenceVerifier(
-            lagrangeCommittee,
-            lagrangeServiceManager
-        );
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -182,22 +173,20 @@ contract Deploy is Script, Test {
             abi.encodeWithSelector(LagrangeCommittee.initialize.selector, msg.sender)
         );
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(lagrangeServiceManager))),
-            address(lagrangeServiceManagerImp),
-            abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, msg.sender)
-        );
-
-        proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender, evidenceVerifier)
+            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(evidenceVerifier))),
             address(evidenceVerifierImp),
             abi.encodeWithSelector(EvidenceVerifier.initialize.selector, msg.sender)
         );
-
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(voteWeigher))),
+            address(voteWeigherImp),
+            abi.encodeWithSelector(EvidenceVerifier.initialize.selector, msg.sender)
+        );
         if (isNative) {
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(stakeManager))),
@@ -206,9 +195,9 @@ contract Deploy is Script, Test {
             );
         } else {
             proxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(voteWeigher))),
-                address(voteWeigherImp),
-                abi.encodeWithSelector(VoteWeigherBaseMock.initialize.selector, msg.sender)
+                TransparentUpgradeableProxy(payable(address(eigenAdapter))),
+                address(eigenAdapterImp),
+                abi.encodeWithSelector(EigenAdapter.initialize.selector, msg.sender)
             );
         }
 
@@ -223,19 +212,19 @@ contract Deploy is Script, Test {
         vm.serializeAddress(deployed_addresses, "lagrangeCommittee", address(lagrangeCommittee));
         vm.serializeAddress(deployed_addresses, "lagrangeServiceImp", address(lagrangeServiceImp));
         vm.serializeAddress(deployed_addresses, "lagrangeService", address(lagrangeService));
-        vm.serializeAddress(deployed_addresses, "lagrangeServiceManagerImp", address(lagrangeServiceManagerImp));
         vm.serializeAddress(deployed_addresses, "evidenceVerifier", address(evidenceVerifier));
         vm.serializeAddress(deployed_addresses, "evidenceVerifierImp", address(evidenceVerifierImp));
+        vm.serializeAddress(deployed_addresses, "voteWeigher", address(voteWeigher));
 
         if (isNative) {
             vm.serializeAddress(deployed_addresses, "stakeManager", address(stakeManager));
             vm.serializeAddress(deployed_addresses, "stakeManagerImp", address(stakeManagerImp));
         } else {
-            vm.serializeAddress(deployed_addresses, "voteWeigher", address(voteWeigher));
-            vm.serializeAddress(deployed_addresses, "voteWeigherImp", address(voteWeigherImp));
+            vm.serializeAddress(deployed_addresses, "stakeManager", address(eigenAdapter));
+            vm.serializeAddress(deployed_addresses, "stakeManagerImp", address(eigenAdapterImp));
         }
         string memory deployed_output =
-            vm.serializeAddress(deployed_addresses, "lagrangeServiceManager", address(lagrangeServiceManager));
+            vm.serializeAddress(deployed_addresses, "voteWeigherImp", address(voteWeigherImp));
         string memory finalJson = vm.serializeString(parent_object, deployed_addresses, deployed_output);
         vm.writeJson(finalJson, "script/output/deployed_lgr.json");
     }

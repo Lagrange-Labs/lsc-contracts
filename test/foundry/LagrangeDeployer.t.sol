@@ -8,13 +8,10 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import "../../contracts/protocol/LagrangeService.sol";
-import "../../contracts/protocol/LagrangeServiceManager.sol";
 import "../../contracts/protocol/LagrangeCommittee.sol";
 import "../../contracts/protocol/EvidenceVerifier.sol";
+import "../../contracts/protocol/VoteWeigher.sol";
 import "../../contracts/library/StakeManager.sol";
-
-import {Verifier} from "../../contracts/library/slashing_single/verifier.sol";
-import {ISlashingSingleVerifier} from "../../contracts/interfaces/ISlashingSingleVerifier.sol";
 
 import {WETH9} from "../../contracts/mock/WETH9.sol";
 
@@ -22,14 +19,14 @@ import {WETH9} from "../../contracts/mock/WETH9.sol";
 contract LagrangeDeployer is Test {
     LagrangeService public lagrangeService;
     LagrangeService public lagrangeServiceImp;
-    LagrangeServiceManager public lagrangeServiceManager;
-    LagrangeServiceManager public lagrangeServiceManagerImp;
     LagrangeCommittee public lagrangeCommittee;
     LagrangeCommittee public lagrangeCommitteeImp;
     StakeManager public stakeManager;
     StakeManager public stakeManagerImp;
     EvidenceVerifier public evidenceVerifier;
     EvidenceVerifier public evidenceVerifierImp;
+    VoteWeigher public voteWeigher;
+    VoteWeigher public voteWeigherImp;
 
     WETH9 public token;
     ProxyAdmin public proxyAdmin;
@@ -46,7 +43,7 @@ contract LagrangeDeployer is Test {
     }
 
     function testDeploy() public view {
-        console.log("LagrangeServiceManager: ", address(lagrangeServiceManager));
+        console.log("LagrangeService: ", address(lagrangeService));
     }
 
     function _deployLagrangeContracts() internal {
@@ -77,7 +74,7 @@ contract LagrangeDeployer is Test {
                 )
             )
         );
-        lagrangeServiceManager = LagrangeServiceManager(
+        voteWeigher = VoteWeigher(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -110,22 +107,19 @@ contract LagrangeDeployer is Test {
                 lagrangeService,
                 IVoteWeigher(stakeManager)
             );
-        lagrangeServiceManagerImp = new LagrangeServiceManager(
-                IStakeManager(stakeManager),
-                lagrangeCommittee,
-                lagrangeService
+        voteWeigherImp = new VoteWeigher(
+                IStakeManager(stakeManager)
             );
         stakeManagerImp = new StakeManager(
-                address(lagrangeServiceManager),
-                5
+                address(lagrangeService)
             );
         lagrangeServiceImp = new LagrangeService(
             lagrangeCommittee,
-            lagrangeServiceManager
+            stakeManager
         );
         evidenceVerifierImp = new EvidenceVerifier(
             lagrangeCommittee,
-            lagrangeServiceManager
+            stakeManager
         );
 
         // upgrade proxy contracts
@@ -135,9 +129,9 @@ contract LagrangeDeployer is Test {
             abi.encodeWithSelector(LagrangeCommittee.initialize.selector, sender)
         );
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(lagrangeServiceManager))),
-            address(lagrangeServiceManagerImp),
-            abi.encodeWithSelector(LagrangeServiceManager.initialize.selector, sender)
+            TransparentUpgradeableProxy(payable(address(voteWeigher))),
+            address(voteWeigherImp),
+            abi.encodeWithSelector(VoteWeigher.initialize.selector, sender)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),

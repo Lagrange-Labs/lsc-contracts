@@ -1,43 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-struct OperatorStatus {
-    uint256 amount;
-    uint256[2] blsPubKey;
-    bool slashed;
-    uint32 serveUntilBlock;
-    uint32[] subscribedChains;
-    uint256 unsubscribedBlockNumber;
-    // ChainID => Block Number which can be unsubscribable
-    mapping(uint32 => uint256) unsubscribedChains;
-}
-
 interface ILagrangeCommittee {
+    struct UnsubscribedParam {
+        uint32 chainID;
+        uint256 blockNumber;
+    }
+
+    struct OperatorStatus {
+        uint256[2] blsPubKey;
+        // ChainID => VotingPower
+        mapping(uint32 => uint96) subscribedChains;
+        UnsubscribedParam[] unsubscribedParams;
+    }
+
     struct CommitteeDef {
         uint256 startBlock;
         uint256 duration;
         uint256 freezeDuration;
+        uint8 quorumNumber;
     }
 
     struct CommitteeData {
         bytes32 root;
-        uint256 height;
+        uint256 leafCount;
         uint256 totalVotingPower;
     }
 
-    function getServeUntilBlock(address operator) external returns (uint32);
-
-    function getSlashed(address operator) external returns (bool);
-
     function getCommittee(uint32 chainID, uint256 blockNumber) external returns (CommitteeData memory, bytes32);
 
-    function addOperator(address operator, uint256[2] memory blsPubKey, uint32 serveUntilBlock) external;
-
-    function freezeOperator(address operator) external;
+    function addOperator(address operator, uint256[2] memory blsPubKey) external;
 
     function isLocked(uint32 chainID) external returns (bool, uint256);
 
-    function updateOperatorAmount(address operator) external;
+    function updateOperatorAmount(address operator, uint32 chainID) external;
 
     function subscribeChain(address operator, uint32 chainID) external;
 

@@ -7,7 +7,7 @@ pragma solidity ^0.8.12;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {IStakeRegistryStub} from "eigenlayer-contracts/src/contracts/interfaces/IStakeRegistryStub.sol";
+import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -34,13 +34,15 @@ contract DelegationManager is IDelegationManager {
         require(owner() == msg.sender, "Ownable: caller is not the owner");
     }
 
-    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external onlyOwner {
+    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external {
         _operatorShares[msg.sender] = 100000000000000000;
     }
 
     function modifyOperatorDetails(OperatorDetails calldata /*newOperatorDetails*/) external pure {}
 
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
+
+    function updateAVSMetadataURI(string calldata /*metadataURI*/) external pure {}
 
     function delegateTo(address /*operator*/, SignatureWithExpiry memory /*approverSignatureAndExpiry*/,
         bytes32 /*approverSalt*/) external pure {}
@@ -49,7 +51,7 @@ contract DelegationManager is IDelegationManager {
         SignatureWithExpiry memory /*approverSignatureAndExpiry*/,
         bytes32 /*approverSalt*/) external pure {}
 
-    function undelegate(address /*staker*/) external pure returns (bytes32 withdrawalRoot) {}
+    function undelegate(address /*staker*/) external pure returns (bytes32[] memory withdrawalRoot) {}
 
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata /*queuedWithdrawalParams*/
@@ -74,7 +76,21 @@ contract DelegationManager is IDelegationManager {
     function decreaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/)
         external pure {}
 
-    function stakeRegistry() external pure returns (IStakeRegistryStub) {}
+    function registerOperatorToAVS(
+        address /*operator*/,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory /*operatorSignature*/
+    ) external pure {}
+
+    function deregisterOperatorFromAVS(address /*operator*/) external pure {}
+
+    function operatorSaltIsSpent(address /*operator*/, bytes32 /*salt*/) external pure returns (bool) {}
+
+    function calculateOperatorAVSRegistrationDigestHash(
+        address /*operator*/,
+        address /*avs*/,
+        bytes32 /*salt*/,
+        uint256 /*expiry*/
+    ) external pure returns (bytes32) {}
 
     function delegatedTo(address /*staker*/) external pure returns (address) {}
 
@@ -103,15 +119,10 @@ contract DelegationManager is IDelegationManager {
 
     function delegationApproverSaltIsSpent(address /*_delegationApprover*/, bytes32 /*salt*/) external pure returns (bool) {}
 
+    function withdrawalDelayBlocks() external pure returns (uint256) {}
+
     function calculateCurrentStakerDelegationDigestHash(
         address /*staker*/,
-        address /*operator*/,
-        uint256 /*expiry*/
-    ) external pure returns (bytes32) {}
-
-    function calculateCurrentOperatorDelegationDigestHash(
-        address /*staker*/,
-        uint256 /*_stakerNonce*/,
         address /*operator*/,
         uint256 /*expiry*/
     ) external pure returns (bytes32) {}
@@ -136,6 +147,8 @@ contract DelegationManager is IDelegationManager {
     function STAKER_DELEGATION_TYPEHASH() external pure returns (bytes32) {}
 
     function DELEGATION_APPROVAL_TYPEHASH() external pure returns (bytes32) {}
+
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external pure returns (bytes32) {}
 
     function domainSeparator() external pure returns (bytes32) {}
 
