@@ -44,9 +44,9 @@ contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager {
     function withdraw(IERC20 token, uint256 amount) external {
         require(!freezeOperators[msg.sender], "Operator is frozen");
         require(stakeLockedBlock[msg.sender] < block.number, "Stake is locked");
-        require(operatorShares[msg.sender][address(token)] > amount, "Insufficient balance");
+        require(operatorShares[msg.sender][address(token)] >= amount, "Insufficient balance");
         operatorShares[msg.sender][address(token)] -= amount;
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        token.safeTransfer(msg.sender, amount);
 
         emit Withdraw(msg.sender, address(token), amount);
     }

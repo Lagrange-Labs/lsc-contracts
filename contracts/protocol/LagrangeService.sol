@@ -35,13 +35,17 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add the operator to the whitelist.
-    function addOperatorToWhitelist(address operator) external onlyOwner {
-        operatorWhitelist[operator] = true;
+    function addOperatorsToWhitelist(address[] calldata operators) external onlyOwner {
+        for (uint256 i = 0; i < operators.length; i++) {
+            operatorWhitelist[operators[i]] = true;
+        }
     }
 
     /// Remove the operator from the whitelist.
-    function removeOperatorFromWhitelist(address operator) external onlyOwner {
-        operatorWhitelist[operator] = false;
+    function removeOperatorsFromWhitelist(address[] calldata operators) external onlyOwner {
+        for (uint256 i = 0; i < operators.length; i++) {
+            delete operatorWhitelist[operators[i]];
+        }
     }
 
     /// Add the operator to the service.

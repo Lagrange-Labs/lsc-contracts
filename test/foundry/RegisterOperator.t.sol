@@ -14,7 +14,9 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // add operator to whitelist
         vm.prank(vm.addr(1));
-        lagrangeService.addOperatorToWhitelist(operator);
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        lagrangeService.addOperatorsToWhitelist(operators);
 
         vm.startPrank(operator);
 
@@ -58,13 +60,22 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
     function testFreezePeriod() public {
         address operator = vm.addr(555);
+        vm.deal(operator, 1e19);
         uint256[2] memory blsPubKey;
+        uint256 amount = 1e16;
 
         // add operator to whitelist
         vm.prank(vm.addr(1));
-        lagrangeService.addOperatorToWhitelist(operator);
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        lagrangeService.addOperatorsToWhitelist(operators);
 
         vm.startPrank(operator);
+
+        // deposit tokens to stake manager
+        token.deposit{value: amount}();
+        token.approve(address(stakeManager), amount);
+        stakeManager.deposit(IERC20(address(token)), amount);
 
         // it should fail because the committee is in freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);

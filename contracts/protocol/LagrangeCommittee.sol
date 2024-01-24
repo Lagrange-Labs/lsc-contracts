@@ -115,7 +115,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         OperatorStatus storage opStatus = operators[operator];
 
         for (uint256 i = 0; i < opStatus.unsubscribedParams.length; i++) {
-            UnsubscribedParam storage param = opStatus.unsubscribedParams[i];
+            UnsubscribedParam memory param = opStatus.unsubscribedParams[i];
             if (param.chainID == chainID) {
                 if (param.blockNumber > 0 && param.blockNumber >= block.number) {
                     revert("The dedciated chain is while unsubscribing.");
@@ -126,6 +126,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         require(opStatus.subscribedChains[chainID] == 0, "The dedicated chain is already subscribed.");
         opStatus.subscribedChains[chainID] =
             voteWeigher.weightOfOperator(committeeParams[chainID].quorumNumber, operator);
+        opStatus.subscribedChainCount = opStatus.subscribedChainCount + 1;
         totalVotingPower[chainID] += opStatus.subscribedChains[chainID];
 
         _registerOperator(operator, chainID);
@@ -142,16 +143,21 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         totalVotingPower[chainID] -= opStatus.subscribedChains[chainID];
         delete opStatus.subscribedChains[chainID];
         opStatus.unsubscribedParams.push(UnsubscribedParam(chainID, blockNumber));
+        opStatus.subscribedChainCount = opStatus.subscribedChainCount - 1;
 
         _unregisterOperator(operator, chainID);
     }
 
     function isUnregisterable(address operator) public view returns (bool, uint256) {
         OperatorStatus storage opStatus = operators[operator];
-        // TODO remaining subscription check
+
+        if (opStatus.subscribedChainCount > 0) {
+            return (false, 0);
+        }
+
         uint256 unsubscribeBlockNumber = 0;
         for (uint256 i = 0; i < opStatus.unsubscribedParams.length; i++) {
-            UnsubscribedParam storage param = opStatus.unsubscribedParams[i];
+            UnsubscribedParam memory param = opStatus.unsubscribedParams[i];
             if (param.blockNumber > unsubscribeBlockNumber) {
                 unsubscribeBlockNumber = param.blockNumber;
             }

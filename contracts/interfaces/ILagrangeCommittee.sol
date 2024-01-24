@@ -9,6 +9,7 @@ interface ILagrangeCommittee {
 
     struct OperatorStatus {
         uint256[2] blsPubKey;
+        uint8 subscribedChainCount;
         // ChainID => VotingPower
         mapping(uint32 => uint96) subscribedChains;
         UnsubscribedParam[] unsubscribedParams;

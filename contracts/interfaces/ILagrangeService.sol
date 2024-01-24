@@ -2,9 +2,9 @@
 pragma solidity ^0.8.12;
 
 interface ILagrangeService {
-    function addOperatorToWhitelist(address operator) external;
+    function addOperatorsToWhitelist(address[] calldata operators) external;
 
-    function removeOperatorFromWhitelist(address operator) external;
+    function removeOperatorsFromWhitelist(address[] calldata operators) external;
 
     function register(uint256[2] memory _blsPubKey) external;
 

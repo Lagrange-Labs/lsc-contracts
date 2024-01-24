@@ -11,15 +11,29 @@ const uint32Max = 4294967295;
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 
 const convertBLSPubKey = (oldPubKey) => {
-  const pubKey = bls.PointG1.fromHex(oldPubKey.slice(2));
-  const Gx = pubKey.toAffine()[0].value.toString(16).padStart(96, '0');
-  const Gy = pubKey.toAffine()[1].value.toString(16).padStart(96, '0');
-  const newPubKey = '0x' + Gx + Gy;
-  console.log('newPubKey: ', newPubKey);
-  return newPubKey;
+  const Gx = BigInt(oldPubKey.slice(0, 66));
+  const Gy = BigInt('0x' + oldPubKey.slice(66));
+  return [Gx, Gy];
 };
 
 (async () => {
+  const owallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+  const ocontract = new ethers.Contract(
+    deployedAddresses.addresses.lagrangeService,
+    abi,
+    owallet,
+  );
+
+  const tx = await ocontract.addOperatorsToWhitelist(operators[0].operators);
+  console.log(
+    `Starting to add operator to whitelist for address: ${operators[0].operators} tx hash: ${tx.hash}`,
+  );
+  const receipt = await tx.wait();
+  console.log(
+    `Add Operator Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
+  );
+
+
   await Promise.all(
     operators[0].operators.map(async (operator, index) => {
       const privKey = operators[0].ecdsa_priv_keys[index];
@@ -32,7 +46,6 @@ const convertBLSPubKey = (oldPubKey) => {
 
       const tx = await contract.register(
         convertBLSPubKey(operators[0].bls_pub_keys[index]),
-        uint32Max,
       );
       console.log(
         `Starting to register operator for address: ${operator} tx hash: ${tx.hash}`,
