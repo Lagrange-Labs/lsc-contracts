@@ -59,9 +59,10 @@ describe('LagrangeCommittee', function () {
     const stakeManager = await StakeManagerFactory.deploy(admin.address);
     await stakeManager.deployed();
 
-    const VoteWeigherFactory =
-      await ethers.getContractFactory('VoteWeigher');
-    const voteWeigher = await VoteWeigherFactory.deploy(stakeManagerProxy.address);
+    const VoteWeigherFactory = await ethers.getContractFactory('VoteWeigher');
+    const voteWeigher = await VoteWeigherFactory.deploy(
+      stakeManagerProxy.address,
+    );
     await voteWeigher.deployed();
 
     const LagrangeCommitteeFactory =
@@ -101,7 +102,9 @@ describe('LagrangeCommittee', function () {
       voteWeigherProxy.address,
       admin,
     );
-    await voteWeigherProxyContract.addQuorumMultiplier(0, [{ token: token.address, multiplier: 1e15 }]);
+    await voteWeigherProxyContract.addQuorumMultiplier(0, [
+      { token: token.address, multiplier: 1e15 },
+    ]);
   });
 
   it('trie construction/deconstruction', async function () {
@@ -119,7 +122,7 @@ describe('LagrangeCommittee', function () {
     const chainCount = 4;
     const operatorCount = 10;
 
-    const operators = []
+    const operators = [];
     for (let j = 1; j < operatorCount; j++) {
       const operator = await ethers.getSigner(j);
       const bls_pub_key = '0x' + '0'.repeat(63) + j;
@@ -127,17 +130,16 @@ describe('LagrangeCommittee', function () {
       await token.connect(operator).approve(stakeManager.address, stake * j);
       await stakeManager.connect(operator).deposit(token.address, stake * j);
 
-      await committee.addOperator(
-        operator.address,
-        [bls_pub_key, bls_pub_key],
-      );
+      await committee.addOperator(operator.address, [bls_pub_key, bls_pub_key]);
       operators.push(operator);
     }
     for (i = 1; i <= chainCount; i++) {
       console.log('Building trie of size ' + i + '...');
-      await Promise.all(operators.map(async (operator) => {
-        return committee.subscribeChain(operator.address, i);
-      }));
+      await Promise.all(
+        operators.map(async (operator) => {
+          return committee.subscribeChain(operator.address, i);
+        }),
+      );
 
       await committee.registerChain(i, 10000, 1000, 0);
     }
@@ -147,9 +149,11 @@ describe('LagrangeCommittee', function () {
 
     for (i = 1; i <= chainCount; i++) {
       console.log('Deconstructing trie #' + i + '...');
-      await Promise.all(operators.map(async (operator) => {
-        return committee.unsubscribeChain(operator.address, i);
-      }));
+      await Promise.all(
+        operators.map(async (operator) => {
+          return committee.unsubscribeChain(operator.address, i);
+        }),
+      );
     }
   });
 
@@ -179,7 +183,10 @@ describe('LagrangeCommittee', function () {
     await committee.subscribeChain(signer.address, operators[0].chain_id);
     await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
 
-    const leaf = ethers.utils.solidityKeccak256(["bytes1", "uint256", "uint256", "address", "uint96"], ["0x01", Gx, Gy, signer.address, stake / 1e3]);
+    const leaf = ethers.utils.solidityKeccak256(
+      ['bytes1', 'uint256', 'uint256', 'address', 'uint96'],
+      ['0x01', Gx, Gy, signer.address, stake / 1e3],
+    );
 
     const leafHash = await committee.committeeNodes(
       operators[0].chain_id,
@@ -227,11 +234,7 @@ describe('LagrangeCommittee', function () {
 
     const leaves = await Promise.all(
       operators[0].operators.map(async (_, index) => {
-        return await committee.committeeNodes(
-          operators[0].chain_id,
-          0,
-          index,
-        );
+        return await committee.committeeNodes(operators[0].chain_id, 0, index);
       }),
     );
     const committeeRoot = await committee.getCommittee(
@@ -252,14 +255,15 @@ describe('LagrangeCommittee', function () {
       for (let i = 0; i < count; i += 2) {
         const left = leaves[i];
         const right = leaves[i + 1];
-        const hash = ethers.utils.solidityKeccak256(['bytes1', 'bytes32', 'bytes32'], ['0x02', left, right]);
+        const hash = ethers.utils.solidityKeccak256(
+          ['bytes1', 'bytes32', 'bytes32'],
+          ['0x02', left, right],
+        );
         leaves[i / 2] = hash;
       }
       count /= 2;
     }
-    expect(leaves[0]).to.equal(
-      committeeRoot.currentCommittee.root,
-    );
+    expect(leaves[0]).to.equal(committeeRoot.currentCommittee.root);
   });
 
   it('merkle tree update', async function () {
@@ -292,45 +296,33 @@ describe('LagrangeCommittee', function () {
     }
 
     // unsubscribe the first operator
-    await committee.unsubscribeChain(
-      opAddrs[0],
-      operators[0].chain_id,
-    );
+    await committee.unsubscribeChain(opAddrs[0], operators[0].chain_id);
     // unsubscribe the last operator
     await committee.unsubscribeChain(
       opAddrs[operators[0].operators.length - 2],
       operators[0].chain_id,
     );
     // unsubscribe the middle operator
-    await committee.unsubscribeChain(
-      opAddrs[3],
-      operators[0].chain_id,
-    );
-    await committee.unsubscribeChain(
-      opAddrs[4],
-      operators[0].chain_id,
-    );
+    await committee.unsubscribeChain(opAddrs[3], operators[0].chain_id);
+    await committee.unsubscribeChain(opAddrs[4], operators[0].chain_id);
     // update the stake amount of the second operator
-    await token.connect(await ethers.getSigner(2)).deposit({ value: stake * 2 });
-    await token.connect(await ethers.getSigner(2)).approve(stakeManager.address, stake * 2);
-    await stakeManager.connect(await ethers.getSigner(2)).deposit(token.address, stake * 2);
+    await token
+      .connect(await ethers.getSigner(2))
+      .deposit({ value: stake * 2 });
+    await token
+      .connect(await ethers.getSigner(2))
+      .approve(stakeManager.address, stake * 2);
+    await stakeManager
+      .connect(await ethers.getSigner(2))
+      .deposit(token.address, stake * 2);
     await committee.updateOperatorAmount(opAddrs[1], operators[0].chain_id);
 
-    await committee.registerChain(
-      operators[0].chain_id,
-      10000,
-      1000,
-      0,
-    );
+    await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
     let operatorCount = operators[0].operators.length - 4;
 
     const leaves = await Promise.all(
       new Array(operatorCount).fill(0).map(async (_, index) => {
-        return await committee.committeeNodes(
-          operators[0].chain_id,
-          0,
-          index,
-        );
+        return await committee.committeeNodes(operators[0].chain_id, 0, index);
       }),
     );
     const committeeRoot = await committee.getCommittee(
@@ -349,13 +341,14 @@ describe('LagrangeCommittee', function () {
       for (let i = 0; i < count; i += 2) {
         const left = leaves[i];
         const right = leaves[i + 1];
-        const hash = ethers.utils.solidityKeccak256(['bytes1', 'bytes32', 'bytes32'], ['0x02', left, right]);
+        const hash = ethers.utils.solidityKeccak256(
+          ['bytes1', 'bytes32', 'bytes32'],
+          ['0x02', left, right],
+        );
         leaves[i / 2] = hash;
       }
       count /= 2;
     }
-    expect(leaves[0]).to.equal(
-      committeeRoot.currentCommittee.root,
-    );
+    expect(leaves[0]).to.equal(committeeRoot.currentCommittee.root);
   });
 });

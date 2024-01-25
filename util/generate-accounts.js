@@ -13,7 +13,10 @@ const DEFAULT_NUM_ACCOUNTS = 10;
 function genBLSKey(i) {
   const privateKey = BigInt(1234567890 + i + 1);
   const publicKey = bn254.getPublicKey(privateKey, false);
-  return [privateKey.toString(16).padStart(64, '0'), Buffer.from(publicKey.slice(1)).toString('hex')];
+  return [
+    privateKey.toString(16).padStart(64, '0'),
+    Buffer.from(publicKey.slice(1)).toString('hex'),
+  ];
 }
 
 async function main() {

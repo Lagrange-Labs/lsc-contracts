@@ -44,4 +44,3 @@ contract.getCommittee(arbChainID, 165).then((current) => {
 contract.committeeParams(arbChainID).then((params) => {
   console.log('Arb params: ', params);
 });
-

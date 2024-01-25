@@ -33,7 +33,6 @@ const convertBLSPubKey = (oldPubKey) => {
     `Add Operator Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
   );
 
-
   await Promise.all(
     operators[0].operators.map(async (operator, index) => {
       const privKey = operators[0].ecdsa_priv_keys[index];
