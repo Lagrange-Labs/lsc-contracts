@@ -4,15 +4,15 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-import {IServiceManager} from "../interfaces/IServiceManager.sol";
-import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommittee.sol";
+import {IStakeManager} from "../interfaces/IStakeManager.sol";
+import {ILagrangeCommittee} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 
 contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
     mapping(address => bool) public operatorWhitelist;
 
     ILagrangeCommittee public immutable committee;
-    IServiceManager public immutable serviceManager;
+    IStakeManager public immutable stakeManager;
 
     event OperatorRegistered(address operator, uint32 serveUntilBlock);
     event OperatorDeregistered(address operator);
@@ -24,9 +24,9 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         _;
     }
 
-    constructor(ILagrangeCommittee _committee, IServiceManager _serviceManager) {
+    constructor(ILagrangeCommittee _committee, IStakeManager _stakeManager) {
         committee = _committee;
-        serviceManager = _serviceManager;
+        stakeManager = _stakeManager;
         _disableInitializers();
     }
 
@@ -35,19 +35,24 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add the operator to the whitelist.
-    function addOperatorToWhitelist(address operator) external onlyOwner {
-        operatorWhitelist[operator] = true;
+    function addOperatorsToWhitelist(address[] calldata operators) external onlyOwner {
+        for (uint256 i = 0; i < operators.length; i++) {
+            operatorWhitelist[operators[i]] = true;
+        }
     }
 
     /// Remove the operator from the whitelist.
-    function removeOperatorFromWhitelist(address operator) external onlyOwner {
-        operatorWhitelist[operator] = false;
+    function removeOperatorsFromWhitelist(address[] calldata operators) external onlyOwner {
+        for (uint256 i = 0; i < operators.length; i++) {
+            delete operatorWhitelist[operators[i]];
+        }
     }
 
     /// Add the operator to the service.
-    function register(uint256[2] memory _blsPubKey, uint32 serveUntilBlock) external onlyWhitelisted {
-        committee.addOperator(msg.sender, _blsPubKey, serveUntilBlock);
-        serviceManager.recordFirstStakeUpdate(msg.sender, serveUntilBlock);
+    function register(uint256[2] memory _blsPubKey) external onlyWhitelisted {
+        committee.addOperator(msg.sender, _blsPubKey);
+        uint32 serveUntilBlock = type(uint32).max;
+        stakeManager.lockStakeUntil(msg.sender, serveUntilBlock);
         emit OperatorRegistered(msg.sender, serveUntilBlock);
     }
 
@@ -67,7 +72,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     function deregister() external onlyWhitelisted {
         (bool possible, uint256 unsubscribeBlockNumber) = committee.isUnregisterable(msg.sender);
         require(possible, "The operator is not able to deregister");
-        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(msg.sender, uint32(unsubscribeBlockNumber));
+        stakeManager.lockStakeUntil(msg.sender, unsubscribeBlockNumber);
         emit OperatorDeregistered(msg.sender);
     }
 

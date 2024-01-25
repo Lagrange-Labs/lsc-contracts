@@ -7,7 +7,6 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 
 import {DelegationManager} from "../contracts/mock/DMMock.sol";
 import {StrategyManager} from "../contracts/mock/SMMock.sol";
-import {Slasher} from "../contracts/mock/SlasherMock.sol";
 import {Strategy} from "../contracts/mock/STMock.sol";
 import {BatchStorageMock} from "../contracts/mock/mantle/BatchStorageMock.sol";
 
@@ -38,7 +37,6 @@ contract DeployMock is Script {
 
             DelegationManager dm = new DelegationManager();
             StrategyManager sm = new StrategyManager(dm);
-            Slasher slasher = new Slasher();
             Strategy st = new Strategy();
 
             string memory operatorsData = vm.readFile(operatorsPath);
@@ -74,7 +72,6 @@ contract DeployMock is Script {
             string memory deployed_addresses = "addresses";
             vm.serializeAddress(deployed_addresses, "delegationManager", address(dm));
             vm.serializeAddress(deployed_addresses, "strategyManager", address(sm));
-            vm.serializeAddress(deployed_addresses, "slasher", address(slasher));
             string memory deployed_out = vm.serializeAddress(deployed_addresses, "strategy", address(st));
             string memory final_json = vm.serializeString(parent_object, deployed_addresses, deployed_out);
             vm.writeFile("script/output/deployed_mock.json", final_json);

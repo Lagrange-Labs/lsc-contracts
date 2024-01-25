@@ -5,10 +5,8 @@ import "forge-std/Test.sol";
 
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {VoteWeigherBaseStorage} from "eigenlayer-middleware/VoteWeigherBaseStorage.sol";
 
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeServiceManager} from "../contracts/protocol/LagrangeServiceManager.sol";
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
 
 contract InitCommittee is Script, Test {
@@ -37,7 +35,7 @@ contract InitCommittee is Script, Test {
 
         for (uint256 i = 0; i < initialChains.length; i++) {
             lagrangeCommittee.registerChain(
-                initialChains[i].chainId, initialChains[i].epochPeriod, initialChains[i].freezeDuration
+                initialChains[i].chainId, initialChains[i].epochPeriod, initialChains[i].freezeDuration, 0
             );
         }
 

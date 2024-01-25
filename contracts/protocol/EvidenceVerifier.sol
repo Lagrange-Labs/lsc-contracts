@@ -8,8 +8,8 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {ISlashingAggregateVerifier} from "../interfaces/ISlashingAggregateVerifier.sol";
 import {ISlashingSingleVerifier} from "../interfaces/ISlashingSingleVerifier.sol";
-import {ILagrangeCommittee, OperatorStatus} from "../interfaces/ILagrangeCommittee.sol";
-import {IServiceManager} from "../interfaces/IServiceManager.sol";
+import {ILagrangeCommittee} from "../interfaces/ILagrangeCommittee.sol";
+import {IStakeManager} from "../interfaces/IStakeManager.sol";
 import {IEvidenceVerifier, Evidence, ProofParams} from "../interfaces/IEvidenceVerifier.sol";
 
 contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifier {
@@ -19,7 +19,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
     uint256 public constant CHAIN_ID_ARBITRUM_NITRO = 421613;
 
     ILagrangeCommittee public immutable committee;
-    IServiceManager public immutable serviceManager;
+    IStakeManager public immutable stakeManager;
     // aggregate signature verifiers Triage
     mapping(uint256 => ISlashingAggregateVerifier) public aggVerifiers;
     // single signature verifier
@@ -39,9 +39,9 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
         uint32 chainID
     );
 
-    constructor(ILagrangeCommittee _committee, IServiceManager _serviceManager) {
+    constructor(ILagrangeCommittee _committee, IStakeManager _stakeManager) {
         committee = _committee;
-        serviceManager = _serviceManager;
+        stakeManager = _stakeManager;
         _disableInitializers();
     }
 
@@ -60,10 +60,9 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
     /// upload the evidence to punish the operator.
     function uploadEvidence(Evidence calldata evidence) external {
         // check the operator is registered or not
-        require(committee.getServeUntilBlock(evidence.operator) > 0, "The operator is not registered");
+        // TODO
 
         // check the operator is slashed or not
-        require(!committee.getSlashed(evidence.operator), "The operator is slashed");
 
         require(checkCommitSignature(evidence), "The commit signature is not correct");
 
@@ -105,7 +104,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
 
     /// Slash the given operator
     function _freezeOperator(address operator) internal {
-        serviceManager.freezeOperator(operator);
+        stakeManager.freezeOperator(operator);
         emit OperatorSlashed(operator);
     }
 
@@ -114,7 +113,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
         (ILagrangeCommittee.CommitteeData memory cdata,) =
             committee.getCommittee(_evidence.chainID, _evidence.l1BlockNumber);
 
-        require(_verifyAggregateSignature(_evidence, cdata.height), "Aggregate proof verification failed");
+        require(_verifyAggregateSignature(_evidence, cdata.leafCount), "Aggregate proof verification failed");
 
         uint256[2] memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
         bool sigVerify = _verifySingleSignature(_evidence, blsPubKey);

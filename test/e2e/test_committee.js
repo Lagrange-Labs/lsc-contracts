@@ -28,18 +28,6 @@ provider.getNetwork().then((network) => {
   console.log('chainID: ', network.chainId);
 });
 
-stake.weightOfOperator(0, address).then((weight) => {
-  console.log('Weight: ', weight);
-});
-
-stake.tokenMultipliers(0).then((multiplier) => {
-  console.log('Multiplier: ', multiplier);
-});
-
-stake.operatorStakes(tokenAddress, address).then((stake) => {
-  console.log('Stake: ', stake);
-});
-
 const arbChainID = 1337;
 const optChainID = 420;
 
@@ -48,7 +36,7 @@ contract.getCommittee(optChainID, 5000).then((current) => {
   console.log('Opt Next committee: ', current[1]);
 });
 
-contract.getCommittee(arbChainID, 4677).then((current) => {
+contract.getCommittee(arbChainID, 165).then((current) => {
   console.log('Arb Current committee: ', current[0]);
   console.log('Arb Next committee: ', current[1]);
 });
@@ -57,6 +45,3 @@ contract.committeeParams(arbChainID).then((params) => {
   console.log('Arb params: ', params);
 });
 
-contract.operators(address).then((op) => {
-  console.log(op);
-});

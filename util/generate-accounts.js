@@ -2,7 +2,7 @@
 
 const ethers = require('ethers');
 const fs = require('fs');
-const bls = require('bls-eth-wasm');
+const { bn254 } = require('@noble/curves/bn254');
 const { config } = require('dotenv');
 require('dotenv').config();
 
@@ -10,11 +10,10 @@ const DEFAULT_MNEMONIC =
   'exchange holiday girl alone head gift unfair resist void voice people tobacco';
 const DEFAULT_NUM_ACCOUNTS = 10;
 
-async function genBLSKey(i) {
-  await bls.init(bls.BLS12_381);
-  blsKey = new bls.SecretKey();
-  await blsKey.setInt(i + 1);
-  return blsKey;
+function genBLSKey(i) {
+  const privateKey = BigInt(1234567890 + i + 1);
+  const publicKey = bn254.getPublicKey(privateKey, false);
+  return [privateKey.toString(16).padStart(64, '0'), Buffer.from(publicKey.slice(1)).toString('hex')];
 }
 
 async function main() {
@@ -29,11 +28,12 @@ async function main() {
     );
     accounts[accountWallet.address] = accountWallet.privateKey;
 
-    blsPair = await genBLSKey(i);
-    pub = await blsPair.getPublicKey();
+    blsKey = await genBLSKey(i);
+    console.log(blsKey);
+
     blsPairs[accountWallet.address] = {
-      pub: '0x' + (await pub.serializeToHexStr()),
-      priv: '0x' + (await blsPair.serializeToHexStr()),
+      priv: '0x' + blsKey[0],
+      pub: '0x' + blsKey[1],
     };
   }
 

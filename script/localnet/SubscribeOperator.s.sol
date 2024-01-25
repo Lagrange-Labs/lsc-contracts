@@ -35,7 +35,7 @@ contract SubscribeOperator is Script, Test {
 
         LagrangeService lagrangeService =
             LagrangeService(stdJson.readAddress(deployLGRData, ".addresses.lagrangeService"));
-        lagrangeService.register(operator.blsPublicPoint, type(uint32).max);
+        lagrangeService.register(operator.blsPublicPoint);
         lagrangeService.subscribe(operator.chainId);
 
         vm.stopBroadcast();

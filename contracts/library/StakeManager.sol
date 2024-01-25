@@ -3,37 +3,30 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../interfaces/IVoteWeigher.sol";
-import "../interfaces/IStakeManager.sol";
+import {IStakeManager} from "../interfaces/IStakeManager.sol";
 
-contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager, IVoteWeigher {
-    struct TokenMultiplier {
-        address token;
-        uint96 multiplier;
-    }
+contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager {
+    using SafeERC20 for IERC20;
 
-    uint256 internal constant _WEIGHTING_DIVISOR = 1e18;
-
-    mapping(address => mapping(address => uint256)) public operatorStakes;
-    TokenMultiplier[] public tokenMultipliers;
-
-    mapping(uint8 => uint8[]) public quorumIndexes;
+    mapping(address => mapping(address => uint256)) public operatorShares;
+    mapping(address => uint256) public stakeLockedBlock;
+    // future use
     mapping(address => bool) public freezeOperators;
-    mapping(address => uint32) public lastStakeUpdateBlock;
 
-    address public immutable serviceManager;
-    uint8 public immutable numberOfQuorums;
+    address public immutable service;
 
-    modifier onlyServiceManager() {
-        require(msg.sender == serviceManager, "Only service manager can call this function.");
+    event Deposit(address indexed operator, address indexed token, uint256 amount);
+    event Withdraw(address indexed operator, address indexed token, uint256 amount);
+
+    modifier onlyService() {
+        require(msg.sender == service, "Only service manager can call this function.");
         _;
     }
 
-    constructor(address _serviceManager, uint8 _numberOfQuorums) {
-        numberOfQuorums = _numberOfQuorums;
-        serviceManager = _serviceManager;
+    constructor(address _service) {
+        service = _service;
         _disableInitializers();
     }
 
@@ -41,75 +34,35 @@ contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager, IVote
         _transferOwnership(initialOwner);
     }
 
-    function deposit(address token, uint256 amount) external {
-        require(amount > 0, "Amount must be greater than 0");
-        require(IERC20(token).transferFrom(msg.sender, address(this), amount), "Transfer failed");
-        operatorStakes[token][msg.sender] += amount;
+    function deposit(IERC20 token, uint256 amount) external {
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        operatorShares[msg.sender][address(token)] += amount;
+
+        emit Deposit(msg.sender, address(token), amount);
     }
 
-    function withdraw(address token, uint256 amount) external {
-        require(amount > 0, "Amount must be greater than 0");
+    function withdraw(IERC20 token, uint256 amount) external {
         require(!freezeOperators[msg.sender], "Operator is frozen");
-        require(lastStakeUpdateBlock[msg.sender] < block.number, "Stake is locked");
-        require(operatorStakes[token][msg.sender] >= amount, "Insufficient balance");
-        operatorStakes[token][msg.sender] -= amount;
-        require(IERC20(token).transfer(msg.sender, amount), "Transfer failed");
+        require(stakeLockedBlock[msg.sender] < block.number, "Stake is locked");
+        require(operatorShares[msg.sender][address(token)] >= amount, "Insufficient balance");
+        operatorShares[msg.sender][address(token)] -= amount;
+        token.safeTransfer(msg.sender, amount);
+
+        emit Withdraw(msg.sender, address(token), amount);
     }
 
-    function setTokenMultiplier(address token, uint96 multiplier) external onlyOwner {
-        for (uint256 i = 0; i < tokenMultipliers.length; i++) {
-            if (tokenMultipliers[i].token == token) {
-                tokenMultipliers[i].multiplier = multiplier;
-                return;
-            }
-        }
-        tokenMultipliers.push(TokenMultiplier({token: token, multiplier: multiplier}));
+    function lockStakeUntil(address operator, uint256 serveUntilBlock) external onlyService {
+        stakeLockedBlock[operator] = serveUntilBlock;
     }
 
-    function setQuorumIndexes(uint8 quorumNumber, uint8[] calldata indexes) external onlyOwner {
-        require(quorumNumber < numberOfQuorums, "Invalid quorum number");
-        quorumIndexes[quorumNumber] = indexes;
+    // future use for slashing
+    function resetFrozenStatus(address[] calldata frozenAddresses) external onlyOwner {
+        // for (uint256 i = 0; i < frozenAddresses.length; i++) {
+        //     freezeOperators[frozenAddresses[i]] = false;
+        // }
     }
 
-    function weightOfOperator(uint8 quorumNumber, address operator) external view override returns (uint96) {
-        require(quorumNumber < numberOfQuorums, "Invalid quorum number");
-        uint256 weight = 0;
-        for (uint256 i = 0; i < quorumIndexes[quorumNumber].length; i++) {
-            uint8 index = quorumIndexes[quorumNumber][i];
-            weight += (operatorStakes[tokenMultipliers[index].token][operator] * tokenMultipliers[index].multiplier)
-                / _WEIGHTING_DIVISOR;
-        }
-        return uint96(weight);
-    }
-
-    function resetFrozenStatus(address[] calldata frozenAddresses) external override onlyOwner {
-        for (uint256 i = 0; i < frozenAddresses.length; i++) {
-            freezeOperators[frozenAddresses[i]] = false;
-        }
-    }
-
-    function freezeOperator(address operator) external override onlyServiceManager {
-        freezeOperators[operator] = true;
-    }
-
-    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external override onlyServiceManager {
-        lastStakeUpdateBlock[operator] = serveUntilBlock;
-    }
-
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement)
-        external
-        override
-    {}
-
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock)
-        external
-        override
-        onlyServiceManager
-    {
-        lastStakeUpdateBlock[operator] = serveUntilBlock;
-    }
-
-    function isFrozen(address operator) external view override returns (bool) {
-        return freezeOperators[operator];
+    function freezeOperator(address operator) external onlyService {
+        // freezeOperators[operator] = true;
     }
 }
