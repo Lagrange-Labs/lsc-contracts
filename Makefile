@@ -90,7 +90,7 @@ deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deplo
 
 all-mock: run-geth init-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee	
 
-all-native: run-geth init-accounts deploy-weth9 deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee	
+all-native: run-geth init-accounts deploy-weth9 deploy-lagrange update-config add-quorum deposit-stake deploy-register init-committee	
 
 deploy-native: generate-accounts deploy-weth9 deploy-lagrange deploy-verifiers update-config add-quorum distribute deploy-register init-committee
 
