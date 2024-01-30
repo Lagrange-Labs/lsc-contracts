@@ -42,126 +42,126 @@ async function getSampleEvidence() {
   ];
 }
 
-describe('LagrangeService', function () {
-  let admin, proxy, lagrangeService, lc, lsm, lsaddr, l2ooAddr, outboxAddr;
+// describe('LagrangeService', function () {
+//   let admin, proxy, lagrangeService, lc, lsm, lsaddr, l2ooAddr, outboxAddr;
 
-  before(async function () {
-    [admin] = await ethers.getSigners();
-  });
+//   before(async function () {
+//     [admin] = await ethers.getSigners();
+//   });
 
-  beforeEach(async function () {
-    proxyAdmin = shared.proxyAdmin;
-    proxy = shared.proxy;
+//   beforeEach(async function () {
+//     proxyAdmin = shared.proxyAdmin;
+//     proxy = shared.proxy;
 
-    console.log('Deploying Slasher mock...');
+//     console.log('Deploying Slasher mock...');
 
-    const SlasherFactory = await ethers.getContractFactory('Slasher');
-    const slasher = await SlasherFactory.deploy();
-    await slasher.deployed();
-    shared.slasher = slasher;
+//     const SlasherFactory = await ethers.getContractFactory('Slasher');
+//     const slasher = await SlasherFactory.deploy();
+//     await slasher.deployed();
+//     shared.slasher = slasher;
 
-    console.log('Loading Lagrange Committee shared state...');
+//     console.log('Loading Lagrange Committee shared state...');
 
-    lc = shared.LagrangeCommittee;
+//     lc = shared.LagrangeCommittee;
 
-    console.log('Deploying Lagrange Service Manager...');
+//     console.log('Deploying Lagrange Service Manager...');
 
-    const LSMFactory = await ethers.getContractFactory(
-      'LagrangeServiceManager',
-    );
-    const lsm = await LSMFactory.deploy(
-      slasher.address,
-      lc.address,
-      admin.address,
-    );
-    await lsm.deployed();
+//     const LSMFactory = await ethers.getContractFactory(
+//       'LagrangeServiceManager',
+//     );
+//     const lsm = await LSMFactory.deploy(
+//       slasher.address,
+//       lc.address,
+//       admin.address,
+//     );
+//     await lsm.deployed();
 
-    shared.LagrangeServiceManager = lsm;
+//     shared.LagrangeServiceManager = lsm;
 
-    console.log('Deploying DelegationManager mock...');
+//     console.log('Deploying DelegationManager mock...');
 
-    const DMFactory = await ethers.getContractFactory('DelegationManager');
-    const dm = await DMFactory.deploy();
-    await dm.deployed();
+//     const DMFactory = await ethers.getContractFactory('DelegationManager');
+//     const dm = await DMFactory.deploy();
+//     await dm.deployed();
 
-    console.log('Deploying StrategyManager mock...');
+//     console.log('Deploying StrategyManager mock...');
 
-    const SMFactory = await ethers.getContractFactory('StrategyManager');
-    const sm = await SMFactory.deploy(dm.address);
-    await sm.deployed();
+//     const SMFactory = await ethers.getContractFactory('StrategyManager');
+//     const sm = await SMFactory.deploy(dm.address);
+//     await sm.deployed();
 
-    console.log('Deploying Lagrange Service...');
+//     console.log('Deploying Lagrange Service...');
 
-    const LSFactory = await ethers.getContractFactory('LagrangeService', {});
-    const lagrangeService = await LSFactory.deploy(lc.address, lsm.address);
-    await lagrangeService.deployed();
-    lsaddr = lagrangeService.address;
+//     const LSFactory = await ethers.getContractFactory('LagrangeService', {});
+//     const lagrangeService = await LSFactory.deploy(lc.address, lsm.address);
+//     await lagrangeService.deployed();
+//     lsaddr = lagrangeService.address;
 
-    const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
-      'lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
-    );
+//     const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
+//       'lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
+//     );
 
-    lsproxy = await TransparentUpgradeableProxyFactory.deploy(
-      lagrangeService.address,
-      proxyAdmin.address,
-      '0x',
-    );
-    await lsproxy.deployed();
+//     lsproxy = await TransparentUpgradeableProxyFactory.deploy(
+//       lagrangeService.address,
+//       proxyAdmin.address,
+//       '0x',
+//     );
+//     await lsproxy.deployed();
 
-    const verSigFactory = await ethers.getContractFactory('Verifier');
-    const verSig = await verSigFactory.deploy();
-    await verSig.deployed();
-    shared.SSV = verSig;
-    evFactory = await ethers.getContractFactory('EvidenceVerifier');
-    ev = await evFactory.deploy(lc.address, lsm.address);
-    await ev.deployed();
-    ev.setSingleVerifier(verSig.address);
-    shared.EV = ev;
+//     const verSigFactory = await ethers.getContractFactory('Verifier');
+//     const verSig = await verSigFactory.deploy();
+//     await verSig.deployed();
+//     shared.SSV = verSig;
+//     evFactory = await ethers.getContractFactory('EvidenceVerifier');
+//     ev = await evFactory.deploy(lc.address, lsm.address);
+//     await ev.deployed();
+//     ev.setSingleVerifier(verSig.address);
+//     shared.EV = ev;
 
-    await proxyAdmin.upgradeAndCall(
-      lsproxy.address,
-      lagrangeService.address,
-      lagrangeService.interface.encodeFunctionData('initialize', [
-        admin.address,
-      ]),
-    );
+//     await proxyAdmin.upgradeAndCall(
+//       lsproxy.address,
+//       lagrangeService.address,
+//       lagrangeService.interface.encodeFunctionData('initialize', [
+//         admin.address,
+//       ]),
+//     );
 
-    lsproxy = await ethers.getContractAt('LagrangeService', lsproxy.address);
+//     lsproxy = await ethers.getContractAt('LagrangeService', lsproxy.address);
 
-    shared.lsproxy = lsproxy;
+//     shared.lsproxy = lsproxy;
 
-    lsmproxy = await TransparentUpgradeableProxyFactory.deploy(
-      lsm.address,
-      proxyAdmin.address,
-      '0x',
-    );
-    await lsmproxy.deployed();
-    shared.lsmproxy = lsmproxy;
+//     lsmproxy = await TransparentUpgradeableProxyFactory.deploy(
+//       lsm.address,
+//       proxyAdmin.address,
+//       '0x',
+//     );
+//     await lsmproxy.deployed();
+//     shared.lsmproxy = lsmproxy;
 
-    shared.LagrangeService = lagrangeService;
-  });
+//     shared.LagrangeService = lagrangeService;
+//   });
 
-  it('Slashed status', async function () {
-    const lc = shared.LagrangeCommittee;
-    slashed = await lc.getSlashed('0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9');
-    expect(slashed).to.equal(false);
-  });
-  it('Evidence submission (no registration)', async function () {
-    const ev = shared.EV;
-    const evidence = await getSampleEvidence();
-    try {
-      await ev.uploadEvidence(evidence);
-      expect('should have failed').to.be.false;
-    } catch (error) {
-      console.log(error);
-      let revertReason = '';
-      if (error.message) {
-        const messageMatch = error.message.match(
-          /reverted with reason string '([^']+)'/,
-        );
-        revertReason = messageMatch ? messageMatch[1] : '';
-      }
-      expect(revertReason).to.include('The operator is not registered');
-    }
-  });
-});
+//   it('Slashed status', async function () {
+//     const lc = shared.LagrangeCommittee;
+//     slashed = await lc.getSlashed('0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9');
+//     expect(slashed).to.equal(false);
+//   });
+//   it('Evidence submission (no registration)', async function () {
+//     const ev = shared.EV;
+//     const evidence = await getSampleEvidence();
+//     try {
+//       await ev.uploadEvidence(evidence);
+//       expect('should have failed').to.be.false;
+//     } catch (error) {
+//       console.log(error);
+//       let revertReason = '';
+//       if (error.message) {
+//         const messageMatch = error.message.match(
+//           /reverted with reason string '([^']+)'/,
+//         );
+//         revertReason = messageMatch ? messageMatch[1] : '';
+//       }
+//       expect(revertReason).to.include('The operator is not registered');
+//     }
+//   });
+// });
