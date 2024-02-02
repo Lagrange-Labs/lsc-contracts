@@ -45,4 +45,8 @@ interface ILagrangeCommittee {
     function update(uint32 chainID, uint256 epochNumber) external;
 
     function getBlsPubKey(address operator) external returns (uint256[2] memory);
+
+    function getOperatorStatus(address opAddr) external returns (uint8, UnsubscribedParam[] memory);
+
+    function getOperatorVotingPower(address opAddr, uint32 chainID) external returns (uint96);
 }

@@ -341,4 +341,16 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             )
         );
     }
+
+    // Get the operator status except subscribed chains
+    function getOperatorStatus(address opAddr) public view returns (uint8, UnsubscribedParam[] memory) {
+        OperatorStatus storage opStatus = operators[opAddr];
+        return (opStatus.subscribedChainCount, opStatus.unsubscribedParams);
+    }
+
+    // Get the operator's voting power for the given chainID
+    function getOperatorVotingPower(address opAddr, uint32 chainID) public view returns (uint96) {
+        OperatorStatus storage opStatus = operators[opAddr];
+        return opStatus.subscribedChains[chainID];
+    }
 }
