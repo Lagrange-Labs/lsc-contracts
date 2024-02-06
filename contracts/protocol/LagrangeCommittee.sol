@@ -22,6 +22,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // Frozen Committee - Next "Current" Committee
     uint256 public constant COMMITTEE_NEXT_1 = 1;
 
+    // Registered ChainIDs
+    uint32[] public chainIDs;
     // ChainID => Committee
     mapping(uint32 => CommitteeDef) public committeeParams;
     // ChainID => Epoch => CommitteeData
@@ -225,6 +227,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     {
         _initCommittee(chainID, epochPeriod, freezeDuration, quorunNumber);
         _updateCommittee(chainID, 0);
+        chainIDs.push(chainID);
     }
 
     // Checks if a chain's committee is updatable at a given block
