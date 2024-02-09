@@ -33,6 +33,9 @@ register-lagrange:
 deploy-lagrange:
 	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
+deploy-fix:
+	forge script script/DeployFix.s.sol:Deploy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
+
 deploy-verifiers:
 	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && npx hardhat run util/deploy-verifiers.js
 
@@ -92,7 +95,7 @@ all-mock: run-geth init-accounts deploy-mock deploy-lagrange update-config add-q
 
 all-native: run-geth init-accounts deploy-weth9 deploy-lagrange update-config add-quorum deposit-stake deploy-register init-committee	
 
-deploy-native: generate-accounts deploy-weth9 deploy-lagrange deploy-verifiers update-config add-quorum distribute deploy-register init-committee
+deploy-native: generate-accounts deploy-weth9 deploy-lagrange update-config add-quorum distribute deposit-stake init-committee
 
 deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-mock deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
 

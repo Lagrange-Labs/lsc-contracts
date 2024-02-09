@@ -2,22 +2,28 @@
     "tokens": [
         {
             "token_name": "mantle",
-            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
+            "token_address": "0x80d0fbE1426B0C04f6f11D91A6E0CFbdA7d2c501",
             "multiplier": 1000000000
         }
     ],
     "chains": [
         {
             "chain_name": "mantle",
-            "chain_id": 1337,
-            "epoch_period": 5,
-            "freeze_duration": 2
+            "chain_id": 5003,
+            "epoch_period": 7128,
+            "freeze_duration": 600
         },
         {
             "chain_name": "optimism",
-            "chain_id": 420,
-            "epoch_period": 43200,
-            "freeze_duration": 6000
+            "chain_id": 11155420,
+            "epoch_period": 7128,
+            "freeze_duration": 600
+        },
+        {
+            "chain_name": "arbitrum",
+            "chain_id": 421614,
+            "epoch_period": 7128,
+            "freeze_duration": 600
         }
     ],
     "settlement": {

@@ -26,8 +26,8 @@ contract DepositStake is Script, Test {
             StakeManager stakeManager = StakeManager(stdJson.readAddress(deployLGRData, ".addresses.stakeManager"));
             WETH9 token = WETH9(payable(stdJson.readAddress(configData, ".tokens.[0].token_address")));
             token.deposit{value: 1e15}();
-            token.approve(address(stakeManager), 1e15);
-            stakeManager.deposit(IERC20(address(token)), 1e15);
+            token.approve(address(stakeManager), 1e14);
+            stakeManager.deposit(IERC20(address(token)), 1e14);
         }
         vm.stopBroadcast();
     }

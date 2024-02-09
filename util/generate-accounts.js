@@ -7,7 +7,7 @@ const { config } = require('dotenv');
 require('dotenv').config();
 
 const DEFAULT_MNEMONIC =
-  'exchange holiday girl alone head gift unfair resist void voice people tobacco';
+  'stereo school chief ordinary royal uphold brief avoid know path company yard';
 const DEFAULT_NUM_ACCOUNTS = 10;
 
 function genBLSKey(i) {
@@ -62,8 +62,8 @@ async function main() {
       operator.chain_id = config.chains[i].chain_id;
       operator.operators = op;
       operator.ecdsa_priv_keys = ecdsaprivk;
-      operator.bls_pub_keys = bpubk;
-      operator.bls_priv_keys = bprivk;
+      // operator.bls_pub_keys = bpubk;
+      // operator.bls_priv_keys = bprivk;
       operators.push(operator);
     }
 
