@@ -12,7 +12,8 @@
     "hermez-contracts": "github:hermeznetwork/contracts",
     "js-sha3": "^0.8.0",
     "rlp": "^3.0.0",
-    "solidity-rlp": "github:hamdiallam/Solidity-RLP"
+    "solidity-rlp": "github:hamdiallam/Solidity-RLP",
+    "web3": "^1.10.4"
   },
   "devDependencies": {
     "prettier": "^3.0.3",
