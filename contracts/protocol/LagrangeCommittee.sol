@@ -114,6 +114,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         (bool locked,) = isLocked(chainID);
         require(!locked, "The dedicated chain is locked.");
 
+        uint96 votingPower = voteWeigher.weightOfOperator(committeeParams[chainID].quorumNumber, operator);
+        require(votingPower > 0, "The operator has no voting power.");
+
         OperatorStatus storage opStatus = operators[operator];
 
         for (uint256 i = 0; i < opStatus.unsubscribedParams.length; i++) {
@@ -126,8 +129,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         }
 
         require(opStatus.subscribedChains[chainID] == 0, "The dedicated chain is already subscribed.");
-        opStatus.subscribedChains[chainID] =
-            voteWeigher.weightOfOperator(committeeParams[chainID].quorumNumber, operator);
+        opStatus.subscribedChains[chainID] = votingPower;
         opStatus.subscribedChainCount = opStatus.subscribedChainCount + 1;
         totalVotingPower[chainID] += opStatus.subscribedChains[chainID];
 
