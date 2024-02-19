@@ -152,6 +152,21 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _unregisterOperator(operator, chainID);
     }
 
+    function unsubscribeChainByAdmin(address operator, uint32 chainID) external onlyOwner {
+        OperatorStatus storage opStatus = operators[operator];
+
+        opStatus.subscribedChainCount = opStatus.subscribedChainCount - 1;
+
+        _unregisterOperator(operator, chainID);
+
+        for (uint256 i = 0; i < committeeAddrs[chainID].length; i++) {
+            if (committeeAddrs[chainID][i] == operator) {
+                committeeLeavesMap[chainID][operator] = uint32(i);
+                break;
+            }
+        }
+    }
+
     function isUnregisterable(address operator) public view returns (bool, uint256) {
         OperatorStatus storage opStatus = operators[operator];
 

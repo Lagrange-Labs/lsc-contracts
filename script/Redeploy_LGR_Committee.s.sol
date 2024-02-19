@@ -11,7 +11,7 @@ import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
 contract Deploy is Script, Test {
-    string public deployDataPath = string(bytes("script/output/deployed_goerli.json"));
+    string public deployDataPath = string(bytes("script/output/deployed_sepolia.json"));
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;
