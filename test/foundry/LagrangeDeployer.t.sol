@@ -161,7 +161,7 @@ contract LagrangeDeployer is Test {
         lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2, 0);
         // register token multiplier
         IVoteWeigher.TokenMultiplier[] memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
-        multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e15);
+        multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
         voteWeigher.addQuorumMultiplier(0, multipliers);
 
         vm.stopPrank();
