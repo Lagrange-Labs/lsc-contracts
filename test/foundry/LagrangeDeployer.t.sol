@@ -164,6 +164,11 @@ contract LagrangeDeployer is Test {
         multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
         voteWeigher.addQuorumMultiplier(0, multipliers);
 
+        // add tokens to whitelist
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(token);
+        stakeManager.addTokensToWhitelist(tokens);
+
         vm.stopPrank();
     }
 }

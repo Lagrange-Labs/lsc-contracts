@@ -10,6 +10,7 @@ import {IStakeManager} from "../interfaces/IStakeManager.sol";
 contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager {
     using SafeERC20 for IERC20;
 
+    mapping(address => bool) public tokenWhitelist;
     mapping(address => mapping(address => uint256)) public operatorShares;
     mapping(address => uint256) public stakeLockedBlock;
     // future use
@@ -25,6 +26,11 @@ contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager {
         _;
     }
 
+    modifier onlyWhitelisted(address token) {
+        require(tokenWhitelist[token], "Token is not whitelisted");
+        _;
+    }
+
     constructor(address _service) {
         service = _service;
         _disableInitializers();
@@ -34,7 +40,21 @@ contract StakeManager is Initializable, OwnableUpgradeable, IStakeManager {
         _transferOwnership(initialOwner);
     }
 
-    function deposit(IERC20 token, uint256 amount) external {
+    /// Add the token to the whitelist.
+    function addTokensToWhitelist(address[] calldata tokens) external onlyOwner {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokenWhitelist[tokens[i]] = true;
+        }
+    }
+
+    /// Remove the token from the whitelist.
+    function removeTokensFromWhitelist(address[] calldata tokens) external onlyOwner {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            delete tokenWhitelist[tokens[i]];
+        }
+    }
+
+    function deposit(IERC20 token, uint256 amount) external onlyWhitelisted(address(token)) {
         token.safeTransferFrom(msg.sender, address(this), amount);
         operatorShares[msg.sender][address(token)] += amount;
 

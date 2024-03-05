@@ -105,6 +105,12 @@ describe('LagrangeCommittee', function () {
     await voteWeigherProxyContract.addQuorumMultiplier(0, [
       { token: token.address, multiplier: 1e15 },
     ]);
+    const stakeManagerProxyContract = await ethers.getContractAt(
+      'StakeManager',
+      stakeManagerProxy.address,
+      admin,
+    );
+    await stakeManagerProxyContract.addTokensToWhitelist([token.address]);
   });
 
   it('trie construction/deconstruction', async function () {
