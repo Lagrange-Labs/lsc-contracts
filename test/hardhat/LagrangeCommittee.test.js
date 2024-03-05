@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { bn254 } = require('@noble/curves/bn254');
+const { mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
 
 const operators = require('../../config/operators.json');
 
@@ -140,17 +141,20 @@ describe('LagrangeCommittee', function () {
       operators.push(operator);
     }
     for (i = 1; i <= chainCount; i++) {
+      await committee.registerChain(i, 10000, 1000, 0);
       console.log('Building trie of size ' + i + '...');
       await Promise.all(
         operators.map(async (operator) => {
           return committee.subscribeChain(operator.address, i);
         }),
       );
-
-      await committee.registerChain(i, 10000, 1000, 0);
     }
 
-    croot = await committee.getCommittee(1, 1000);
+    await mineUpTo(9500);
+    await committee.update(1, 1);
+
+    await mineUpTo(15000);
+    croot = await committee.getCommittee(1, 15000);
     console.log('current committee: ', croot);
 
     for (i = 1; i <= chainCount; i++) {
@@ -175,6 +179,9 @@ describe('LagrangeCommittee', function () {
       admin,
     );
 
+    await mineUpTo(20000);
+    await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
+
     // deposit stake
     const signer = await ethers.getSigner(1);
     await token.connect(signer).deposit({ value: stake });
@@ -187,12 +194,14 @@ describe('LagrangeCommittee', function () {
 
     await committee.addOperator(signer.address, newPubKey);
     await committee.subscribeChain(signer.address, operators[0].chain_id);
-    await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
 
     const leaf = ethers.utils.solidityKeccak256(
       ['bytes1', 'uint256', 'uint256', 'address', 'uint96'],
       ['0x01', Gx, Gy, signer.address, stake / 1e3],
     );
+
+    await mineUpTo(29500);
+    await committee.update(operators[0].chain_id, 1);
 
     const leafHash = await committee.committeeNodes(
       operators[0].chain_id,
@@ -201,7 +210,7 @@ describe('LagrangeCommittee', function () {
     );
     const committeeRoot = await committee.getCommittee(
       operators[0].chain_id,
-      1000,
+      35000,
     );
     expect(leafHash).to.equal(committeeRoot.currentCommittee.root);
     expect(stake).to.equal(
@@ -222,6 +231,9 @@ describe('LagrangeCommittee', function () {
       admin,
     );
 
+    await mineUpTo(40000);
+    await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
+
     // deposit stake
     for (let i = 0; i < operators[0].operators.length; i++) {
       const signer = await ethers.getSigner(i + 1);
@@ -236,7 +248,9 @@ describe('LagrangeCommittee', function () {
       await committee.addOperator(signer.address, newPubKey);
       await committee.subscribeChain(signer.address, operators[0].chain_id);
     }
-    await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
+
+    await mineUpTo(49500);
+    await committee.update(operators[0].chain_id, 1);
 
     const leaves = await Promise.all(
       operators[0].operators.map(async (_, index) => {
@@ -245,7 +259,7 @@ describe('LagrangeCommittee', function () {
     );
     const committeeRoot = await committee.getCommittee(
       operators[0].chain_id,
-      1000,
+      55000,
     );
 
     let count = 1;
@@ -283,6 +297,9 @@ describe('LagrangeCommittee', function () {
       stakeManagerProxy.address,
       admin,
     );
+
+    await mineUpTo(60000);
+    await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
 
     // deposit stake
     const opAddrs = [];
@@ -323,17 +340,21 @@ describe('LagrangeCommittee', function () {
       .deposit(token.address, stake * 2);
     await committee.updateOperatorAmount(opAddrs[1], operators[0].chain_id);
 
-    await committee.registerChain(operators[0].chain_id, 10000, 1000, 0);
+
     let operatorCount = operators[0].operators.length - 4;
+
+    await mineUpTo(69500);
+    await committee.update(operators[0].chain_id, 1);
 
     const leaves = await Promise.all(
       new Array(operatorCount).fill(0).map(async (_, index) => {
         return await committee.committeeNodes(operators[0].chain_id, 0, index);
       }),
     );
+
     const committeeRoot = await committee.getCommittee(
       operators[0].chain_id,
-      1000,
+      75000,
     );
     let count = 1;
     while (count < leaves.length) {

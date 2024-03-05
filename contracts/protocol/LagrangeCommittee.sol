@@ -111,6 +111,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     function subscribeChain(address operator, uint32 chainID) external onlyService {
+        // Check if the chainID is already registered
+        require(committeeParams[chainID].startBlock > 0, "The dedicated chain is not registered.");
+
         (bool locked,) = isLocked(chainID);
         require(!locked, "The dedicated chain is locked.");
 
