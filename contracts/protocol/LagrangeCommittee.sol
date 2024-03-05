@@ -29,7 +29,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // ChainID => Epoch => CommitteeData
     mapping(uint32 => mapping(uint256 => CommitteeData)) public committees;
     // ChainID => Total Voting Power
-    mapping(uint32 => uint256) public totalVotingPower;
+    mapping(uint32 => uint224) public totalVotingPower;
 
     /* Live Committee Data */
     // ChainID => Tree Depth => Leaf Index => Node Value
@@ -89,7 +89,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // Adds address stake data and flags it for committee addition
     function addOperator(address operator, uint256[2] memory blsPubKey) public onlyService {
         OperatorStatus storage opStatus = operators[operator];
-        require(opStatus.blsPubKey[0] == 0, "Operator is already registered.");
+        require(opStatus.blsPubKey[0] == 0 && opStatus.blsPubKey[1] == 0, "Operator is already registered.");
         opStatus.blsPubKey = blsPubKey;
     }
 
@@ -111,6 +111,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     function subscribeChain(address operator, uint32 chainID) external onlyService {
+        // Check if the chainID is already registered
+        require(committeeParams[chainID].startBlock > 0, "The dedicated chain is not registered.");
+
         (bool locked,) = isLocked(chainID);
         require(!locked, "The dedicated chain is locked.");
 
@@ -181,9 +184,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         returns (CommitteeData memory currentCommittee, bytes32 nextRoot)
     {
         uint256 epochNumber = getEpochNumber(chainID, blockNumber);
-        uint256 nextEpoch = getEpochNumber(chainID, blockNumber + 1);
+        uint256 nextCommitteeEpoch = getEpochNumber(chainID, blockNumber + 1);
         currentCommittee = committees[chainID][epochNumber];
-        nextRoot = committees[chainID][nextEpoch].root;
+        nextRoot = committees[chainID][nextCommitteeEpoch].root;
         return (currentCommittee, nextRoot);
     }
 
@@ -262,7 +265,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
 
         // Update roots
-        committees[chainID][nextEpoch].leafCount = committeeAddrs[chainID].length;
+        committees[chainID][nextEpoch].leafCount = uint32(committeeAddrs[chainID].length);
         if (committeeHeights[chainID] > 0) {
             committees[chainID][nextEpoch].root = committeeNodes[chainID][committeeHeights[chainID] - 1][0];
         }

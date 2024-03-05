@@ -24,8 +24,8 @@ interface ILagrangeCommittee {
 
     struct CommitteeData {
         bytes32 root;
-        uint256 leafCount;
-        uint256 totalVotingPower;
+        uint32 leafCount;
+        uint224 totalVotingPower;
     }
 
     function getCommittee(uint32 chainID, uint256 blockNumber) external returns (CommitteeData memory, bytes32);

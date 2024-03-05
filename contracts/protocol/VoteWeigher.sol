@@ -19,6 +19,10 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
 
     IStakeManager public immutable stakeManager;
 
+    event QuorumAdded(uint8 quorumNumber, TokenMultiplier[] multipliers);
+    event QuorumRemoved(uint8 quorumNumber);
+    event QuorumUpdated(uint8 quorumNumber, uint256 index, TokenMultiplier multiplier);
+
     constructor(IStakeManager _stakeManager)
     {
         _disableInitializers();
@@ -34,10 +38,12 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
         for (uint256 i = 0; i < multipliers.length; i++) {
             quorumMultipliers[quorumNumber].push(multipliers[i]);
         }
+        emit QuorumAdded(quorumNumber, multipliers);
     }
 
     function removeQuorumMultiplier(uint8 quorumNumber) external onlyOwner {
         delete quorumMultipliers[quorumNumber];
+        emit QuorumRemoved(quorumNumber);
     }
 
     function updateQuorumMultiplier(uint8 quorumNumber, uint256 index, TokenMultiplier memory multiplier) external onlyOwner {
@@ -47,6 +53,7 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
         } else {
             quorumMultipliers[quorumNumber][index] = multiplier;
         }
+        emit QuorumUpdated(quorumNumber, index, multiplier);
     }
 
     function weightOfOperator(uint8 quorumNumber, address operator)

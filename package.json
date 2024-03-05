@@ -2,6 +2,7 @@
   "dependencies": {
     "@iden3/js-crypto": "^1.0.2",
     "@noble/bls12-381": "^1.4.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "big.js": "^6.2.1",
     "bls-eth-wasm": "^1.0.6",
