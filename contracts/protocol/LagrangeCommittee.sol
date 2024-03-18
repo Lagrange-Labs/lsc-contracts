@@ -373,4 +373,16 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         OperatorStatus storage opStatus = operators[opAddr];
         return opStatus.subscribedChains[chainID];
     }
+
+    function updateByAdmin(address operator, uint32 chainID) external onlyOwner {
+        OperatorStatus storage opStatus = operators[operator];
+
+        uint96 amount = voteWeigher.weightOfOperator(committeeParams[chainID].quorumNumber, operator);
+        totalVotingPower[chainID] -= opStatus.subscribedChains[chainID];
+        totalVotingPower[chainID] += amount;
+        opStatus.subscribedChains[chainID] = amount;
+        _updateAmount(operator, chainID);
+
+        _updateCommittee(chainID, updatedEpoch[chainID]);
+    }
 }
