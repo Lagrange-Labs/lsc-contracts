@@ -10,8 +10,8 @@
         {
             "chain_name": "mantle",
             "chain_id": 1337,
-            "epoch_period": 5,
-            "freeze_duration": 2
+            "epoch_period": 10,
+            "freeze_duration": 4
         },
         {
             "chain_name": "optimism",
