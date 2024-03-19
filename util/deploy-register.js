@@ -1,12 +1,12 @@
 const ethers = require('ethers');
-const bls = require('@noble/bls12-381');
+
 require('dotenv').config();
 
-const abi = require('../out/LagrangeService.sol/LagrangeService.json').abi;
+const serviceABI = require('../out/LagrangeService.sol/LagrangeService.json').abi;
+const committeeABI = require('../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
 const deployedAddresses = require('../script/output/deployed_lgr.json');
 
 const operators = require('../config/operators.json');
-const uint32Max = 4294967295;
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 
@@ -20,7 +20,7 @@ const convertBLSPubKey = (oldPubKey) => {
   const owallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const ocontract = new ethers.Contract(
     deployedAddresses.addresses.lagrangeService,
-    abi,
+    serviceABI,
     owallet,
   );
 
@@ -33,13 +33,25 @@ const convertBLSPubKey = (oldPubKey) => {
     `Add Operator Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
   );
 
+  const committee = new ethers.Contract(
+    deployedAddresses.addresses.lagrangeCommittee,
+    committeeABI,
+    owallet,
+  );
+
+  const chainParams = []
+  for (let i = 0; i < operators.length; i++) {
+    chainParams.push(await committee.committeeParams(operators[i].chain_id));
+  }
+  console.log('Chain Params', chainParams);
+
   await Promise.all(
     operators[0].operators.map(async (operator, index) => {
       const privKey = operators[0].ecdsa_priv_keys[index];
       const wallet = new ethers.Wallet(privKey, provider);
       const contract = new ethers.Contract(
         deployedAddresses.addresses.lagrangeService,
-        abi,
+        serviceABI,
         wallet,
       );
 
@@ -56,20 +68,30 @@ const convertBLSPubKey = (oldPubKey) => {
     }),
   );
 
-  operators.forEach(async (chain, k) => {
+  for (let k = 0; k < operators.length; k++) {
+    const chain = operators[k];
     for (let index = 0; index < chain.operators.length; index++) {
       const address = chain.operators[index];
       const privKey = operators[0].ecdsa_priv_keys[index];
       const wallet = new ethers.Wallet(privKey, provider);
       const contract = new ethers.Contract(
         deployedAddresses.addresses.lagrangeService,
-        abi,
+        serviceABI,
         wallet,
       );
-      const nonce = await provider.getTransactionCount(address);
-      const tx = await contract.subscribe(chain.chain_id, {
-        nonce: nonce + k,
-      });
+
+      while (true) {
+        const blockNumber = await provider.getBlockNumber();
+        const isLocked = await committee.isLocked(chain.chain_id);
+        console.log(`Block Number: ${blockNumber} isLocked: ${isLocked[1].toNumber()} Freeze Duration: ${chainParams[k].freezeDuration.toNumber()}`);
+        if (blockNumber < (isLocked[1].toNumber() - chainParams[k].freezeDuration.toNumber() - 1)) {
+          break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      const tx = await contract.subscribe(chain.chain_id);
       console.log(
         `Starting to subscribe operator for address: ${address} tx hash: ${tx.hash}`,
       );
@@ -78,5 +100,5 @@ const convertBLSPubKey = (oldPubKey) => {
         `Subscribe Transaction was mined in block ${receipt.blockNumber} gas consumed: ${receipt.gasUsed}`,
       );
     }
-  });
+  }
 })();
