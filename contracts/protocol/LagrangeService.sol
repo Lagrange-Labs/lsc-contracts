@@ -49,8 +49,16 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add the operator to the service.
-    function register(uint256[2] memory _blsPubKey) external onlyWhitelisted {
-        committee.addOperator(msg.sender, _blsPubKey);
+    function register(uint256[2][] memory blsPubKeys) external onlyWhitelisted {
+        committee.addOperator(msg.sender, blsPubKeys);
+        uint32 serveUntilBlock = type(uint32).max;
+        stakeManager.lockStakeUntil(msg.sender, serveUntilBlock);
+        emit OperatorRegistered(msg.sender, serveUntilBlock);
+    }
+
+    /// Add extra BlsPubKeys
+    function addBlsPubKeys(uint256[2][] memory additionalBlsPubKeys) external onlyWhitelisted {
+        committee.addBlsPubKeys(msg.sender, additionalBlsPubKeys);
         uint32 serveUntilBlock = type(uint32).max;
         stakeManager.lockStakeUntil(msg.sender, serveUntilBlock);
         emit OperatorRegistered(msg.sender, serveUntilBlock);

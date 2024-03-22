@@ -86,29 +86,33 @@ contract LagrangeDeployer is Test {
         stakeManager = StakeManager(
             address(
                 new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
             )
         );
         evidenceVerifier = EvidenceVerifier(
             address(
                 new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
             )
         );
 
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
-            lagrangeService,
-            IVoteWeigher(voteWeigher)
-        );
-        voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
-        stakeManagerImp = new StakeManager(address(lagrangeService));
+                lagrangeService,
+                IVoteWeigher(voteWeigher)
+            );
+        voteWeigherImp = new VoteWeigher(
+                IStakeManager(stakeManager)
+            );
+        stakeManagerImp = new StakeManager(
+                address(lagrangeService)
+            );
         lagrangeServiceImp = new LagrangeService(
             lagrangeCommittee,
             stakeManager
@@ -122,10 +126,7 @@ contract LagrangeDeployer is Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
             address(lagrangeCommitteeImp),
-            abi.encodeWithSelector(
-                LagrangeCommittee.initialize.selector,
-                sender
-            )
+            abi.encodeWithSelector(LagrangeCommittee.initialize.selector, sender)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(voteWeigher))),
@@ -135,11 +136,7 @@ contract LagrangeDeployer is Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(
-                LagrangeService.initialize.selector,
-                sender,
-                evidenceVerifier
-            )
+            abi.encodeWithSelector(LagrangeService.initialize.selector, sender, evidenceVerifier)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(stakeManager))),
@@ -160,25 +157,10 @@ contract LagrangeDeployer is Test {
         vm.startPrank(vm.addr(1));
 
         // register chains
-        lagrangeCommittee.registerChain(
-            CHAIN_ID,
-            EPOCH_PERIOD,
-            FREEZE_DURATION,
-            0,
-            2000, // minWeight
-            5000 // maxWeight
-        );
-        lagrangeCommittee.registerChain(
-            CHAIN_ID + 1,
-            EPOCH_PERIOD * 2,
-            FREEZE_DURATION * 2,
-            0,
-            1400, // minWeight
-            3000 // maxWeight
-        );
+        lagrangeCommittee.registerChain(CHAIN_ID, EPOCH_PERIOD, FREEZE_DURATION, 0);
+        lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2, 0);
         // register token multiplier
-        IVoteWeigher.TokenMultiplier[]
-            memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
+        IVoteWeigher.TokenMultiplier[] memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
         multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
         voteWeigher.addQuorumMultiplier(0, multipliers);
 

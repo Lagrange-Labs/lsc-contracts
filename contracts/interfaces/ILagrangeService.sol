@@ -6,7 +6,9 @@ interface ILagrangeService {
 
     function removeOperatorsFromWhitelist(address[] calldata operators) external;
 
-    function register(uint256[2] memory _blsPubKey) external;
+    function register(uint256[2][] memory blsPubKeys) external;
+    
+    function addBlsPubKeys(uint256[2][] memory additionalBlsPubKeys) external;
 
     function subscribe(uint32 chainID) external;
 

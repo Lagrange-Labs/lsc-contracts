@@ -115,7 +115,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
 
         require(_verifyAggregateSignature(_evidence, cdata.leafCount), "Aggregate proof verification failed");
 
-        uint256[2] memory blsPubKey = committee.getBlsPubKey(_evidence.operator);
+        uint256[2] memory blsPubKey = committee.getBlsPubKeys(_evidence.operator)[0];
         bool sigVerify = _verifySingleSignature(_evidence, blsPubKey);
 
         return (sigVerify);

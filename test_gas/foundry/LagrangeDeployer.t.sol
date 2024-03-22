@@ -12,6 +12,7 @@ import "../../contracts/protocol/LagrangeCommittee.sol";
 import "../../contracts/protocol/EvidenceVerifier.sol";
 import "../../contracts/protocol/VoteWeigher.sol";
 import "../../contracts/library/StakeManager.sol";
+import {ILagrangeService} from "../../contracts/interfaces/ILagrangeService.sol";
 
 import {WETH9} from "../../contracts/mock/WETH9.sol";
 
@@ -25,7 +26,7 @@ contract LagrangeDeployer is Test {
     StakeManager public stakeManagerImp;
     EvidenceVerifier public evidenceVerifier;
     EvidenceVerifier public evidenceVerifierImp;
-    VoteWeigher public voteWeigher;
+    address public voteWeigher;
     VoteWeigher public voteWeigherImp;
 
     WETH9 public token;
@@ -39,7 +40,7 @@ contract LagrangeDeployer is Test {
 
     function setUp() public {
         _deployLagrangeContracts();
-        _registerChain();
+        // _registerChain();
     }
 
     function testDeploy() public view {
@@ -65,54 +66,34 @@ contract LagrangeDeployer is Test {
                 )
             )
         );
-        lagrangeService = LagrangeService(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        voteWeigher = VoteWeigher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
+        voteWeigher = address(new MockedVoteWeigher());
         stakeManager = StakeManager(
             address(
                 new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
             )
         );
         evidenceVerifier = EvidenceVerifier(
             address(
                 new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
             )
         );
 
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(
-            lagrangeService,
-            IVoteWeigher(voteWeigher)
-        );
-        voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
-        stakeManagerImp = new StakeManager(address(lagrangeService));
-        lagrangeServiceImp = new LagrangeService(
-            lagrangeCommittee,
-            stakeManager
-        );
+                ILagrangeService(sender),
+                IVoteWeigher(voteWeigher)
+            );
+        stakeManagerImp = new StakeManager(
+                sender
+            );
         evidenceVerifierImp = new EvidenceVerifier(
             lagrangeCommittee,
             stakeManager
@@ -122,24 +103,7 @@ contract LagrangeDeployer is Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
             address(lagrangeCommitteeImp),
-            abi.encodeWithSelector(
-                LagrangeCommittee.initialize.selector,
-                sender
-            )
-        );
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(voteWeigher))),
-            address(voteWeigherImp),
-            abi.encodeWithSelector(VoteWeigher.initialize.selector, sender)
-        );
-        proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(lagrangeService))),
-            address(lagrangeServiceImp),
-            abi.encodeWithSelector(
-                LagrangeService.initialize.selector,
-                sender,
-                evidenceVerifier
-            )
+            abi.encodeWithSelector(LagrangeCommittee.initialize.selector, sender)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(stakeManager))),
@@ -155,38 +119,35 @@ contract LagrangeDeployer is Test {
         vm.stopPrank();
     }
 
-    function _registerChain() internal {
-        vm.roll(START_EPOCH);
-        vm.startPrank(vm.addr(1));
+    // function _registerChain() internal {
+    //     vm.roll(START_EPOCH);
+    //     vm.startPrank(vm.addr(1));
 
-        // register chains
-        lagrangeCommittee.registerChain(
-            CHAIN_ID,
-            EPOCH_PERIOD,
-            FREEZE_DURATION,
-            0,
-            2000, // minWeight
-            5000 // maxWeight
-        );
-        lagrangeCommittee.registerChain(
-            CHAIN_ID + 1,
-            EPOCH_PERIOD * 2,
-            FREEZE_DURATION * 2,
-            0,
-            1400, // minWeight
-            3000 // maxWeight
-        );
-        // register token multiplier
-        IVoteWeigher.TokenMultiplier[]
-            memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
-        multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
-        voteWeigher.addQuorumMultiplier(0, multipliers);
+    //     // register chains
+    //     lagrangeCommittee.registerChain(CHAIN_ID, EPOCH_PERIOD, FREEZE_DURATION, 0);
+    //     lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2, 0);
+    //     // register token multiplier
+    //     IVoteWeigher.TokenMultiplier[] memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
+    //     multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
+    //     voteWeigher.addQuorumMultiplier(0, multipliers);
 
-        // add tokens to whitelist
-        address[] memory tokens = new address[](1);
-        tokens[0] = address(token);
-        stakeManager.addTokensToWhitelist(tokens);
+    //     // add tokens to whitelist
+    //     address[] memory tokens = new address[](1);
+    //     tokens[0] = address(token);
+    //     stakeManager.addTokensToWhitelist(tokens);
 
-        vm.stopPrank();
+    //     vm.stopPrank();
+    // }
+}
+
+
+contract MockedVoteWeigher {
+    constructor() {}
+
+    function weightOfOperator(
+        uint8 quorumNumber,
+        address operator
+    ) external returns (uint96) {
+        return 6000;
     }
 }

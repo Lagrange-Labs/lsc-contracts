@@ -13,5 +13,5 @@ interface IVoteWeigher {
 
     function updateQuorumMultiplier(uint8 quorumNumber, uint256 index, TokenMultiplier memory multiplier) external;
 
-    function weightOfOperator(uint8 quorumNumber, address operator) external returns (uint96);
+    function weightOfOperator(uint8 quorumNumber, address operator) external view returns (uint96);
 }
