@@ -4,13 +4,8 @@ pragma solidity ^0.8.12;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-
-import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
-import {StakeManager} from "../contracts/library/StakeManager.sol";
 import {IVoteWeigher} from "../contracts/interfaces/IVoteWeigher.sol";
+import {StakeManager} from "../contracts/library/StakeManager.sol";
 
 contract AddQuorum is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
@@ -30,10 +25,24 @@ contract AddQuorum is Script, Test {
 
         IVoteWeigher voteWeigher = IVoteWeigher(stdJson.readAddress(deployLGRData, ".addresses.voteWeigher"));
 
-        // add token multipliers to stake manager
+        bool isNative = stdJson.readBool(configData, ".isNative");
+
         TokenConfig[] memory tokens;
         bytes memory tokensRaw = stdJson.parseRaw(configData, ".tokens");
         tokens = abi.decode(tokensRaw, (TokenConfig[]));
+
+        if (isNative) {
+            // add tokens to stake manager whitelist
+            StakeManager stakeManager = StakeManager(stdJson.readAddress(deployLGRData, ".addresses.stakeManager"));
+
+            address[] memory tokenAddresses = new address[](tokens.length);
+            for (uint256 i = 0; i < tokens.length; i++) {
+                tokenAddresses[i] = tokens[i].tokenAddress;
+            }
+            stakeManager.addTokensToWhitelist(tokenAddresses);
+        }
+
+        // add token multipliers to vote weigher
         IVoteWeigher.TokenMultiplier[] memory multipliers = new IVoteWeigher.TokenMultiplier[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             multipliers[i] = (IVoteWeigher.TokenMultiplier(tokens[i].tokenAddress, tokens[i].multiplier));
