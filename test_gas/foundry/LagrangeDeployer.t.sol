@@ -118,36 +118,12 @@ contract LagrangeDeployer is Test {
 
         vm.stopPrank();
     }
-
-    // function _registerChain() internal {
-    //     vm.roll(START_EPOCH);
-    //     vm.startPrank(vm.addr(1));
-
-    //     // register chains
-    //     lagrangeCommittee.registerChain(CHAIN_ID, EPOCH_PERIOD, FREEZE_DURATION, 0);
-    //     lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2, 0);
-    //     // register token multiplier
-    //     IVoteWeigher.TokenMultiplier[] memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
-    //     multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
-    //     voteWeigher.addQuorumMultiplier(0, multipliers);
-
-    //     // add tokens to whitelist
-    //     address[] memory tokens = new address[](1);
-    //     tokens[0] = address(token);
-    //     stakeManager.addTokensToWhitelist(tokens);
-
-    //     vm.stopPrank();
-    // }
 }
-
 
 contract MockedVoteWeigher {
     constructor() {}
 
-    function weightOfOperator(
-        uint8 quorumNumber,
-        address operator
-    ) external returns (uint96) {
+    function weightOfOperator(uint8 quorumNumber, address operator) external returns (uint96) {
         return 6000;
     }
 }
