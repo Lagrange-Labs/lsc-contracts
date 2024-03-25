@@ -20,11 +20,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.stopPrank();
     }
 
-    function _registerOperator(
-        address operator,
-        uint256 amount,
-        uint256[2][] memory blsPubKeys
-    ) internal {
+    function _registerOperator(address operator, uint256 amount, uint256[2][] memory blsPubKeys) internal {
         vm.deal(operator, 1e19);
         // add operator to whitelist
         vm.prank(vm.addr(1));
@@ -43,10 +39,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.stopPrank();
     }
 
-    function _addBlsPubKeys(
-        address operator,
-        uint256[2][] memory blsPubKeys
-    ) internal {
+    function _addBlsPubKeys(address operator, uint256[2][] memory blsPubKeys) internal {
         if (blsPubKeys.length > 0) {
             vm.startPrank(operator);
             // register operator
@@ -110,7 +103,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         blsPubKeysArray[2] = new uint256[2][](1);
         blsPubKeysArray[2][0] = [uint256(3), 4];
 
-        for (uint i; i < OPERATOR_COUNT; i++) {
+        for (uint256 i; i < OPERATOR_COUNT; i++) {
             _registerOperator(operators[i], amounts[i], blsPubKeysArray[i]);
         }
 
@@ -118,20 +111,11 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
         lagrangeCommittee.update(CHAIN_ID, 1);
 
-        (
-            ILagrangeCommittee.CommitteeData memory cur,
-            bytes32 next
-        ) = lagrangeCommittee.getCommittee(
-                CHAIN_ID,
-                START_EPOCH + EPOCH_PERIOD
-            );
+        (ILagrangeCommittee.CommitteeData memory cur, bytes32 next) =
+            lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD);
 
-        assertEq(cur.totalVotingPower, 6e6);
         assertEq(cur.leafCount, 3);
-        assertEq(
-            cur.root,
-            0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3
-        );
+        assertEq(cur.root, 0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3);
         assertEq(cur.root, next);
 
         _deposit(operators[0], 1e15);
@@ -143,16 +127,9 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD * 2 - FREEZE_DURATION + 1);
         lagrangeCommittee.update(CHAIN_ID, 2);
 
-        (cur, next) = lagrangeCommittee.getCommittee(
-            CHAIN_ID,
-            START_EPOCH + EPOCH_PERIOD * 2
-        );
-        assertEq(cur.totalVotingPower, 7e6);
+        (cur, next) = lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD * 2);
         assertEq(cur.leafCount, 3);
-        assertEq(
-            cur.root,
-            0x02f507202eec14a32171bbca5d048778e4c67238b21037a90b90608c71b6276a
-        );
+        assertEq(cur.root, 0x02f507202eec14a32171bbca5d048778e4c67238b21037a90b90608c71b6276a);
         assertEq(cur.root, next);
     }
 
@@ -222,15 +199,9 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
         lagrangeCommittee.update(CHAIN_ID, 1);
 
-        (
-            ILagrangeCommittee.CommitteeData memory cur,
-            bytes32 next
-        ) = lagrangeCommittee.getCommittee(
-                CHAIN_ID,
-                START_EPOCH + EPOCH_PERIOD
-            );
+        (ILagrangeCommittee.CommitteeData memory cur, bytes32 next) =
+            lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD);
 
-        uint224 expectedTotalVotingPower;
         uint256 expectedLeafCount;
         for (uint256 i; i < OPERATOR_COUNT2; i++) {
             uint224 expectedVotingPower;
@@ -238,24 +209,17 @@ contract CommitteeTreeTest is LagrangeDeployer {
                 expectedVotingPower += uint224(expectedVotingPowers[i][j]);
             }
             expectedLeafCount += expectedVotingPowers[i].length;
-            expectedTotalVotingPower += expectedVotingPower;
 
-            uint96[] memory individualVotingPowers = lagrangeCommittee
-                .getBlsPubKeyVotingPowers(operators[i], CHAIN_ID);
-            uint96 operatorVotingPower = lagrangeCommittee
-                .getOperatorVotingPower(operators[i], CHAIN_ID);
+            uint96[] memory individualVotingPowers = lagrangeCommittee.getBlsPubKeyVotingPowers(operators[i], CHAIN_ID);
+            uint96 operatorVotingPower = lagrangeCommittee.getOperatorVotingPower(operators[i], CHAIN_ID);
 
             assertEq(operatorVotingPower, expectedVotingPower);
-            assertEq(
-                individualVotingPowers.length,
-                expectedVotingPowers[i].length
-            );
+            assertEq(individualVotingPowers.length, expectedVotingPowers[i].length);
             for (uint256 j; j < individualVotingPowers.length; j++) {
                 assertEq(individualVotingPowers[j], expectedVotingPowers[i][j]);
             }
         }
 
-        assertEq(cur.totalVotingPower, expectedTotalVotingPower);
         assertEq(cur.leafCount, expectedLeafCount);
         // assertEq(cur.root, 0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3);
         assertEq(cur.root, next);

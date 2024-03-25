@@ -1,15 +1,15 @@
-const { expect } = require('chai');
-const { ethers } = require('hardhat');
-const fs = require('fs');
-const shared = require('./shared');
-const bls = require('@noble/bls12-381');
-let { PointG1, PointG2 } = require('./zk-utils-index.js');
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+const fs = require("fs");
+const shared = require("./shared");
+const bls = require("@noble/bls12-381");
+let { PointG1, PointG2 } = require("./zk-utils-index.js");
 
-const verSigABI = ['uint[2]', 'uint[2][2]', 'uint[2]'];
+const verSigABI = ["uint[2]", "uint[2][2]", "uint[2]"];
 
-const verAggABI = ['uint[2]', 'uint[2][2]', 'uint[2]'];
+const verAggABI = ["uint[2]", "uint[2][2]", "uint[2]"];
 
-const chainHeaderABI = ['bytes32', 'uint256', 'uint32'];
+const chainHeaderABI = ["bytes32", "uint256", "uint32"];
 
 async function getJSON(path) {
   txt = await fs.readFileSync(path);

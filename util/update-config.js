@@ -1,15 +1,15 @@
-const deployedMock = require('../script/output/deployed_mock.json');
-const deployedWETH = require('../script/output/deployed_weth9.json');
-const deployedEigens = require('../script/output/M1_deployment_data.json');
+const deployedMock = require("../script/output/deployed_mock.json");
+const deployedWETH = require("../script/output/deployed_weth9.json");
+const deployedEigens = require("../script/output/M1_deployment_data.json");
 
-const fs = require('fs');
+const fs = require("fs");
 
-const filePath = './config/LagrangeService.json';
+const filePath = "./config/LagrangeService.json";
 
 // Read the JSON file and parse its contents
-fs.readFile(filePath, 'utf8', (err, data) => {
+fs.readFile(filePath, "utf8", (err, data) => {
   if (err) {
-    console.error('Error reading JSON file:', err);
+    console.error("Error reading JSON file:", err);
     return;
   }
 
@@ -39,15 +39,15 @@ fs.readFile(filePath, 'utf8', (err, data) => {
     const updatedJsonString = JSON.stringify(jsonObject, null, 4);
 
     // Write the updated JSON string back to the file
-    fs.writeFile(filePath, updatedJsonString, 'utf8', (err) => {
+    fs.writeFile(filePath, updatedJsonString, "utf8", (err) => {
       if (err) {
-        console.error('Error writing JSON file:', err);
+        console.error("Error writing JSON file:", err);
         return;
       }
 
-      console.log('JSON file updated successfully.');
+      console.log("JSON file updated successfully.");
     });
   } catch (err) {
-    console.error('Error parsing JSON:', err);
+    console.error("Error parsing JSON:", err);
   }
 });

@@ -25,13 +25,9 @@ interface ILagrangeCommittee {
     struct CommitteeData {
         bytes32 root;
         uint32 leafCount;
-        uint224 totalVotingPower;
     }
 
-    function getCommittee(
-        uint32 chainID,
-        uint256 blockNumber
-    ) external view returns (CommitteeData memory, bytes32);
+    function getCommittee(uint32 chainID, uint256 blockNumber) external view returns (CommitteeData memory, bytes32);
 
     // TODO: need to change order of the params for gas optimization
     function registerChain(
@@ -52,15 +48,9 @@ interface ILagrangeCommittee {
         uint96 maxWeight
     ) external;
 
-    function addOperator(
-        address operator,
-        uint256[2][] memory blsPubKeys
-    ) external;
+    function addOperator(address operator, uint256[2][] memory blsPubKeys) external;
 
-    function addBlsPubKeys(
-        address operator,
-        uint256[2][] memory additionalBlsPubKeys
-    ) external;
+    function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) external;
 
     function isLocked(uint32 chainID) external view returns (bool, uint256);
 
@@ -68,26 +58,15 @@ interface ILagrangeCommittee {
 
     function unsubscribeChain(address operator, uint32 chainID) external;
 
-    function isUnregisterable(
-        address operator
-    ) external view returns (bool, uint256);
+    function isUnregisterable(address operator) external view returns (bool, uint256);
 
     function update(uint32 chainID, uint256 epochNumber) external;
 
-    function getBlsPubKeys(
-        address operator
-    ) external view returns (uint256[2][] memory);
+    function getBlsPubKeys(address operator) external view returns (uint256[2][] memory);
 
-    function getOperatorVotingPower(
-        address opAddr,
-        uint32 chainID
-    ) external view returns (uint96);
+    function getOperatorVotingPower(address opAddr, uint32 chainID) external view returns (uint96);
 
-    function getBlsPubKeyVotingPowers(
-        address opAddr,
-        uint32 chainID
-    ) external view returns (uint96[] memory);
-
+    function getBlsPubKeyVotingPowers(address opAddr, uint32 chainID) external view returns (uint96[] memory);
 
     // Event fired on initialization of a new committee
     event InitCommittee(

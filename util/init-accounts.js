@@ -1,11 +1,11 @@
 /* eslint-disable no-await-in-loop */
 
-const ethers = require('ethers');
-const fs = require('fs');
-require('dotenv').config();
+const ethers = require("ethers");
+const fs = require("fs");
+require("dotenv").config();
 
 const DEFAULT_MNEMONIC =
-  'exchange holiday girl alone head gift unfair resist void voice people tobacco';
+  "exchange holiday girl alone head gift unfair resist void voice people tobacco";
 const DEFAULT_NUM_ACCOUNTS = 10;
 
 async function main() {
@@ -27,10 +27,10 @@ async function main() {
       {
         from: await signerNode.getAddress(),
         to: accountWallet.address,
-        value: '0x3635C9ADC5DEA00000',
+        value: "0x3635C9ADC5DEA00000",
       },
     ];
-    const tx = await currentProvider.send('eth_sendTransaction', params);
+    const tx = await currentProvider.send("eth_sendTransaction", params);
     if (i === DEFAULT_NUM_ACCOUNTS - 1) {
       await currentProvider.waitForTransaction(tx);
     }
@@ -38,7 +38,7 @@ async function main() {
 
   try {
     await fs.promises.writeFile(
-      './config/accounts.json',
+      "./config/accounts.json",
       JSON.stringify(accounts, null, 2),
     );
     console.log(
@@ -49,7 +49,7 @@ async function main() {
       )}`,
     );
   } catch (err) {
-    console.error('Error writing to file:', err);
+    console.error("Error writing to file:", err);
   }
 }
 

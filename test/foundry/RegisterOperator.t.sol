@@ -76,12 +76,11 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         vm.startPrank(operator);
 
-
         // deposit tokens to stake manager
         token.deposit{value: amount}();
         token.approve(address(stakeManager), amount);
         stakeManager.deposit(IERC20(address(token)), amount);
-        
+
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
         lagrangeService.register(blsPubKeys);
 

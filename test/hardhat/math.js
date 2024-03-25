@@ -1,5 +1,5 @@
-'use strict';
-Object.defineProperty(exports, '__esModule', { value: true });
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.psi2 =
   exports.psi =
   exports.millerLoop =
@@ -78,7 +78,7 @@ exports.mod = mod;
  * powMod(2n, 6n, 11n) // 64n % 11n == 9n
  */
 function powMod(num, power, modulo) {
-  if (modulo <= 0n || power < 0n) throw new Error('Expected power/modulo > 0');
+  if (modulo <= 0n || power < 0n) throw new Error("Expected power/modulo > 0");
   if (modulo === 1n) return 0n;
   let res = 1n;
   while (power > 0n) {
@@ -140,7 +140,7 @@ function invert(number, modulo = exports.CURVE.P) {
     b = a, a = r, x = u, y = v, u = m, v = n;
   }
   const gcd = b;
-  if (gcd !== _1n) throw new Error('invert: does not exist');
+  if (gcd !== _1n) throw new Error("invert: does not exist");
   return mod(x, modulo);
 }
 // Finite field over p.
@@ -192,12 +192,12 @@ class Fp {
     return new Fp(this.value * rhs);
   }
   div(rhs) {
-    if (typeof rhs === 'bigint') rhs = new Fp(rhs);
+    if (typeof rhs === "bigint") rhs = new Fp(rhs);
     return this.multiply(rhs.invert());
   }
   toString() {
-    const str = this.value.toString(16).padStart(96, '0');
-    return str.slice(0, 2) + '.' + str.slice(-2);
+    const str = this.value.toString(16).padStart(96, "0");
+    return str.slice(0, 2) + "." + str.slice(-2);
   }
 }
 exports.Fp = Fp;
@@ -243,7 +243,7 @@ class Fr {
     return new Fr(this.value * rhs);
   }
   div(rhs) {
-    if (typeof rhs === 'bigint') rhs = new Fr(rhs);
+    if (typeof rhs === "bigint") rhs = new Fr(rhs);
     return this.multiply(rhs.invert());
   }
   legendre() {
@@ -277,7 +277,7 @@ class Fr {
     return new Fr(r);
   }
   toString() {
-    return '0x' + this.value.toString(16).padStart(64, '0');
+    return "0x" + this.value.toString(16).padStart(64, "0");
   }
 }
 exports.Fr = Fr;
@@ -305,8 +305,8 @@ class Fp2 {
   constructor(c0, c1) {
     this.c0 = c0;
     this.c1 = c1;
-    if (typeof c0 === 'bigint') throw new Error('c0: Expected Fp');
-    if (typeof c1 === 'bigint') throw new Error('c1: Expected Fp');
+    if (typeof c0 === "bigint") throw new Error("c0: Expected Fp");
+    if (typeof c1 === "bigint") throw new Error("c1: Expected Fp");
   }
   static fromBigTuple(tuple) {
     const fps = tuple.map((n) => new Fp(n));
@@ -346,7 +346,7 @@ class Fp2 {
   }
   multiply(rhs) {
     const { c0, c1 } = this;
-    if (typeof rhs === 'bigint') {
+    if (typeof rhs === "bigint") {
       return new Fp2(c0.multiply(rhs), c1.multiply(rhs));
     }
     // (a+bi)(c+di) = (ac−bd) + (ad+bc)i
@@ -364,7 +364,7 @@ class Fp2 {
   }
   div(rhs) {
     const inv =
-      typeof rhs === 'bigint' ? new Fp(rhs).invert().value : rhs.invert();
+      typeof rhs === "bigint" ? new Fp(rhs).invert().value : rhs.invert();
     return this.multiply(inv);
   }
   // multiply by u + 1
@@ -395,7 +395,7 @@ class Fp2 {
     if (!divisor) return;
     const index = R.indexOf(divisor);
     const root = R[index / 2];
-    if (!root) throw new Error('Invalid root');
+    if (!root) throw new Error("Invalid root");
     const x1 = candidateSqrt.div(root);
     const x2 = x1.negate();
     const { re: re1, im: im1 } = x1.reim();
@@ -448,7 +448,7 @@ class Fp6 {
   static ONE = new Fp6(Fp2.ONE, Fp2.ZERO, Fp2.ZERO);
   static fromBigSix(t) {
     if (!Array.isArray(t) || t.length !== 6)
-      throw new Error('Invalid Fp6 usage');
+      throw new Error("Invalid Fp6 usage");
     const c = [t.slice(0, 2), t.slice(2, 4), t.slice(4, 6)].map((t) =>
       Fp2.fromBigTuple(t),
     );
@@ -491,7 +491,7 @@ class Fp6 {
     return new Fp6(c0.subtract(r0), c1.subtract(r1), c2.subtract(r2));
   }
   multiply(rhs) {
-    if (typeof rhs === 'bigint') {
+    if (typeof rhs === "bigint") {
       return new Fp6(
         this.c0.multiply(rhs),
         this.c1.multiply(rhs),
@@ -523,7 +523,7 @@ class Fp6 {
   }
   div(rhs) {
     const inv =
-      typeof rhs === 'bigint' ? new Fp(rhs).invert().value : rhs.invert();
+      typeof rhs === "bigint" ? new Fp(rhs).invert().value : rhs.invert();
     return this.multiply(inv);
   }
   // Multiply by quadratic nonresidue v.
@@ -651,7 +651,7 @@ class Fp12 {
     return new Fp12(c0.subtract(r0), c1.subtract(r1));
   }
   multiply(rhs) {
-    if (typeof rhs === 'bigint')
+    if (typeof rhs === "bigint")
       return new Fp12(this.c0.multiply(rhs), this.c1.multiply(rhs));
     let { c0, c1 } = this;
     let { c0: r0, c1: r1 } = rhs;
@@ -668,7 +668,7 @@ class Fp12 {
   }
   div(rhs) {
     const inv =
-      typeof rhs === 'bigint' ? new Fp(rhs).invert().value : rhs.invert();
+      typeof rhs === "bigint" ? new Fp(rhs).invert().value : rhs.invert();
     return this.multiply(inv);
   }
   // Sparse multiplication
@@ -836,7 +836,7 @@ class ProjectivePoint {
   // Converts Projective point to default (x, y) coordinates.
   // Can accept precomputed Z^-1 - for example, from invertBatch.
   toAffine(invZ = this.z.invert()) {
-    if (invZ.isZero()) throw new Error('Invalid inverted z');
+    if (invZ.isZero()) throw new Error("Invalid inverted z");
     return [this.x.multiply(invZ), this.y.multiply(invZ)];
   }
   toAffineBatch(points) {
@@ -913,8 +913,8 @@ class ProjectivePoint {
     return this.add(rhs.negate());
   }
   validateScalar(n) {
-    if (typeof n === 'number') n = BigInt(n);
-    if (typeof n !== 'bigint' || n <= 0 || n > exports.CURVE.r) {
+    if (typeof n === "number") n = BigInt(n);
+    if (typeof n !== "bigint" || n <= 0 || n > exports.CURVE.r) {
       throw new Error(
         `Point#multiply: invalid scalar, expected positive integer < CURVE.r. Got: ${n}`,
       );
@@ -980,7 +980,7 @@ class ProjectivePoint {
   }
   calcMultiplyPrecomputes(W) {
     if (this._MPRECOMPUTES)
-      throw new Error('This point already has precomputes');
+      throw new Error("This point already has precomputes");
     this._MPRECOMPUTES = [W, this.normalizeZ(this.precomputeWindow(W))];
   }
   clearMultiplyPrecomputes() {
@@ -1108,7 +1108,7 @@ function map_to_curve_simple_swu_9mod16(t) {
     }
   });
   if (!success && !success2)
-    throw new Error('Hash to Curve - Optimized SWU failure');
+    throw new Error("Hash to Curve - Optimized SWU failure");
   if (success2) numerator = numerator.multiply(iso_3_z_t2);
   y = y;
   if (sgn0(t) !== sgn0(y)) y = y.negate();

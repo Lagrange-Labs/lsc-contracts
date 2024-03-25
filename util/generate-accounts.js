@@ -1,21 +1,21 @@
 /* eslint-disable no-await-in-loop */
 
-const ethers = require('ethers');
-const fs = require('fs');
-const { bn254 } = require('@noble/curves/bn254');
-const { config } = require('dotenv');
-require('dotenv').config();
+const ethers = require("ethers");
+const fs = require("fs");
+const { bn254 } = require("@noble/curves/bn254");
+const { config } = require("dotenv");
+require("dotenv").config();
 
 const DEFAULT_MNEMONIC =
-  'exchange holiday girl alone head gift unfair resist void voice people tobacco';
+  "exchange holiday girl alone head gift unfair resist void voice people tobacco";
 const DEFAULT_NUM_ACCOUNTS = 10;
 
 function genBLSKey(i) {
   const privateKey = BigInt(1234567890 + i + 1);
   const publicKey = bn254.getPublicKey(privateKey, false);
   return [
-    privateKey.toString(16).padStart(64, '0'),
-    Buffer.from(publicKey.slice(1)).toString('hex'),
+    privateKey.toString(16).padStart(64, "0"),
+    Buffer.from(publicKey.slice(1)).toString("hex"),
   ];
 }
 
@@ -35,13 +35,13 @@ async function main() {
     console.log(blsKey);
 
     blsPairs[accountWallet.address] = {
-      priv: '0x' + blsKey[0],
-      pub: '0x' + blsKey[1],
+      priv: "0x" + blsKey[0],
+      pub: "0x" + blsKey[1],
     };
   }
 
   try {
-    const config = require('../config/LagrangeService.json');
+    const config = require("../config/LagrangeService.json");
     operators = [];
 
     op = [];
@@ -68,7 +68,7 @@ async function main() {
     }
 
     await fs.promises.writeFile(
-      './config/operators.json',
+      "./config/operators.json",
       JSON.stringify(operators, null, 2),
     );
     console.log(
@@ -79,7 +79,7 @@ async function main() {
       )}`,
     );
   } catch (err) {
-    console.error('Error writing to file:', err);
+    console.error("Error writing to file:", err);
   }
 }
 
