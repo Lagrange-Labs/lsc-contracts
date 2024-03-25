@@ -61,9 +61,7 @@ contract LagrangeCommittee is
     event UpdateCommittee(uint256 chainID, bytes32 current);
 
     modifier onlyService() {
-        if (msg.sender != address(service)) {
-            console.log(msg.sender, address(service));
-        }
+        if (msg.sender != address(service)) {}
         require(
             msg.sender == address(service),
             "Only Lagrange service can call this function."
@@ -278,7 +276,7 @@ contract LagrangeCommittee is
             minWeight,
             maxWeight
         );
-        _updateCommittee(chainID, 0, 0);
+        _updateCommittee(chainID, 0, 0, 0);
         chainIDs.push(chainID);
     }
 
@@ -423,22 +421,21 @@ contract LagrangeCommittee is
                 }
                 _childCount = _parentCount;
             }
-            _root = _committeeLeaves[0];
+            if (_leafCounter > 0) _root = _committeeLeaves[0];
         }
 
-        _updateCommittee(chainID, epochNumber, _root);
+        _updateCommittee(chainID, epochNumber, _root, uint32(_leafCounter));
     }
 
     function _updateCommittee(
         uint32 chainID,
         uint256 epochNumber,
-        bytes32 root
+        bytes32 root,
+        uint32 leafCount
     ) internal {
         uint256 nextEpoch = epochNumber + COMMITTEE_NEXT_1;
         // Update roots
-        committees[chainID][nextEpoch].leafCount = uint32(
-            committeeAddrs[chainID].length
-        );
+        committees[chainID][nextEpoch].leafCount = leafCount;
         committees[chainID][nextEpoch].root = root;
         committees[chainID][nextEpoch].totalVotingPower = totalVotingPower[
             chainID
@@ -464,8 +461,8 @@ contract LagrangeCommittee is
     function _leafHash(
         address opAddr,
         uint256[2] memory blsPubKey,
-        uint256 _votingPower
-    ) internal pure returns (bytes32) {
+        uint96 _votingPower
+    ) internal view returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
@@ -567,13 +564,14 @@ contract LagrangeCommittee is
         uint96 totalWeight,
         uint96 minWeight,
         uint96 maxWeight
-    ) internal pure returns (uint96[] memory) {
+    ) internal view returns (uint96[] memory) {
         uint256 _count = _calcActiveBlsPubKeyCount(
             totalWeight,
             minWeight,
             maxWeight
         );
         uint96[] memory _individualVotingPowers = new uint96[](_count);
+        if (_count == 0) return _individualVotingPowers;
         uint256 _index;
         uint96 _remained = totalWeight;
         unchecked {
@@ -611,8 +609,8 @@ contract LagrangeCommittee is
         if (_lastRemained > maxWeight) {
             return
                 index == _activeBlsPubKeyCount - 1
-                    ? minWeight
-                    : _lastRemained - minWeight;
+                    ? _lastRemained - minWeight
+                    : minWeight;
         } else {
             return _lastRemained;
         }

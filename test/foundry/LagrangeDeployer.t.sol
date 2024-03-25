@@ -36,6 +36,8 @@ contract LagrangeDeployer is Test {
     uint256 public constant START_EPOCH = 30;
     uint256 public constant EPOCH_PERIOD = 70;
     uint256 public constant FREEZE_DURATION = 10;
+    uint96 public constant MIN_WEIGHT = 1e6;
+    uint96 public constant MAX_WEIGHT = 5e6;
 
     function setUp() public {
         _deployLagrangeContracts();
@@ -165,16 +167,16 @@ contract LagrangeDeployer is Test {
             EPOCH_PERIOD,
             FREEZE_DURATION,
             0,
-            2000, // minWeight
-            5000 // maxWeight
+            MIN_WEIGHT, // minWeight
+            MAX_WEIGHT // maxWeight
         );
         lagrangeCommittee.registerChain(
             CHAIN_ID + 1,
             EPOCH_PERIOD * 2,
             FREEZE_DURATION * 2,
             0,
-            1400, // minWeight
-            3000 // maxWeight
+            MIN_WEIGHT, // minWeight
+            MAX_WEIGHT // maxWeight
         );
         // register token multiplier
         IVoteWeigher.TokenMultiplier[]
