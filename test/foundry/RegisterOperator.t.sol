@@ -9,7 +9,9 @@ contract RegisterOperatorTest is LagrangeDeployer {
     function testDepositAndWithdraw() public {
         address operator = vm.addr(333);
         vm.deal(operator, 1e19);
-        uint256[2] memory blsPubKey;
+        uint256[2][] memory blsPubKeys = new uint256[2][](1);
+        blsPubKeys[0][0] = 1;
+        blsPubKeys[0][1] = 2;
         uint256 amount = 1e15;
 
         // add operator to whitelist
@@ -28,7 +30,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(blsPubKey);
+        lagrangeService.register(blsPubKeys);
         lagrangeService.subscribe(CHAIN_ID);
         lagrangeService.subscribe(CHAIN_ID + 1);
 
@@ -61,7 +63,9 @@ contract RegisterOperatorTest is LagrangeDeployer {
     function testFreezePeriod() public {
         address operator = vm.addr(555);
         vm.deal(operator, 1e19);
-        uint256[2] memory blsPubKey;
+        uint256[2][] memory blsPubKeys = new uint256[2][](1);
+        blsPubKeys[0][0] = 1;
+        blsPubKeys[0][1] = 2;
         uint256 amount = 1e16;
 
         // add operator to whitelist
@@ -77,15 +81,16 @@ contract RegisterOperatorTest is LagrangeDeployer {
         token.approve(address(stakeManager), amount);
         stakeManager.deposit(IERC20(address(token)), amount);
 
+        vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
+        lagrangeService.register(blsPubKeys);
+
         // it should fail because the committee is in freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
-        lagrangeService.register(blsPubKey);
         vm.expectRevert("The dedicated chain is locked.");
         lagrangeService.subscribe(CHAIN_ID);
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
-        lagrangeService.register(blsPubKey);
         lagrangeService.subscribe(CHAIN_ID);
 
         // deregister operator should fail due to the freeze period

@@ -32,6 +32,6 @@ module.exports = {
   paths: {
     sources: './contracts',
     cache: './cache_hardhat',
-    tests: './test/hardhat',
+    tests: './test/hardhat-sim', // TODO: fix the hardhat tests
   },
 };

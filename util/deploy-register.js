@@ -2,8 +2,10 @@ const ethers = require('ethers');
 
 require('dotenv').config();
 
-const serviceABI = require('../out/LagrangeService.sol/LagrangeService.json').abi;
-const committeeABI = require('../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
+const serviceABI =
+  require('../out/LagrangeService.sol/LagrangeService.json').abi;
+const committeeABI =
+  require('../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
 const deployedAddresses = require('../script/output/deployed_lgr.json');
 
 const operators = require('../config/operators.json');
@@ -39,7 +41,7 @@ const convertBLSPubKey = (oldPubKey) => {
     owallet,
   );
 
-  const chainParams = []
+  const chainParams = [];
   for (let i = 0; i < operators.length; i++) {
     chainParams.push(await committee.committeeParams(operators[i].chain_id));
   }
@@ -83,8 +85,15 @@ const convertBLSPubKey = (oldPubKey) => {
       while (true) {
         const blockNumber = await provider.getBlockNumber();
         const isLocked = await committee.isLocked(chain.chain_id);
-        console.log(`Block Number: ${blockNumber} isLocked: ${isLocked[1].toNumber()} Freeze Duration: ${chainParams[k].freezeDuration.toNumber()}`);
-        if (blockNumber < (isLocked[1].toNumber() - chainParams[k].freezeDuration.toNumber() - 1)) {
+        console.log(
+          `Block Number: ${blockNumber} isLocked: ${isLocked[1].toNumber()} Freeze Duration: ${chainParams[
+            k
+          ].freezeDuration.toNumber()}`,
+        );
+        if (
+          blockNumber <
+          isLocked[1].toNumber() - chainParams[k].freezeDuration.toNumber() - 1
+        ) {
           break;
         }
 

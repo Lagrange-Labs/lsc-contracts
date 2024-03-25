@@ -109,7 +109,7 @@ library Pairing {
         require(p1.length == p2.length, "pairing-lengths-failed");
         uint256 elements = p1.length;
         uint256 inputSize = elements * 6;
-        uint256[] memory input = new uint[](inputSize);
+        uint256[] memory input = new uint256[](inputSize);
         for (uint256 i = 0; i < elements; i++) {
             input[i * 6 + 0] = p1[i].X;
             input[i * 6 + 1] = p1[i].Y;
@@ -306,7 +306,7 @@ contract Verifier_256 {
         proof.A = Pairing.G1Point(a[0], a[1]);
         proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
         proof.C = Pairing.G1Point(c[0], c[1]);
-        uint256[] memory inputValues = new uint[](input.length);
+        uint256[] memory inputValues = new uint256[](input.length);
         for (uint256 i = 0; i < input.length; i++) {
             inputValues[i] = input[i];
         }

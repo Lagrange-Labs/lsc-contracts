@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { bn254 } = require('@noble/curves/bn254');
-const { mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
+const { mineUpTo } = require('@nomicfoundation/hardhat-network-helpers');
 
 const operators = require('../../config/operators.json');
 
@@ -339,7 +339,6 @@ describe('LagrangeCommittee', function () {
       .connect(await ethers.getSigner(2))
       .deposit(token.address, stake * 2);
     await committee.updateOperatorAmount(opAddrs[1], operators[0].chain_id);
-
 
     let operatorCount = operators[0].operators.length - 4;
 

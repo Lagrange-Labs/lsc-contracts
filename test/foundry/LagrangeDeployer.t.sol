@@ -36,6 +36,8 @@ contract LagrangeDeployer is Test {
     uint256 public constant START_EPOCH = 30;
     uint256 public constant EPOCH_PERIOD = 70;
     uint256 public constant FREEZE_DURATION = 10;
+    uint96 public constant MIN_WEIGHT = 1e6;
+    uint96 public constant MAX_WEIGHT = 5e6;
 
     function setUp() public {
         _deployLagrangeContracts();
@@ -56,71 +58,23 @@ contract LagrangeDeployer is Test {
 
         // deploy upgradeable proxy contracts
         emptyContract = new EmptyContract();
-        lagrangeCommittee = LagrangeCommittee(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        lagrangeService = LagrangeService(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        voteWeigher = VoteWeigher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        stakeManager = StakeManager(
-            address(
-                new TransparentUpgradeableProxy(
-                        address(emptyContract),
-                        address(proxyAdmin),
-                        ""
-                    )
-            )
-        );
-        evidenceVerifier = EvidenceVerifier(
-            address(
-                new TransparentUpgradeableProxy(
-                        address(emptyContract),
-                        address(proxyAdmin),
-                        ""
-                    )
-            )
-        );
+        lagrangeCommittee =
+            LagrangeCommittee(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        lagrangeService =
+            LagrangeService(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        voteWeigher =
+            VoteWeigher(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        stakeManager =
+            StakeManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        evidenceVerifier =
+            EvidenceVerifier(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
 
         // deploy implementation contracts
-        lagrangeCommitteeImp = new LagrangeCommittee(
-                lagrangeService,
-                IVoteWeigher(voteWeigher)
-            );
-        voteWeigherImp = new VoteWeigher(
-                IStakeManager(stakeManager)
-            );
-        stakeManagerImp = new StakeManager(
-                address(lagrangeService)
-            );
-        lagrangeServiceImp = new LagrangeService(
-            lagrangeCommittee,
-            stakeManager
-        );
-        evidenceVerifierImp = new EvidenceVerifier(
-            lagrangeCommittee,
-            stakeManager
-        );
+        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
+        voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
+        stakeManagerImp = new StakeManager(address(lagrangeService));
+        lagrangeServiceImp = new LagrangeService(lagrangeCommittee, stakeManager);
+        evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, stakeManager);
 
         // upgrade proxy contracts
         proxyAdmin.upgradeAndCall(
@@ -157,8 +111,22 @@ contract LagrangeDeployer is Test {
         vm.startPrank(vm.addr(1));
 
         // register chains
-        lagrangeCommittee.registerChain(CHAIN_ID, EPOCH_PERIOD, FREEZE_DURATION, 0);
-        lagrangeCommittee.registerChain(CHAIN_ID + 1, EPOCH_PERIOD * 2, FREEZE_DURATION * 2, 0);
+        lagrangeCommittee.registerChain(
+            CHAIN_ID,
+            EPOCH_PERIOD,
+            FREEZE_DURATION,
+            0,
+            MIN_WEIGHT, // minWeight
+            MAX_WEIGHT // maxWeight
+        );
+        lagrangeCommittee.registerChain(
+            CHAIN_ID + 1,
+            EPOCH_PERIOD * 2,
+            FREEZE_DURATION * 2,
+            0,
+            MIN_WEIGHT, // minWeight
+            MAX_WEIGHT // maxWeight
+        );
         // register token multiplier
         IVoteWeigher.TokenMultiplier[] memory multipliers = new IVoteWeigher.TokenMultiplier[](1);
         multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
