@@ -3,7 +3,7 @@ RPC_URL?="http://localhost:8545"
 
 # Run ethereum nodes
 run-geth:
-	cd docker && DEV_PERIOD=1 docker-compose up -d geth
+	cd docker && DEV_PERIOD=1 docker compose up -d geth
 
 init-accounts:
 	node util/init-accounts.js

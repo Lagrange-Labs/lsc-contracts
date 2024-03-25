@@ -39,7 +39,7 @@ contract LagrangeDeployer is Test {
     uint96 public constant MIN_WEIGHT = 1e6;
     uint96 public constant MAX_WEIGHT = 5e6;
 
-    function setUp() public {
+    function setUp() virtual public {
         _deployLagrangeContracts();
         _registerChain();
     }
