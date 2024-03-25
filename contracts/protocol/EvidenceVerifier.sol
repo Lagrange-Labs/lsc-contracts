@@ -108,7 +108,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
         emit OperatorSlashed(operator);
     }
 
-    function _checkBlockSignature(Evidence memory _evidence) internal returns (bool) {
+    function _checkBlockSignature(Evidence memory _evidence) internal view returns (bool) {
         // establish that proofs are valid
         (ILagrangeCommittee.CommitteeData memory cdata,) =
             committee.getCommittee(_evidence.chainID, _evidence.l1BlockNumber);
@@ -129,7 +129,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
         bytes32 nextCommitteeRoot,
         uint256 blockNumber,
         uint32 chainID
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         (ILagrangeCommittee.CommitteeData memory currentCommittee, bytes32 nextRoot) =
             committee.getCommittee(chainID, blockNumber);
         require(correctCurrentCommitteeRoot == currentCommittee.root, "Reference current committee roots do not match.");
