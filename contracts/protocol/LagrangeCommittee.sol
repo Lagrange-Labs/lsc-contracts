@@ -164,7 +164,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return operatorsStatus[operator].blsPubKeys;
     }
 
-    // Returns chain"s committee current and next roots at a given block.
+    // Returns chain's committee current and next roots at a given block.
     function getCommittee(uint32 chainID, uint256 blockNumber)
         public
         view
@@ -177,14 +177,14 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return (currentCommittee, nextRoot);
     }
 
-    // Checks if a chain"s committee is updatable at a given block
+    // Checks if a chain's committee is updatable at a given block
     function isUpdatable(uint32 chainID, uint256 epochNumber) public view returns (bool) {
         uint256 epochEnd = epochNumber * committeeParams[chainID].duration + committeeParams[chainID].startBlock;
         uint256 freezeDuration = committeeParams[chainID].freezeDuration;
         return block.number > epochEnd - freezeDuration;
     }
 
-    // Checks if a chain"s committee is locked at a given block
+    // Checks if a chain's committee is locked at a given block
     function isLocked(uint32 chainID) public view returns (bool, uint256) {
         if (committeeParams[chainID].duration == 0) {
             return (false, 0);
@@ -276,7 +276,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _updateCommittee(chainID, epochNumber, _root, uint32(_leafCounter));
     }
 
-    // Computes epoch number for a chain"s committee at a given block
+    // Computes epoch number for a chain's committee at a given block
     function getEpochNumber(uint32 chainID, uint256 blockNumber) public view returns (uint256) {
         uint256 startBlockNumber = committeeParams[chainID].startBlock;
         uint256 epochPeriod = committeeParams[chainID].duration;
@@ -292,7 +292,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return keccak256(abi.encodePacked(LEAF_NODE_PREFIX, blsPubKey[0], blsPubKey[1], opAddr, _votingPower));
     }
 
-    // Get the operator"s voting power for the given chainID
+    // Get the operator's voting power for the given chainID
     function getOperatorVotingPower(address opAddr, uint32 chainID) public view returns (uint96) {
         CommitteeDef memory _committeeParam = committeeParams[chainID];
         uint96 _weight = voteWeigher.weightOfOperator(_committeeParam.quorumNumber, opAddr);

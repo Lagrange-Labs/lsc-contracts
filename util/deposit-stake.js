@@ -1,8 +1,8 @@
-const { exec } = require("child_process");
-const fs = require("fs");
-require("dotenv").config();
+const { exec } = require('child_process');
+const fs = require('fs');
+require('dotenv').config();
 
-const operators = require("../config/operators.json");
+const operators = require('../config/operators.json');
 
 const rpcURL = process.env.RPC_URL;
 
@@ -37,8 +37,8 @@ const batch_size = 10;
   }
 })()
   .then(() => {
-    console.log("All done!");
+    console.log('All done!');
   })
   .catch((err) => {
-    console.error("Error:", err);
+    console.error('Error:', err);
   });

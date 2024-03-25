@@ -1,13 +1,13 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const { bn254 } = require("@noble/curves/bn254");
-const { mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
+const { expect } = require('chai');
+const { ethers } = require('hardhat');
+const { bn254 } = require('@noble/curves/bn254');
+const { mineUpTo } = require('@nomicfoundation/hardhat-network-helpers');
 
-const operators = require("../../config/operators.json");
+const operators = require('../../config/operators.json');
 
 const stake = 100000000;
 
-describe("LagrangeCommittee", function () {
+describe('LagrangeCommittee', function () {
   let admin, committeeProxy, voteWeigherProxy, stakeManagerProxy, token;
 
   before(async function () {
@@ -15,91 +15,91 @@ describe("LagrangeCommittee", function () {
   });
 
   beforeEach(async function () {
-    console.log("Deploying empty contract...");
+    console.log('Deploying empty contract...');
 
     const EmptyContractFactory =
-      await ethers.getContractFactory("EmptyContract");
+      await ethers.getContractFactory('EmptyContract');
     const emptyContract = await EmptyContractFactory.deploy();
     await emptyContract.deployed();
 
-    console.log("Deploying proxy...");
+    console.log('Deploying proxy...');
 
     const ProxyAdminFactory = await ethers.getContractFactory(
-      "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin',
     );
     const proxyAdmin = await ProxyAdminFactory.deploy();
     await proxyAdmin.deployed();
 
-    console.log("Deploying transparent proxy...");
+    console.log('Deploying transparent proxy...');
 
     const TransparentUpgradeableProxyFactory = await ethers.getContractFactory(
-      "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+      'lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     );
     committeeProxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
       proxyAdmin.address,
-      "0x",
+      '0x',
     );
     await committeeProxy.deployed();
 
     voteWeigherProxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
       proxyAdmin.address,
-      "0x",
+      '0x',
     );
     await voteWeigherProxy.deployed();
 
     stakeManagerProxy = await TransparentUpgradeableProxyFactory.deploy(
       emptyContract.address,
       proxyAdmin.address,
-      "0x",
+      '0x',
     );
     await stakeManagerProxy.deployed();
 
-    const StakeManagerFactory = await ethers.getContractFactory("StakeManager");
+    const StakeManagerFactory = await ethers.getContractFactory('StakeManager');
     const stakeManager = await StakeManagerFactory.deploy(admin.address);
     await stakeManager.deployed();
 
-    const VoteWeigherFactory = await ethers.getContractFactory("VoteWeigher");
+    const VoteWeigherFactory = await ethers.getContractFactory('VoteWeigher');
     const voteWeigher = await VoteWeigherFactory.deploy(
       stakeManagerProxy.address,
     );
     await voteWeigher.deployed();
 
     const LagrangeCommitteeFactory =
-      await ethers.getContractFactory("LagrangeCommittee");
+      await ethers.getContractFactory('LagrangeCommittee');
     const committee = await LagrangeCommitteeFactory.deploy(
       admin.address,
       voteWeigherProxy.address,
     );
     await committee.deployed();
 
-    console.log("Upgrading proxy...");
+    console.log('Upgrading proxy...');
 
     await proxyAdmin.upgradeAndCall(
       committeeProxy.address,
       committee.address,
-      committee.interface.encodeFunctionData("initialize", [admin.address]),
+      committee.interface.encodeFunctionData('initialize', [admin.address]),
     );
 
     await proxyAdmin.upgradeAndCall(
       voteWeigherProxy.address,
       voteWeigher.address,
-      voteWeigher.interface.encodeFunctionData("initialize", [admin.address]),
+      voteWeigher.interface.encodeFunctionData('initialize', [admin.address]),
     );
 
     await proxyAdmin.upgradeAndCall(
       stakeManagerProxy.address,
       stakeManager.address,
-      stakeManager.interface.encodeFunctionData("initialize", [admin.address]),
+      stakeManager.interface.encodeFunctionData('initialize', [admin.address]),
     );
 
-    const WETH9Factory = await ethers.getContractFactory("WETH9");
+    const WETH9Factory = await ethers.getContractFactory('WETH9');
     token = await WETH9Factory.deploy();
     await token.deployed();
 
     const voteWeigherProxyContract = await ethers.getContractAt(
-      "VoteWeigher",
+      'VoteWeigher',
       voteWeigherProxy.address,
       admin,
     );
@@ -107,21 +107,21 @@ describe("LagrangeCommittee", function () {
       { token: token.address, multiplier: 1e15 },
     ]);
     const stakeManagerProxyContract = await ethers.getContractAt(
-      "StakeManager",
+      'StakeManager',
       stakeManagerProxy.address,
       admin,
     );
     await stakeManagerProxyContract.addTokensToWhitelist([token.address]);
   });
 
-  it("trie construction/deconstruction", async function () {
+  it('trie construction/deconstruction', async function () {
     const committee = await ethers.getContractAt(
-      "LagrangeCommittee",
+      'LagrangeCommittee',
       committeeProxy.address,
       admin,
     );
     const stakeManager = await ethers.getContractAt(
-      "StakeManager",
+      'StakeManager',
       stakeManagerProxy.address,
       admin,
     );
@@ -132,7 +132,7 @@ describe("LagrangeCommittee", function () {
     const operators = [];
     for (let j = 1; j < operatorCount; j++) {
       const operator = await ethers.getSigner(j);
-      const bls_pub_key = "0x" + "0".repeat(63) + j;
+      const bls_pub_key = '0x' + '0'.repeat(63) + j;
       await token.connect(operator).deposit({ value: stake * j });
       await token.connect(operator).approve(stakeManager.address, stake * j);
       await stakeManager.connect(operator).deposit(token.address, stake * j);
@@ -142,7 +142,7 @@ describe("LagrangeCommittee", function () {
     }
     for (i = 1; i <= chainCount; i++) {
       await committee.registerChain(i, 10000, 1000, 0);
-      console.log("Building trie of size " + i + "...");
+      console.log('Building trie of size ' + i + '...');
       await Promise.all(
         operators.map(async (operator) => {
           return committee.subscribeChain(operator.address, i);
@@ -155,10 +155,10 @@ describe("LagrangeCommittee", function () {
 
     await mineUpTo(15000);
     croot = await committee.getCommittee(1, 15000);
-    console.log("current committee: ", croot);
+    console.log('current committee: ', croot);
 
     for (i = 1; i <= chainCount; i++) {
-      console.log("Deconstructing trie #" + i + "...");
+      console.log('Deconstructing trie #' + i + '...');
       await Promise.all(
         operators.map(async (operator) => {
           return committee.unsubscribeChain(operator.address, i);
@@ -167,14 +167,14 @@ describe("LagrangeCommittee", function () {
     }
   });
 
-  it("leaf hash", async function () {
+  it('leaf hash', async function () {
     const committee = await ethers.getContractAt(
-      "LagrangeCommittee",
+      'LagrangeCommittee',
       committeeProxy.address,
       admin,
     );
     const stakeManager = await ethers.getContractAt(
-      "StakeManager",
+      'StakeManager',
       stakeManagerProxy.address,
       admin,
     );
@@ -189,15 +189,15 @@ describe("LagrangeCommittee", function () {
     await stakeManager.connect(signer).deposit(token.address, stake);
 
     const Gx = operators[0].bls_pub_keys[0].slice(0, 66);
-    const Gy = "0x" + operators[0].bls_pub_keys[0].slice(66);
+    const Gy = '0x' + operators[0].bls_pub_keys[0].slice(66);
     const newPubKey = [Gx, Gy];
 
     await committee.addOperator(signer.address, newPubKey);
     await committee.subscribeChain(signer.address, operators[0].chain_id);
 
     const leaf = ethers.utils.solidityKeccak256(
-      ["bytes1", "uint256", "uint256", "address", "uint96"],
-      ["0x01", Gx, Gy, signer.address, stake / 1e3],
+      ['bytes1', 'uint256', 'uint256', 'address', 'uint96'],
+      ['0x01', Gx, Gy, signer.address, stake / 1e3],
     );
 
     await mineUpTo(29500);
@@ -219,14 +219,14 @@ describe("LagrangeCommittee", function () {
     expect(leaf).to.equal(leafHash);
   });
 
-  it("merkle root", async function () {
+  it('merkle root', async function () {
     const committee = await ethers.getContractAt(
-      "LagrangeCommittee",
+      'LagrangeCommittee',
       committeeProxy.address,
       admin,
     );
     const stakeManager = await ethers.getContractAt(
-      "StakeManager",
+      'StakeManager',
       stakeManagerProxy.address,
       admin,
     );
@@ -242,7 +242,7 @@ describe("LagrangeCommittee", function () {
       await stakeManager.connect(signer).deposit(token.address, stake);
 
       const Gx = operators[0].bls_pub_keys[i].slice(0, 66);
-      const Gy = "0x" + operators[0].bls_pub_keys[i].slice(66);
+      const Gy = '0x' + operators[0].bls_pub_keys[i].slice(66);
       const newPubKey = [Gx, Gy];
 
       await committee.addOperator(signer.address, newPubKey);
@@ -268,7 +268,7 @@ describe("LagrangeCommittee", function () {
     }
     const len = leaves.length;
     for (let i = 0; i < count - len; i++) {
-      leaves.push("0x" + "0".repeat(64));
+      leaves.push('0x' + '0'.repeat(64));
     }
 
     while (count > 1) {
@@ -276,8 +276,8 @@ describe("LagrangeCommittee", function () {
         const left = leaves[i];
         const right = leaves[i + 1];
         const hash = ethers.utils.solidityKeccak256(
-          ["bytes1", "bytes32", "bytes32"],
-          ["0x02", left, right],
+          ['bytes1', 'bytes32', 'bytes32'],
+          ['0x02', left, right],
         );
         leaves[i / 2] = hash;
       }
@@ -286,14 +286,14 @@ describe("LagrangeCommittee", function () {
     expect(leaves[0]).to.equal(committeeRoot.currentCommittee.root);
   });
 
-  it("merkle tree update", async function () {
+  it('merkle tree update', async function () {
     const committee = await ethers.getContractAt(
-      "LagrangeCommittee",
+      'LagrangeCommittee',
       committeeProxy.address,
       admin,
     );
     const stakeManager = await ethers.getContractAt(
-      "StakeManager",
+      'StakeManager',
       stakeManagerProxy.address,
       admin,
     );
@@ -310,7 +310,7 @@ describe("LagrangeCommittee", function () {
       await stakeManager.connect(signer).deposit(token.address, stake);
 
       const Gx = operators[0].bls_pub_keys[i].slice(0, 66);
-      const Gy = "0x" + operators[0].bls_pub_keys[i].slice(66);
+      const Gy = '0x' + operators[0].bls_pub_keys[i].slice(66);
       const newPubKey = [Gx, Gy];
 
       await committee.addOperator(signer.address, newPubKey);
@@ -360,7 +360,7 @@ describe("LagrangeCommittee", function () {
       count *= 2;
     }
     for (let i = 0; i < count - operatorCount; i++) {
-      leaves.push("0x" + "0".repeat(64));
+      leaves.push('0x' + '0'.repeat(64));
     }
 
     while (count > 1) {
@@ -368,8 +368,8 @@ describe("LagrangeCommittee", function () {
         const left = leaves[i];
         const right = leaves[i + 1];
         const hash = ethers.utils.solidityKeccak256(
-          ["bytes1", "bytes32", "bytes32"],
-          ["0x02", left, right],
+          ['bytes1', 'bytes32', 'bytes32'],
+          ['0x02', left, right],
         );
         leaves[i / 2] = hash;
       }

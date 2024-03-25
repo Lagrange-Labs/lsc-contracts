@@ -1,15 +1,15 @@
-const ethers = require("ethers");
+const ethers = require('ethers');
 
-const accounts = require("../../config/accounts.json");
+const accounts = require('../../config/accounts.json');
 const abi =
-  require("../../out/LagrangeCommittee.sol/LagrangeCommittee.json").abi;
+  require('../../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
 const serviceABI =
-  require("../../out/LagrangeService.sol/LagrangeService.json").abi;
+  require('../../out/LagrangeService.sol/LagrangeService.json').abi;
 
-const deployedAddresses = require("../../script/output/deployed_goerli.json");
-require("dotenv").config();
+const deployedAddresses = require('../../script/output/deployed_goerli.json');
+require('dotenv').config();
 
-const address = "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9";
+const address = '0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9';
 const privKey = accounts[address];
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(privKey, provider);
@@ -28,26 +28,26 @@ const arbChainID = 421613;
 const optChainID = 420;
 
 contract.getEpochNumber(arbChainID, 9377423).then((epoch) => {
-  console.log("Arb epoch: ", epoch);
+  console.log('Arb epoch: ', epoch);
 });
 
 contract.getCommittee(arbChainID, 9377423).then((current) => {
-  console.log("Arb Current committee: ", current[0]);
-  console.log("Arb Next committee: ", current[1]);
+  console.log('Arb Current committee: ', current[0]);
+  console.log('Arb Next committee: ', current[1]);
 });
 
 contract.getEpochNumber(optChainID, 9377423).then((epoch) => {
-  console.log("Opt epoch: ", epoch);
+  console.log('Opt epoch: ', epoch);
 });
 
 contract.isUpdatable(2, arbChainID).then((updatable) => {
-  console.log("Arb updatable: ", updatable);
+  console.log('Arb updatable: ', updatable);
 });
 
 contract.isUpdatable(3, arbChainID).then((updatable) => {
-  console.log("Arb updatable: ", updatable);
+  console.log('Arb updatable: ', updatable);
 });
 
 contract.updatedEpoch(arbChainID).then((epoch) => {
-  console.log("Arb updated epoch: ", epoch);
+  console.log('Arb updated epoch: ', epoch);
 });

@@ -1,18 +1,18 @@
-const ethers = require("ethers");
-const bls = require("@noble/bls12-381");
-require("dotenv").config();
+const ethers = require('ethers');
+const bls = require('@noble/bls12-381');
+require('dotenv').config();
 
-const abi = require("../out/LagrangeService.sol/LagrangeService.json").abi;
-const deployedAddresses = require("../script/output/deployed_lgr.json");
+const abi = require('../out/LagrangeService.sol/LagrangeService.json').abi;
+const deployedAddresses = require('../script/output/deployed_lgr.json');
 
-const operators = require("../config/operators.json");
+const operators = require('../config/operators.json');
 const uint32Max = 4294967295;
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 
 const convertBLSPubKey = (oldPubKey) => {
   const Gx = BigInt(oldPubKey.slice(0, 66));
-  const Gy = BigInt("0x" + oldPubKey.slice(66));
+  const Gy = BigInt('0x' + oldPubKey.slice(66));
   return [Gx, Gy];
 };
 

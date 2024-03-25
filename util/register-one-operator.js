@@ -1,7 +1,7 @@
-const { exec } = require("child_process");
-require("dotenv").config();
+const { exec } = require('child_process');
+require('dotenv').config();
 
-const operatorData = require("../config/random_operator.json");
+const operatorData = require('../config/random_operator.json');
 
 const rpcURL = process.env.RPC_URL;
 
@@ -33,8 +33,8 @@ function executeCommand(command) {
   await executeCommand(subscribe_command);
 })()
   .then(() => {
-    console.log("All done!");
+    console.log('All done!');
   })
   .catch((err) => {
-    console.error("Error:", err);
+    console.error('Error:', err);
   });
