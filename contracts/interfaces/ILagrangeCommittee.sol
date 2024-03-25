@@ -78,10 +78,6 @@ interface ILagrangeCommittee {
         address operator
     ) external view returns (uint256[2][] memory);
 
-    function getOperatorStatus(
-        address opAddr
-    ) external view returns (uint8, UnsubscribedParam[] memory);
-
     function getOperatorVotingPower(
         address opAddr,
         uint32 chainID
@@ -91,4 +87,27 @@ interface ILagrangeCommittee {
         address opAddr,
         uint32 chainID
     ) external view returns (uint96[] memory);
+
+
+    // Event fired on initialization of a new committee
+    event InitCommittee(
+        uint256 chainID,
+        uint256 duration,
+        uint256 freezeDuration,
+        uint8 quorumNumber,
+        uint96 minWeight,
+        uint96 maxWeight
+    );
+    // Event fired on updating a committee params
+    event UpdateCommitteeParams(
+        uint256 chainID,
+        uint256 duration,
+        uint256 freezeDuration,
+        uint8 quorumNumber,
+        uint96 minWeight,
+        uint96 maxWeight
+    );
+
+    // Fired on successful rotation of committee
+    event UpdateCommittee(uint256 chainID, bytes32 current);
 }

@@ -10,6 +10,8 @@ contract RegisterOperatorTest is LagrangeDeployer {
         address operator = vm.addr(333);
         vm.deal(operator, 1e19);
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
+        blsPubKeys[0][0] = 1;
+        blsPubKeys[0][1] = 2;
         uint256 amount = 1e15;
 
         // add operator to whitelist
@@ -62,6 +64,8 @@ contract RegisterOperatorTest is LagrangeDeployer {
         address operator = vm.addr(555);
         vm.deal(operator, 1e19);
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
+        blsPubKeys[0][0] = 1;
+        blsPubKeys[0][1] = 2;
         uint256 amount = 1e16;
 
         // add operator to whitelist

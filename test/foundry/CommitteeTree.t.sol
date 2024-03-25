@@ -77,6 +77,13 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
         lagrangeService.register(blsPubKeys);
         // subscribe chain
+        vm.expectRevert("Insufficient Vote Weight");
+        lagrangeService.subscribe(CHAIN_ID);
+        vm.stopPrank();
+
+        _deposit(operator, 1e15);
+
+        vm.startPrank(operator);
         lagrangeService.subscribe(CHAIN_ID);
         vm.stopPrank();
     }
@@ -166,10 +173,11 @@ contract CommitteeTreeTest is LagrangeDeployer {
         // maxWeight = 5e6
 
         {
-            amounts[0] = 0.5e15; // weight = 0.5e6, voting_power = 0
-            blsPubKeysArray[0] = new uint256[2][](1); // voting_powers = []
+            amounts[0] = 1e15; // weight = 1e6, voting_power = 0
+            blsPubKeysArray[0] = new uint256[2][](1); // voting_powers = [1e6]
 
-            expectedVotingPowers[0] = new uint256[](0);
+            expectedVotingPowers[0] = new uint256[](1);
+            expectedVotingPowers[0][0] = 1e6;
         }
 
         {
