@@ -39,7 +39,7 @@ contract LagrangeDeployer is Test {
     uint96 public constant MIN_WEIGHT = 1e6;
     uint96 public constant MAX_WEIGHT = 5e6;
 
-    function setUp() public {
+    function setUp() public virtual {
         _deployLagrangeContracts();
         _registerChain();
     }
@@ -113,6 +113,7 @@ contract LagrangeDeployer is Test {
         // register chains
         lagrangeCommittee.registerChain(
             CHAIN_ID,
+            0,
             EPOCH_PERIOD,
             FREEZE_DURATION,
             0,
@@ -121,6 +122,7 @@ contract LagrangeDeployer is Test {
         );
         lagrangeCommittee.registerChain(
             CHAIN_ID + 1,
+            0,
             EPOCH_PERIOD * 2,
             FREEZE_DURATION * 2,
             0,

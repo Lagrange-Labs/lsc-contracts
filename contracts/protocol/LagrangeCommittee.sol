@@ -113,6 +113,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // Initializes a new committee, and optionally associates addresses with it.
     function registerChain(
         uint32 chainID,
+        uint256 genesisBlock,
         uint256 epochPeriod,
         uint256 freezeDuration,
         uint8 quorumNumber,
@@ -122,7 +123,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         require(committeeParams[chainID].startBlock == 0, "Committee has already been initialized.");
         _validateVotingPowerRange(minWeight, maxWeight);
 
-        _initCommittee(chainID, epochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight);
+        _initCommittee(chainID, genesisBlock, epochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight);
     }
 
     function updateChain(
@@ -138,7 +139,16 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
         _validateVotingPowerRange(minWeight, maxWeight);
 
-        _updateCommitteeParams(chainID, _startBlock, epochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight);
+        _updateCommitteeParams(
+            chainID,
+            _startBlock,
+            committeeParams[chainID].genesisBlock,
+            epochPeriod,
+            freezeDuration,
+            quorumNumber,
+            minWeight,
+            maxWeight
+        );
     }
 
     function isUnregisterable(address operator) public view returns (bool, uint256) {
@@ -168,13 +178,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     function getCommittee(uint32 chainID, uint256 blockNumber)
         public
         view
-        returns (CommitteeData memory currentCommittee, bytes32 nextRoot)
+        returns (CommitteeData memory currentCommittee)
     {
         uint256 epochNumber = getEpochNumber(chainID, blockNumber);
-        uint256 nextCommitteeEpoch = getEpochNumber(chainID, blockNumber + 1);
         currentCommittee = committees[chainID][epochNumber];
-        nextRoot = committees[chainID][nextCommitteeEpoch].root;
-        return (currentCommittee, nextRoot);
+        return currentCommittee;
     }
 
     // Checks if a chain's committee is updatable at a given block
@@ -278,7 +286,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     // Computes epoch number for a chain's committee at a given block
     function getEpochNumber(uint32 chainID, uint256 blockNumber) public view returns (uint256) {
+        if (blockNumber < committeeParams[chainID].genesisBlock) {
+            return 0;
+        }
         uint256 startBlockNumber = committeeParams[chainID].startBlock;
+        if (blockNumber < startBlockNumber) {
+            return 1;
+        }
         uint256 epochPeriod = committeeParams[chainID].duration;
         return (blockNumber - startBlockNumber) / epochPeriod + 1;
     }
@@ -319,6 +333,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // Initialize new committee.
     function _initCommittee(
         uint32 _chainID,
+        uint256 _genesisBlock,
         uint256 _duration,
         uint256 _freezeDuration,
         uint8 _quorumNumber,
@@ -326,18 +341,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint96 _maxWeight
     ) internal {
         committeeParams[_chainID] =
-            CommitteeDef(block.number, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
-        committees[_chainID][0] = CommitteeData(0, 0);
+            CommitteeDef(block.number, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
+        committees[_chainID][0] = CommitteeData(0, 0, 0);
 
         chainIDs.push(_chainID);
 
-        emit InitCommittee(_chainID, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
+        emit InitCommittee(_chainID, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
     }
 
     // Update committee.
     function _updateCommitteeParams(
         uint32 _chainID,
         uint256 _startBlock,
+        uint256 _genesisBlock,
         uint256 _duration,
         uint256 _freezeDuration,
         uint8 _quorumNumber,
@@ -345,7 +361,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint96 _maxWeight
     ) internal {
         committeeParams[_chainID] =
-            CommitteeDef(_startBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
+            CommitteeDef(_startBlock, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
         emit UpdateCommitteeParams(_chainID, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
     }
 
@@ -391,6 +407,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         // Update roots
         committees[_chainID][nextEpoch].leafCount = _leafCount;
         committees[_chainID][nextEpoch].root = _root;
+        committees[_chainID][nextEpoch].updatedBlock = uint224(block.number);
         updatedEpoch[_chainID] = _epochNumber;
         emit UpdateCommittee(_chainID, bytes32(committees[_chainID][nextEpoch].root));
     }

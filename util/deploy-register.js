@@ -57,9 +57,9 @@ const convertBLSPubKey = (oldPubKey) => {
         wallet,
       );
 
-      const tx = await contract.register(
+      const tx = await contract.register([
         convertBLSPubKey(operators[0].bls_pub_keys[index]),
-      );
+      ]);
       console.log(
         `Starting to register operator for address: ${operator} tx hash: ${tx.hash}`,
       );
