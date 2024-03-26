@@ -15,6 +15,7 @@ interface ILagrangeCommittee {
 
     struct CommitteeDef {
         uint256 startBlock;
+        uint256 genesisBlock;
         uint256 duration;
         uint256 freezeDuration;
         uint8 quorumNumber;
@@ -24,14 +25,16 @@ interface ILagrangeCommittee {
 
     struct CommitteeData {
         bytes32 root;
+        uint224 updatedBlock;
         uint32 leafCount;
     }
 
-    function getCommittee(uint32 chainID, uint256 blockNumber) external view returns (CommitteeData memory, bytes32);
+    function getCommittee(uint32 chainID, uint256 blockNumber) external view returns (CommitteeData memory);
 
     // TODO: need to change order of the params for gas optimization
     function registerChain(
         uint32 chainID,
+        uint256 genesisBlock,
         uint256 epochPeriod,
         uint256 freezeDuration,
         uint8 quorumNumber,
@@ -71,6 +74,7 @@ interface ILagrangeCommittee {
     // Event fired on initialization of a new committee
     event InitCommittee(
         uint256 chainID,
+        uint256 genesisBlock,
         uint256 duration,
         uint256 freezeDuration,
         uint8 quorumNumber,

@@ -21,7 +21,9 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.stopPrank();
     }
 
-    function _registerOperator(address operator, uint256 amount, uint256[2][] memory blsPubKeys, uint32 chainID) internal {
+    function _registerOperator(address operator, uint256 amount, uint256[2][] memory blsPubKeys, uint32 chainID)
+        internal
+    {
         vm.deal(operator, 1e19);
         // add operator to whitelist
         vm.prank(lagrangeService.owner());
@@ -34,10 +36,11 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.startPrank(operator);
         // register operator
 
-        (uint256 startBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(chainID);
+        (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+            lagrangeCommittee.committeeParams(chainID);
         vm.roll(startBlock + duration - freezeDuration - 1);
         lagrangeService.register(blsPubKeys);
-        
+
         uint256 epochNumber = lagrangeCommittee.getEpochNumber(chainID, block.number);
         (bool isLocked, uint256 blockNumber) = lagrangeCommittee.isLocked(chainID);
 
@@ -50,7 +53,8 @@ contract CommitteeTreeTest is LagrangeDeployer {
         if (blsPubKeys.length > 0) {
             vm.startPrank(operator);
             // register operator
-            (uint256 startBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(chainID);
+            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+                lagrangeCommittee.committeeParams(chainID);
             vm.roll(startBlock + duration - freezeDuration - 1);
             lagrangeService.addBlsPubKeys(blsPubKeys);
 
@@ -119,12 +123,11 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
         lagrangeCommittee.update(CHAIN_ID, 1);
 
-        (ILagrangeCommittee.CommitteeData memory cur, bytes32 next) =
+        ILagrangeCommittee.CommitteeData memory cur =
             lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD);
 
         assertEq(cur.leafCount, 3);
         assertEq(cur.root, 0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3);
-        assertEq(cur.root, next);
 
         _deposit(operators[0], 1e15);
 
@@ -135,10 +138,9 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD * 2 - FREEZE_DURATION + 1);
         lagrangeCommittee.update(CHAIN_ID, 2);
 
-        (cur, next) = lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD * 2);
+        cur = lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD * 2);
         assertEq(cur.leafCount, 3);
         assertEq(cur.root, 0x02f507202eec14a32171bbca5d048778e4c67238b21037a90b90608c71b6276a);
-        assertEq(cur.root, next);
     }
 
     uint256 private constant OPERATOR_COUNT2 = 4;
@@ -204,14 +206,14 @@ contract CommitteeTreeTest is LagrangeDeployer {
         }
 
         ILagrangeCommittee.CommitteeData memory cur;
-        bytes32 next;
         {
-            (uint256 startBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(CHAIN_ID);
+            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+                lagrangeCommittee.committeeParams(CHAIN_ID);
 
             // update the tree
             vm.roll(startBlock + duration - freezeDuration + 1);
             lagrangeCommittee.update(CHAIN_ID, 1);
-            (cur, next) = lagrangeCommittee.getCommittee(CHAIN_ID, startBlock + duration);
+            cur = lagrangeCommittee.getCommittee(CHAIN_ID, startBlock + duration);
         }
 
         uint256 expectedLeafCount;
@@ -234,14 +236,12 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         assertEq(cur.leafCount, expectedLeafCount);
         // assertEq(cur.root, 0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3);
-        assertEq(cur.root, next);
-
-
         {
             uint256[2][] memory additionalBlsPubKeys;
             additionalBlsPubKeys = new uint256[2][](1);
             additionalBlsPubKeys[0] = [_blsKeyCounter++, _blsKeyCounter];
-            (uint256 startBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(CHAIN_ID);
+            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+                lagrangeCommittee.committeeParams(CHAIN_ID);
 
             _addBlsPubKeys(operators[0], additionalBlsPubKeys, CHAIN_ID);
             vm.roll(startBlock + duration * 2 - freezeDuration + 1);
