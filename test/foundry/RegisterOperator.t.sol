@@ -7,7 +7,8 @@ import "./LagrangeDeployer.t.sol";
 
 contract RegisterOperatorTest is LagrangeDeployer {
     function testDepositAndWithdraw() public {
-        address operator = vm.addr(333);
+        uint256 privateKey = 333;
+        address operator = vm.addr(privateKey);
         vm.deal(operator, 1e19);
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
         blsPubKeys[0][0] = 1;
@@ -28,9 +29,23 @@ contract RegisterOperatorTest is LagrangeDeployer {
         // deposit tokens to stake manager
         stakeManager.deposit(IERC20(address(token)), amount);
 
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
+        operatorSignature.expiry = block.timestamp + 60;
+        operatorSignature.salt = bytes32(0x0);
+        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+            operator, 
+            address(lagrangeService), 
+            operatorSignature.salt, 
+            operatorSignature.expiry
+        );
+
+        console.logBytes32(digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        operatorSignature.signature = abi.encodePacked(r, s, v);
+        
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(blsPubKeys);
+        lagrangeService.register(blsPubKeys, operatorSignature);
         lagrangeService.subscribe(CHAIN_ID);
         lagrangeService.subscribe(CHAIN_ID + 1);
 
@@ -76,13 +91,15 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         vm.startPrank(operator);
 
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
+
         // deposit tokens to stake manager
         token.deposit{value: amount}();
         token.approve(address(stakeManager), amount);
         stakeManager.deposit(IERC20(address(token)), amount);
 
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
-        lagrangeService.register(blsPubKeys);
+        lagrangeService.register(blsPubKeys, operatorSignature);
 
         // it should fail because the committee is in freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);

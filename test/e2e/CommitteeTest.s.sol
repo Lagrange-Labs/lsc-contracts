@@ -14,7 +14,7 @@ import "../foundry/CommitteeTree.t.sol";
 contract CommitteeTest is Script, CommitteeTreeTest {
     string deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
     string serviceDataPath = string(bytes("config/LagrangeService.json"));
-    uint256 private constant OPERATOR_COUNT = 4;
+    uint256 private constant _OPERATOR_COUNT = 4;
     uint32 private chainIDArb;
     uint32 private chainIDOpt;
 
@@ -47,10 +47,10 @@ contract CommitteeTest is Script, CommitteeTreeTest {
 
     function run() public {
         uint256 originalLeaves = 10;
-        address[OPERATOR_COUNT] memory operators;
-        uint256[OPERATOR_COUNT] memory amounts;
-        uint256[2][][OPERATOR_COUNT] memory blsPubKeysArray;
-        uint256[][OPERATOR_COUNT] memory expectedVotingPowers;
+        address[_OPERATOR_COUNT] memory operators;
+        uint256[_OPERATOR_COUNT] memory amounts;
+        uint256[2][][_OPERATOR_COUNT] memory blsPubKeysArray;
+        uint256[][_OPERATOR_COUNT] memory expectedVotingPowers;
 
         operators[0] = vm.addr(111);
         operators[1] = vm.addr(222);
@@ -96,29 +96,28 @@ contract CommitteeTest is Script, CommitteeTreeTest {
         }
 
         uint256 _blsKeyCounter = 1;
-        for (uint256 i; i < OPERATOR_COUNT; i++) {
+        for (uint256 i; i < _OPERATOR_COUNT; i++) {
             for (uint256 j; j < blsPubKeysArray[i].length; j++) {
                 blsPubKeysArray[i][j] = [_blsKeyCounter++, _blsKeyCounter];
             }
         }
 
-        for (uint256 i; i < OPERATOR_COUNT; i++) {
+        for (uint256 i; i < _OPERATOR_COUNT; i++) {
             _registerOperator(operators[i], amounts[i], blsPubKeysArray[i], chainIDArb);
         }
 
         ILagrangeCommittee.CommitteeData memory cur;
-        bytes32 next;
         {
-            (uint256 startBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(chainIDArb);
+            (uint256 startBlock, uint256 _genesisBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(chainIDArb);
 
             // update the tree
             vm.roll(startBlock + duration - freezeDuration + 1);
             lagrangeCommittee.update(chainIDArb, 1);
-            (cur, next) = lagrangeCommittee.getCommittee(chainIDArb, startBlock + duration);
+            cur = lagrangeCommittee.getCommittee(chainIDArb, startBlock + duration);
         }
 
         uint256 expectedLeafCount = originalLeaves;
-        for (uint256 i; i < OPERATOR_COUNT; i++) {
+        for (uint256 i; i < _OPERATOR_COUNT; i++) {
             uint224 expectedVotingPower;
             for (uint256 j; j < expectedVotingPowers[i].length; j++) {
                 expectedVotingPower += uint224(expectedVotingPowers[i][j]);
@@ -136,15 +135,12 @@ contract CommitteeTest is Script, CommitteeTreeTest {
         }
 
         assertEq(cur.leafCount, expectedLeafCount);
-        // assertEq(cur.root, 0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3);
-        assertEq(cur.root, next);
-
 
         {
             uint256[2][] memory additionalBlsPubKeys;
             additionalBlsPubKeys = new uint256[2][](1);
             additionalBlsPubKeys[0] = [_blsKeyCounter++, _blsKeyCounter];
-            (uint256 startBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(chainIDArb);
+            (uint256 startBlock, uint256 _genesisBlock, uint256 duration, uint256 freezeDuration, , , ) = lagrangeCommittee.committeeParams(chainIDArb);
 
             _addBlsPubKeys(operators[0], additionalBlsPubKeys, chainIDArb);
             vm.roll(startBlock + duration * 2 - freezeDuration + 1);

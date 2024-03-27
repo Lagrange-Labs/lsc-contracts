@@ -1,15 +1,15 @@
 {
   "addresses": {
-    "evidenceVerifier": "0x9F1b23ce0CCE09eD8245Bba3d1967B67D6823BA0",
-    "evidenceVerifierImp": "0x2AbEcAE423a9A493F2f202771213f2403871825e",
-    "lagrangeCommittee": "0xEf259c4cbA6BCA61f004E9c6f9853B128ba2257f",
-    "lagrangeCommitteeImp": "0xC1bb2F1398c85D0142FC7f0A8F22432ED757Fa7d",
-    "lagrangeService": "0x51c6B291E89855064A5196015A965c42331eB3a9",
-    "lagrangeServiceImp": "0x8CfDa194A3cc39226cBb56cFA1008812cD63DD3d",
-    "proxyAdmin": "0x10CE6fd76a2d7b294bF6bDcE97Fc52568F22c779",
-    "stakeManager": "0x197a6a2Ca7Ad1Fd7E2Bb27A893DA5BABD6bFacEA",
-    "stakeManagerImp": "0x6009D11eD16f93a1c8043EB0aC680BE593d0e4af",
-    "voteWeigher": "0xf815A2Be9741bB4c66374350aFF138292DF77CCD",
-    "voteWeigherImp": "0x6DcCB4da92f4F97D1Cd15B8608A21f04B6b8bACb"
+    "evidenceVerifier": "0xD8349E821223d0c058519379B5351E07f2BEC6E7",
+    "evidenceVerifierImp": "0xBc19195A86C70C3cb67bcd730285578F4A21A1Fc",
+    "lagrangeCommittee": "0xD6F061031837624ec3A1b9f55B062EE83f571952",
+    "lagrangeCommitteeImp": "0xcBB9F259a19e7189300C47248FB0f04144AE2f71",
+    "lagrangeService": "0x11BECbB998217ffe4f38FD650051f812a6D624a3",
+    "lagrangeServiceImp": "0xA1C68B0b727A0DcCA7ED45c08ba08608E8d2502d",
+    "proxyAdmin": "0x833caFf5E31f4E303622473bC3948830e203D96B",
+    "stakeManager": "0x7027BC26585BEe3c90d3744D9EAD4237D794e594",
+    "stakeManagerImp": "0x032094834f2dE47cEF758620c14E07f6fA0079Ce",
+    "voteWeigher": "0x3bE720bdB8F3B0d1190A63EDd6F5224DB3b99CeB",
+    "voteWeigherImp": "0x6F389b82bEE24a16eb9D51cdafe8286C5A5a0aeC"
   }
 }

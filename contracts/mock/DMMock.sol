@@ -157,4 +157,16 @@ contract DelegationManager is IDelegationManager {
     function calculateWithdrawalRoot(Withdrawal memory /*withdrawal*/) external pure returns (bytes32) {}
 
     function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory /*withdrawalsToQueue*/) external {}
+
+
+    function getOperatorShares(
+        address /*operator*/,
+        IStrategy[] memory /*strategies*/
+    ) external view returns (uint256[] memory) {}
+
+    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) external view returns (uint256) {}
+
+    function minWithdrawalDelayBlocks() external view returns (uint256) {}
+    
+    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external view returns (uint256) {}
 }

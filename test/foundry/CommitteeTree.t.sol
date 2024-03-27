@@ -35,11 +35,12 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         vm.startPrank(operator);
         // register operator
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
 
         (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
             lagrangeCommittee.committeeParams(chainID);
         vm.roll(startBlock + duration - freezeDuration - 1);
-        lagrangeService.register(blsPubKeys);
+        lagrangeService.register(blsPubKeys, operatorSignature);
 
         uint256 epochNumber = lagrangeCommittee.getEpochNumber(chainID, block.number);
         (bool isLocked, uint256 blockNumber) = lagrangeCommittee.isLocked(chainID);
@@ -78,9 +79,11 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         vm.startPrank(operator);
 
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
+
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(blsPubKeys);
+        lagrangeService.register(blsPubKeys, operatorSignature);
         // subscribe chain
         vm.expectRevert("Insufficient Vote Weight");
         lagrangeService.subscribe(CHAIN_ID);

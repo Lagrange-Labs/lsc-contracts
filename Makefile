@@ -27,9 +27,6 @@ add-strategy:
 register-operator:
 	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/register-operator.js
 
-register-lagrange:
-	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/register-lagrange.js
-
 deploy-lagrange:
 	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv
 
@@ -45,7 +42,7 @@ init-committee:
 deposit-stake:
 	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deposit-stake.js
 
-.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator register-lagrange deploy-lagrange add-quorum init-committee deposit-stake
+.PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-lagrange add-quorum init-committee deposit-stake
 
 deploy-register:
 	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deploy-register.js
@@ -84,9 +81,9 @@ clean: stop
 	sudo rm -rf docker/geth_db
 
 # Deploy
-deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange deploy-verifiers update-config add-quorum register-lagrange deploy-register init-committee
+deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee deposit-stake deploy-register
 
-deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange deploy-verifiers update-config add-quorum register-lagrange deploy-register init-committee
+deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange deploy-verifiers update-config add-quorum deploy-register init-committee
 
 all-mock: run-geth init-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee	
 
