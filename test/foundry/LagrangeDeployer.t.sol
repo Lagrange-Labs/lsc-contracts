@@ -77,7 +77,8 @@ contract LagrangeDeployer is Test {
         lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
         voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
         stakeManagerImp = new StakeManager(address(lagrangeService));
-        lagrangeServiceImp = new LagrangeService(lagrangeCommittee, stakeManager, avsDirectory, IVoteWeigher(voteWeigher));
+        lagrangeServiceImp =
+            new LagrangeService(lagrangeCommittee, stakeManager, address(avsDirectory), IVoteWeigher(voteWeigher));
         evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, stakeManager);
 
         // upgrade proxy contracts

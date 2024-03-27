@@ -33,16 +33,13 @@ contract RegisterOperatorTest is LagrangeDeployer {
         operatorSignature.expiry = block.timestamp + 60;
         operatorSignature.salt = bytes32(0x0);
         bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
-            operator, 
-            address(lagrangeService), 
-            operatorSignature.salt, 
-            operatorSignature.expiry
+            operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
         );
 
         console.logBytes32(digest);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         operatorSignature.signature = abi.encodePacked(r, s, v);
-        
+
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
         lagrangeService.register(blsPubKeys, operatorSignature);

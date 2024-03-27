@@ -18,8 +18,10 @@ contract InitCommittee is Script, Test {
         string chainName;
         uint256 epochPeriod;
         uint256 freezeDuration;
+        uint256 genesisBlock;
         uint96 maxWeight;
         uint96 minWeight;
+        uint8 quorumNumber;
     }
 
     function run() public {
@@ -38,10 +40,10 @@ contract InitCommittee is Script, Test {
         for (uint256 i = 0; i < initialChains.length; i++) {
             lagrangeCommittee.registerChain(
                 initialChains[i].chainId,
-                0,
+                initialChains[i].genesisBlock,
                 initialChains[i].epochPeriod,
                 initialChains[i].freezeDuration,
-                0,
+                initialChains[i].quorumNumber,
                 initialChains[i].minWeight,
                 initialChains[i].maxWeight
             );

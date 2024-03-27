@@ -8,7 +8,10 @@ interface ILagrangeService {
 
     function removeOperatorsFromWhitelist(address[] calldata operators) external;
 
-    function register(uint256[2][] memory blsPubKeys, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external;
+    function register(
+        uint256[2][] memory blsPubKeys,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
 
     function addBlsPubKeys(uint256[2][] memory additionalBlsPubKeys) external;
 

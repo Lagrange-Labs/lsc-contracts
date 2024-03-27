@@ -37,13 +37,12 @@ contract CommitteeTreeTest is LagrangeDeployer {
         // register operator
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
 
-        (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
-            lagrangeCommittee.committeeParams(chainID);
+        (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) = lagrangeCommittee.committeeParams(chainID);
         vm.roll(startBlock + duration - freezeDuration - 1);
         lagrangeService.register(blsPubKeys, operatorSignature);
 
-        uint256 epochNumber = lagrangeCommittee.getEpochNumber(chainID, block.number);
-        (bool isLocked, uint256 blockNumber) = lagrangeCommittee.isLocked(chainID);
+        lagrangeCommittee.getEpochNumber(chainID, block.number);
+        lagrangeCommittee.isLocked(chainID);
 
         lagrangeService.subscribe(chainID);
 
@@ -54,7 +53,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         if (blsPubKeys.length > 0) {
             vm.startPrank(operator);
             // register operator
-            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+            (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) =
                 lagrangeCommittee.committeeParams(chainID);
             vm.roll(startBlock + duration - freezeDuration - 1);
             lagrangeService.addBlsPubKeys(blsPubKeys);
@@ -210,7 +209,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         ILagrangeCommittee.CommitteeData memory cur;
         {
-            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+            (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) =
                 lagrangeCommittee.committeeParams(CHAIN_ID);
 
             // update the tree
@@ -243,7 +242,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
             uint256[2][] memory additionalBlsPubKeys;
             additionalBlsPubKeys = new uint256[2][](1);
             additionalBlsPubKeys[0] = [_blsKeyCounter++, _blsKeyCounter];
-            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+            (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) =
                 lagrangeCommittee.committeeParams(CHAIN_ID);
 
             _addBlsPubKeys(operators[0], additionalBlsPubKeys, CHAIN_ID);

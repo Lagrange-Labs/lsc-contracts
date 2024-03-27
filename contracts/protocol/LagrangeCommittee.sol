@@ -323,18 +323,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     function getTokenListForOperator(address operator) external view returns (address[] memory) {
         uint256 _length = chainIDs.length;
-        uint32[] memory _subscribedChainIDs = new uint32[](_length);
+        uint8[] memory _quorumNumbers = new uint8[](operatorsStatus[operator].subscribedChainCount);
         uint256 _count;
         for (uint256 i; i < _length; i++) {
             uint32 _chainID = chainIDs[i];
             if (subscribedChains[_chainID][operator]) {
-                _subscribedChainIDs[_count++] = _chainID;
+                _quorumNumbers[_count++] = committeeParams[_chainID].quorumNumber;
             }
         }
-        uint8[] memory _quorumNumbers = new uint8[](_count);
-        for (uint256 i; i < _count; i++) {
-            _quorumNumbers[i] = committeeParams[_subscribedChainIDs[i]].quorumNumber;
-        }
+
         return voteWeigher.getTokenListForQuorumNumbers(_quorumNumbers);
     }
 

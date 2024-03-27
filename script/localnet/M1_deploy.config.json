@@ -29,7 +29,7 @@
             "max_deposits": 0
         },
         {
-            "token_address": "0xfb21902702D05620b5841732C978ed6962b19616",
+            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
             "token_name": "Wrapped Ether",
             "token_symbol": "WETH",
             "max_per_deposit": 1000000000000000000,

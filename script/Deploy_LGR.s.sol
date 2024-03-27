@@ -47,8 +47,6 @@ contract Deploy is Script, Test {
     EigenAdapter public eigenAdapterImp;
     EvidenceVerifier public evidenceVerifier;
     EvidenceVerifier public evidenceVerifierImp;
-    
-    IAVSDirectory public avsDirectory;
 
     EmptyContract public emptyContract;
 
@@ -68,7 +66,6 @@ contract Deploy is Script, Test {
         }
 
         address avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
-        avsDirectory = IAVSDirectory(avsDirectoryAddress);
 
         vm.startBroadcast(msg.sender);
 
@@ -96,12 +93,14 @@ contract Deploy is Script, Test {
         lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
         if (isNative) {
             voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
-            lagrangeServiceImp = new LagrangeService(lagrangeCommittee, IStakeManager(stakeManager), avsDirectory, IVoteWeigher(voteWeigher));
+            lagrangeServiceImp =
+            new LagrangeService(lagrangeCommittee, IStakeManager(stakeManager), avsDirectoryAddress, IVoteWeigher(voteWeigher));
             stakeManagerImp = new StakeManager(address(lagrangeService));
             evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(stakeManager));
         } else {
             voteWeigherImp = new VoteWeigher(IStakeManager(eigenAdapter));
-            lagrangeServiceImp = new LagrangeService(lagrangeCommittee, IStakeManager(eigenAdapter), avsDirectory, IVoteWeigher(voteWeigher));
+            lagrangeServiceImp =
+            new LagrangeService(lagrangeCommittee, IStakeManager(eigenAdapter), avsDirectoryAddress, IVoteWeigher(voteWeigher));
             eigenAdapterImp = new EigenAdapter(address(lagrangeService), IDelegationManager(delegationManagerAddress));
             evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(eigenAdapter));
         }

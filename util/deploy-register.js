@@ -6,7 +6,7 @@ const serviceABI =
   require('../out/LagrangeService.sol/LagrangeService.json').abi;
 const committeeABI =
   require('../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
-const avsDirectoryABI = 
+const avsDirectoryABI =
   require('../out/IAVSDirectory.sol/IAVSDirectory.json').abi;
 const deployedAddresses = require('../script/output/deployed_lgr.json');
 const m1DeployedAddresses = require('../script/output/M1_deployment_data.json');
@@ -22,8 +22,6 @@ const convertBLSPubKey = (oldPubKey) => {
 };
 
 (async () => {
-  await new Promise((resolve) => setTimeout(resolve, 10000)); // wait for register-operator
-
   const owallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const ocontract = new ethers.Contract(
     deployedAddresses.addresses.lagrangeService,
@@ -34,7 +32,7 @@ const convertBLSPubKey = (oldPubKey) => {
   const avsDirectory = new ethers.Contract(
     m1DeployedAddresses.addresses.avsDirectory,
     avsDirectoryABI,
-    owallet
+    owallet,
   );
 
   const tx = await ocontract.addOperatorsToWhitelist(operators[0].operators);
@@ -70,22 +68,25 @@ const convertBLSPubKey = (oldPubKey) => {
 
       const timestamp = (await provider._getBlock()).timestamp;
 
-      const salt = '0x0000000000000000000000000000000000000000000000000000000000000011'; // 
+      const salt =
+        '0x0000000000000000000000000000000000000000000000000000000000000011'; //
       const expiry = timestamp + 60; // 1 minutes from now
-      const avs = deployedAddresses.addresses.lagrangeService;// 
+      const avs = deployedAddresses.addresses.lagrangeService; //
 
-      const digestHash = await avsDirectory.calculateOperatorAVSRegistrationDigestHash(
-        operator,// address operator,
-        avs,// address avs, // This address should be smart contract address who calls AVSDirectory.registerOperatorToAVS
-        salt,// bytes32 approverSalt,
-        expiry// uint256 expiry
-      );
+      const digestHash =
+        await avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+          operator, // address operator,
+          avs, // address avs, // This address should be smart contract address who calls AVSDirectory.registerOperatorToAVS
+          salt, // bytes32 approverSalt,
+          expiry, // uint256 expiry
+        );
       const signingKey = new ethers.utils.SigningKey(privKey);
-      const signature = (signingKey.signDigest(digestHash)).compact;
+      const signature = signingKey.signDigest(digestHash).compact;
 
-      const tx = await contract.register([
-        convertBLSPubKey(operators[0].bls_pub_keys[index]),
-      ], { signature, salt, expiry });
+      const tx = await contract.register(
+        [convertBLSPubKey(operators[0].bls_pub_keys[index])],
+        { signature, salt, expiry },
+      );
       console.log(
         `Starting to register operator for address: ${operator} tx hash: ${tx.hash}`,
       );

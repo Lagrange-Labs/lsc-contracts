@@ -29,11 +29,16 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         _;
     }
 
-    constructor(ILagrangeCommittee _committee, IStakeManager _stakeManager, IAVSDirectory _avsDirectory, IVoteWeigher _voteWeigher) {
+    constructor(
+        ILagrangeCommittee _committee,
+        IStakeManager _stakeManager,
+        address _avsDirectoryAddress,
+        IVoteWeigher _voteWeigher
+    ) {
         committee = _committee;
         stakeManager = _stakeManager;
-        avsDirectory = _avsDirectory;
-        voteWeigher = _voteWeigher; // TODO: need to check if this is same with the one in the committee
+        avsDirectory = IAVSDirectory(_avsDirectoryAddress);
+        voteWeigher = _voteWeigher;
         _disableInitializers();
     }
 
@@ -56,12 +61,15 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add the operator to the service.
-    function register(uint256[2][] memory blsPubKeys, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external onlyWhitelisted {
+    function register(
+        uint256[2][] memory blsPubKeys,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external onlyWhitelisted {
         address _operator = msg.sender;
         committee.addOperator(_operator, blsPubKeys);
         uint32 serveUntilBlock = type(uint32).max;
         stakeManager.lockStakeUntil(_operator, serveUntilBlock);
-        avsDirectory.registerOperatorToAVS(_operator, operatorSignature); // TODO: need to enable this line once passing corrrecet operatorSignature
+        avsDirectory.registerOperatorToAVS(_operator, operatorSignature);
         emit OperatorRegistered(_operator, serveUntilBlock);
     }
 
