@@ -84,6 +84,7 @@ const convertBLSPubKey = (oldPubKey) => {
       const signature = signingKey.signDigest(digestHash).compact;
 
       const tx = await contract.register(
+        operators[0].operators[index],
         [convertBLSPubKey(operators[0].bls_pub_keys[index])],
         { signature, salt, expiry },
       );

@@ -21,9 +21,13 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.stopPrank();
     }
 
-    function _registerOperator(address operator, uint256 privateKey, uint256 amount, uint256[2][] memory blsPubKeys, uint32 chainID)
-        internal
-    {
+    function _registerOperator(
+        address operator,
+        uint256 privateKey,
+        uint256 amount,
+        uint256[2][] memory blsPubKeys,
+        uint32 chainID
+    ) internal {
         vm.deal(operator, 1e19);
         // add operator to whitelist
         vm.prank(lagrangeService.owner());
@@ -47,7 +51,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) = lagrangeCommittee.committeeParams(chainID);
         vm.roll(startBlock + duration - freezeDuration - 1);
-        lagrangeService.register(blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, blsPubKeys, operatorSignature);
 
         lagrangeCommittee.getEpochNumber(chainID, block.number);
         lagrangeCommittee.isLocked(chainID);
@@ -98,7 +102,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, blsPubKeys, operatorSignature);
         // subscribe chain
         vm.expectRevert("Insufficient Vote Weight");
         lagrangeService.subscribe(CHAIN_ID);

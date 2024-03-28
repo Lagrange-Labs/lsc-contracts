@@ -8,6 +8,7 @@ interface ILagrangeCommittee {
     }
 
     struct OperatorStatus {
+        address signAddress;
         uint256[2][] blsPubKeys;
         uint8 subscribedChainCount; // assume that size of this array is not big
         UnsubscribedParam[] unsubscribedParams;
@@ -51,7 +52,7 @@ interface ILagrangeCommittee {
         uint96 maxWeight
     ) external;
 
-    function addOperator(address operator, uint256[2][] memory blsPubKeys) external;
+    function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) external;
 
     function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) external;
 
