@@ -22,10 +22,7 @@ const abi = [
 ];
 
 // configure these values
-const operators = [
-  '0x7627e924F5e74aeeE246E701cd23F5B038b3c5cD',
-  '0x032145C977D623B34DD8702c44484b693013f885',
-];
+const operators = ['0xadFDa3A18402D54534A4C8Ef8648C4732CEeAB53'];
 const contractAddress = '0x8cbFb6310b10CD0510cDA02c7419fc7d8F162b48';
 
 const contract = new web3.eth.Contract(abi, contractAddress);

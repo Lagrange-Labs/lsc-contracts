@@ -40,7 +40,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, blsPubKeys, operatorSignature);
         lagrangeService.subscribe(CHAIN_ID);
         lagrangeService.subscribe(CHAIN_ID + 1);
 
@@ -102,7 +102,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
         stakeManager.deposit(IERC20(address(token)), amount);
 
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
-        lagrangeService.register(blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, blsPubKeys, operatorSignature);
 
         // it should fail because the committee is in freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);

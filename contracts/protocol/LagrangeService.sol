@@ -62,11 +62,12 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
 
     /// Add the operator to the service.
     function register(
+        address signAddress,
         uint256[2][] memory blsPubKeys,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhitelisted {
         address _operator = msg.sender;
-        committee.addOperator(_operator, blsPubKeys);
+        committee.addOperator(_operator, signAddress, blsPubKeys);
         uint32 serveUntilBlock = type(uint32).max;
         stakeManager.lockStakeUntil(_operator, serveUntilBlock);
         avsDirectory.registerOperatorToAVS(_operator, operatorSignature);

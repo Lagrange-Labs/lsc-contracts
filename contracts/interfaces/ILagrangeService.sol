@@ -9,6 +9,7 @@ interface ILagrangeService {
     function removeOperatorsFromWhitelist(address[] calldata operators) external;
 
     function register(
+        address signAddress,
         uint256[2][] memory blsPubKeys,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;

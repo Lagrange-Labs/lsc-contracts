@@ -20,7 +20,7 @@ contract AVSDirectoryMock is IAVSDirectory {
      * Use the getter function `domainSeparator` to get the current domain separator for this contract.
      */
     bytes32 internal _DOMAIN_SEPARATOR;
-    
+
     /// @notice Mapping: AVS => operator => enum of operator status to the AVS
     mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
 
@@ -33,9 +33,8 @@ contract AVSDirectoryMock is IAVSDirectory {
     // @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher, 
+     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager, slasher,
      * and eigenpodManager contracts
      */
     constructor() {
@@ -43,9 +42,11 @@ contract AVSDirectoryMock is IAVSDirectory {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
     }
 
-    /*******************************************************************************
-                            EXTERNAL FUNCTIONS 
-    *******************************************************************************/
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Called by the AVS's service manager contract to register an operator with the avs.
@@ -56,7 +57,6 @@ contract AVSDirectoryMock is IAVSDirectory {
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external {
-
         require(
             operatorSignature.expiry >= block.timestamp,
             "AVSDirectory.registerOperatorToAVS: operator signature expired"
@@ -79,9 +79,7 @@ contract AVSDirectoryMock is IAVSDirectory {
 
         // Check that the signature is valid
         EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator,
-            operatorRegistrationDigestHash,
-            operatorSignature.signature
+            operator, operatorRegistrationDigestHash, operatorSignature.signature
         );
 
         // Set the operator as registered
@@ -126,9 +124,11 @@ contract AVSDirectoryMock is IAVSDirectory {
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
 
-    /*******************************************************************************
-                            VIEW FUNCTIONS
-    *******************************************************************************/
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
@@ -137,20 +137,15 @@ contract AVSDirectoryMock is IAVSDirectory {
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
-    function calculateOperatorAVSRegistrationDigestHash(
-        address operator,
-        address avs,
-        bytes32 salt,
-        uint256 expiry
-    ) public view returns (bytes32) {
+    function calculateOperatorAVSRegistrationDigestHash(address operator, address avs, bytes32 salt, uint256 expiry)
+        public
+        view
+        returns (bytes32)
+    {
         // calculate the struct hash
-        bytes32 structHash = keccak256(
-            abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)
-        );
+        bytes32 structHash = keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry));
         // calculate the digest hash
-        bytes32 digestHash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator(), structHash)
-        );
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
         return digestHash;
     }
 

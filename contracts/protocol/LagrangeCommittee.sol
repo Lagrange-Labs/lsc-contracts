@@ -63,9 +63,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Adds address stake data and flags it for committee addition
-    function addOperator(address operator, uint256[2][] memory blsPubKeys) public onlyService {
+    function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) public onlyService {
         _validateBlsPubKeys(blsPubKeys);
-        _registerOperator(operator, blsPubKeys);
+        _registerOperator(operator, signAddress, blsPubKeys);
     }
 
     // Adds address stake data and flags it for committee addition
@@ -370,9 +370,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         emit UpdateCommitteeParams(_chainID, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
     }
 
-    function _registerOperator(address _operator, uint256[2][] memory _blsPubKeys) internal {
+    function _registerOperator(address _operator, address _signAddress, uint256[2][] memory _blsPubKeys) internal {
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         require(_opStatus.blsPubKeys.length == 0, "Operator is already registered.");
+        _opStatus.signAddress = _signAddress;
         _opStatus.blsPubKeys = _blsPubKeys;
     }
 
