@@ -46,16 +46,21 @@ contract CommitteeTest is Script, CommitteeTreeTest {
     }
 
     function run() public {
-        uint256 originalLeaves = 10;
+        uint256 originalLeaves = 10; // This is the number of leaves in the original committee tree
+        uint256[_OPERATOR_COUNT] memory privateKeys;
         address[_OPERATOR_COUNT] memory operators;
         uint256[_OPERATOR_COUNT] memory amounts;
         uint256[2][][_OPERATOR_COUNT] memory blsPubKeysArray;
         uint256[][_OPERATOR_COUNT] memory expectedVotingPowers;
 
-        operators[0] = vm.addr(111);
-        operators[1] = vm.addr(222);
-        operators[2] = vm.addr(333);
-        operators[3] = vm.addr(444);
+        privateKeys[0] = 111;
+        privateKeys[1] = 222;
+        privateKeys[2] = 333;
+        privateKeys[3] = 444;
+
+        for (uint256 i; i < _OPERATOR_COUNT; i++) {
+            operators[i] = vm.addr(privateKeys[i]);
+        }
 
         // minWeight = 1e6
         // maxWeight = 5e6
@@ -103,7 +108,7 @@ contract CommitteeTest is Script, CommitteeTreeTest {
         }
 
         for (uint256 i; i < _OPERATOR_COUNT; i++) {
-            _registerOperator(operators[i], amounts[i], blsPubKeysArray[i], chainIDArb);
+            _registerOperator(operators[i], privateKeys[i], amounts[i], blsPubKeysArray[i], chainIDArb);
         }
 
         ILagrangeCommittee.CommitteeData memory cur;

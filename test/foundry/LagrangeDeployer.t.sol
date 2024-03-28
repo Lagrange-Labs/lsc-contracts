@@ -15,6 +15,7 @@ import "../../contracts/protocol/VoteWeigher.sol";
 import "../../contracts/library/StakeManager.sol";
 
 import {WETH9} from "../../contracts/mock/WETH9.sol";
+import {AVSDirectoryMock} from "../../contracts/mock/AVSDirectoryMock.sol";
 
 // This contract is used to deploy LagrangeService contract to the testnet
 contract LagrangeDeployer is Test {
@@ -42,7 +43,7 @@ contract LagrangeDeployer is Test {
     uint96 public constant MAX_WEIGHT = 5e6;
 
     function setUp() public virtual {
-        // TODO: need to initialize AVSDirectory
+        avsDirectory = IAVSDirectory(new AVSDirectoryMock());
 
         _deployLagrangeContracts();
         _registerChain();

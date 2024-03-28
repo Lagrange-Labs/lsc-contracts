@@ -29,14 +29,12 @@ contract RegisterOperatorTest is LagrangeDeployer {
         // deposit tokens to stake manager
         stakeManager.deposit(IERC20(address(token)), amount);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
         operatorSignature.expiry = block.timestamp + 60;
         operatorSignature.salt = bytes32(0x0);
         bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
             operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
         );
-
-        console.logBytes32(digest);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         operatorSignature.signature = abi.encodePacked(r, s, v);
 
@@ -73,7 +71,8 @@ contract RegisterOperatorTest is LagrangeDeployer {
     }
 
     function testFreezePeriod() public {
-        address operator = vm.addr(555);
+        uint256 privateKey = 555;
+        address operator = vm.addr(privateKey);
         vm.deal(operator, 1e19);
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
         blsPubKeys[0][0] = 1;
@@ -88,7 +87,14 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         vm.startPrank(operator);
 
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        operatorSignature.expiry = block.timestamp + 60;
+        operatorSignature.salt = bytes32(0x0);
+        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+            operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        operatorSignature.signature = abi.encodePacked(r, s, v);
 
         // deposit tokens to stake manager
         token.deposit{value: amount}();
