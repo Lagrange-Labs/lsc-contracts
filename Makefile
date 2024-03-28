@@ -83,17 +83,11 @@ clean: stop
 # Deploy
 deploy-eigen-localnet: run-geth init-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee deposit-stake deploy-register
 
-deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange deploy-verifiers update-config add-quorum deploy-register init-committee
+deploy-mock-localnet: run-geth init-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee
 
-all-mock: run-geth init-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee	
+deploy-native-localnet: run-geth init-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee	deposit-stake deploy-register
 
-all-native: run-geth init-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee	deposit-stake deploy-register 
-
-deploy-native: generate-accounts deploy-weth9 deploy-lagrange deploy-verifiers update-config add-quorum distribute deploy-register init-committee
-
-deploy-staging: run-geth init-accounts generate-accounts deploy-weth9 deploy-mock deploy-lagrange deploy-verifiers update-config add-quorum deposit-stake deploy-register init-committee
-
-.PHONY: deploy-eigen-localnet deploy-eigen-public clean all-mock all-native deploy-native deploy-staging
+.PHONY: deploy-eigen-localnet deploy-mock-localnet deploy-native-localnet
 
 # Formatter
 format:

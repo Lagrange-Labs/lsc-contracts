@@ -95,5 +95,5 @@ interface ILagrangeCommittee {
     );
 
     // Fired on successful rotation of committee
-    event UpdateCommittee(uint256 chainID, bytes32 current);
+    event UpdateCommittee(uint256 chainID, uint256 epochNumber, bytes32 current);
 }
