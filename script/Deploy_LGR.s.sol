@@ -28,10 +28,11 @@ import {L2OutputOracle} from "../contracts/mock/optimism/L2OutputOracle.sol";
 import {IL2OutputOracle} from "../contracts/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
-    // string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
+    string public deployMockDataPath = string(bytes("script/output/deployed_mock.json"));
     string public deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
+    address public ownerMultisig;
     address public delegationManagerAddress;
     address public avsDirectoryAddress;
 
@@ -58,29 +59,36 @@ contract Deploy is Script, Test {
         bool isNative = stdJson.readBool(configData, ".isNative");
         bool isMock = stdJson.readBool(configData, ".isMock");
 
+        ownerMultisig = stdJson.readAddress(configData, ".ownerMultisig");
+
         console.log("ChainID: ", block.chainid);
 
-        if (isMock) {
-            string memory deployData = vm.readFile(deployDataPath);
+        if (block.chainid == 1337) {
+            // local
+            if (isMock) {
+                string memory deployData = vm.readFile(deployMockDataPath);
+                delegationManagerAddress = stdJson.readAddress(deployData, ".addresses.delegationManager");
+                avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
+            } else {
+                string memory deployData = vm.readFile(deployDataPath);
+                if (!isNative) {
+                    delegationManagerAddress = stdJson.readAddress(deployData, ".addresses.delegation");
+                }
+                avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
+            }
+        } else if (block.chainid == 1) {
+            // mainnet
             if (!isNative) {
-                delegationManagerAddress = stdJson.readAddress(deployData, ".addresses.delegation");
+                delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.delegation");
             }
-            avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
-        }
-        else {
-            if (block.chainid == 1) { // mainnet
-                if (!isNative) {
-                    delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.delegation");
-                }
-                avsDirectoryAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.avsDirectory");
+            avsDirectoryAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.avsDirectory");
+        } else if (block.chainid == 17000) {
+            // Holesky
+            if (!isNative) {
+                delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.holesky.delegation");
             }
-            else if (block.chainid == 17000) { // Holesky
-                if (!isNative) {
-                    delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.holesky.delegation");
-                }
-                avsDirectoryAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.holesky.avsDirectory");
-                console.log(delegationManagerAddress, avsDirectoryAddress);
-            }
+            avsDirectoryAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.holesky.avsDirectory");
+            console.log(delegationManagerAddress, avsDirectoryAddress);
         }
 
         vm.startBroadcast(msg.sender);
@@ -125,34 +133,34 @@ contract Deploy is Script, Test {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))),
             address(lagrangeCommitteeImp),
-            abi.encodeWithSelector(LagrangeCommittee.initialize.selector, msg.sender)
+            abi.encodeWithSelector(LagrangeCommittee.initialize.selector, ownerMultisig)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(lagrangeService))),
             address(lagrangeServiceImp),
-            abi.encodeWithSelector(LagrangeService.initialize.selector, msg.sender)
+            abi.encodeWithSelector(LagrangeService.initialize.selector, ownerMultisig)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(evidenceVerifier))),
             address(evidenceVerifierImp),
-            abi.encodeWithSelector(EvidenceVerifier.initialize.selector, msg.sender)
+            abi.encodeWithSelector(EvidenceVerifier.initialize.selector, ownerMultisig)
         );
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(voteWeigher))),
             address(voteWeigherImp),
-            abi.encodeWithSelector(EvidenceVerifier.initialize.selector, msg.sender)
+            abi.encodeWithSelector(EvidenceVerifier.initialize.selector, ownerMultisig)
         );
         if (isNative) {
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(stakeManager))),
                 address(stakeManagerImp),
-                abi.encodeWithSelector(StakeManager.initialize.selector, msg.sender)
+                abi.encodeWithSelector(StakeManager.initialize.selector, ownerMultisig)
             );
         } else {
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(eigenAdapter))),
                 address(eigenAdapterImp),
-                abi.encodeWithSelector(EigenAdapter.initialize.selector, msg.sender)
+                abi.encodeWithSelector(EigenAdapter.initialize.selector, ownerMultisig)
             );
         }
 
