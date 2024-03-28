@@ -85,9 +85,9 @@ deploy-eigen-localnet: run-geth init-accounts deploy-weth9 update-strategy-confi
 
 deploy-eigen-public: generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange deploy-verifiers update-config add-quorum deploy-register init-committee
 
-all-mock: run-geth init-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee	
+all-mock: run-geth init-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee
 
-all-native: run-geth init-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee	deposit-stake deploy-register 
+all-native: run-geth init-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee	deposit-stake deploy-register
 
 deploy-native: generate-accounts deploy-weth9 deploy-lagrange deploy-verifiers update-config add-quorum distribute deploy-register init-committee
 

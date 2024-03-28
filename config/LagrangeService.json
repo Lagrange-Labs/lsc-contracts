@@ -2,7 +2,7 @@
     "tokens": [
         {
             "token_name": "mantle",
-            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
+            "token_address": "0x799E00b5F48c19Daa690EA291551E36E6823CAf3",
             "multiplier": 1000000000
         }
     ],
@@ -33,5 +33,15 @@
         "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
     },
     "isNative": true,
-    "isMock": false
+    "isMock": true,
+    "eigenlayer_addresses": {
+        "mainnet": {
+            "avsDirectory": "0x0000000000000000000000000000000000000000",
+            "delegation": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
+        },
+        "holesky": {
+            "avsDirectory": "0x055733000064333CaDDbC92763c58BF0192fFeBf",
+            "delegation": "0xA44151489861Fe9e3055d95adC98FbD462B948e7"
+        }
+    }
 }

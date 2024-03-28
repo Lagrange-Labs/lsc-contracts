@@ -28,10 +28,12 @@ import {L2OutputOracle} from "../contracts/mock/optimism/L2OutputOracle.sol";
 import {IL2OutputOracle} from "../contracts/mock/optimism/IL2OutputOracle.sol";
 
 contract Deploy is Script, Test {
-    string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
+    // string public deployDataPath = string(bytes("script/output/deployed_mock.json"));
+    string public deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));
 
     address public delegationManagerAddress;
+    address public avsDirectoryAddress;
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;
@@ -56,16 +58,30 @@ contract Deploy is Script, Test {
         bool isNative = stdJson.readBool(configData, ".isNative");
         bool isMock = stdJson.readBool(configData, ".isMock");
 
-        if (!isMock) {
-            deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
-        }
-        string memory deployData = vm.readFile(deployDataPath);
+        console.log("ChainID: ", block.chainid);
 
-        if (!isNative) {
-            delegationManagerAddress = stdJson.readAddress(deployData, ".addresses.delegationManager");
+        if (isMock) {
+            string memory deployData = vm.readFile(deployDataPath);
+            if (!isNative) {
+                delegationManagerAddress = stdJson.readAddress(deployData, ".addresses.delegation");
+            }
+            avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
         }
-
-        address avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
+        else {
+            if (block.chainid == 1) { // mainnet
+                if (!isNative) {
+                    delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.delegation");
+                }
+                avsDirectoryAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.avsDirectory");
+            }
+            else if (block.chainid == 17000) { // Holesky
+                if (!isNative) {
+                    delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.holesky.delegation");
+                }
+                avsDirectoryAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.holesky.avsDirectory");
+                console.log(delegationManagerAddress, avsDirectoryAddress);
+            }
+        }
 
         vm.startBroadcast(msg.sender);
 
