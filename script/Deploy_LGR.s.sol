@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
 import {VoteWeigher} from "../contracts/protocol/VoteWeigher.sol";
@@ -64,6 +65,8 @@ contract Deploy is Script, Test {
             delegationManagerAddress = stdJson.readAddress(deployData, ".addresses.delegationManager");
         }
 
+        address avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
+
         vm.startBroadcast(msg.sender);
 
         // deploy proxy admin for ability to upgrade proxy contracts
@@ -71,99 +74,35 @@ contract Deploy is Script, Test {
 
         // deploy upgradeable proxy contracts
         emptyContract = new EmptyContract();
-        lagrangeCommittee = LagrangeCommittee(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        lagrangeService = LagrangeService(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        evidenceVerifier = EvidenceVerifier(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        voteWeigher = VoteWeigher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
+        lagrangeCommittee =
+            LagrangeCommittee(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        lagrangeService =
+            LagrangeService(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        evidenceVerifier =
+            EvidenceVerifier(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        voteWeigher =
+            VoteWeigher(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
         if (isNative) {
-            stakeManager = StakeManager(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(emptyContract),
-                        address(proxyAdmin),
-                        ""
-                    )
-                )
-            );
+            stakeManager =
+                StakeManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
         } else {
-            eigenAdapter = EigenAdapter(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(emptyContract),
-                        address(proxyAdmin),
-                        ""
-                    )
-                )
-            );
+            eigenAdapter =
+                EigenAdapter(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
         }
         // deploy implementation contracts
-        lagrangeCommitteeImp = new LagrangeCommittee(
-            lagrangeService,
-            IVoteWeigher(voteWeigher)
-        );
+        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
         if (isNative) {
-            voteWeigherImp = new VoteWeigher(
-                IStakeManager(stakeManager)
-            );
-            lagrangeServiceImp = new LagrangeService(
-                lagrangeCommittee,
-                IStakeManager(stakeManager)
-            );
-            stakeManagerImp = new StakeManager(
-                address(lagrangeService)
-            );
-            evidenceVerifierImp = new EvidenceVerifier(
-                lagrangeCommittee,
-                IStakeManager(stakeManager)
-            );
+            voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
+            lagrangeServiceImp =
+            new LagrangeService(lagrangeCommittee, IStakeManager(stakeManager), avsDirectoryAddress, IVoteWeigher(voteWeigher));
+            stakeManagerImp = new StakeManager(address(lagrangeService));
+            evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(stakeManager));
         } else {
-            voteWeigherImp = new VoteWeigher(
-                IStakeManager(eigenAdapter)
-            );
-            lagrangeServiceImp = new LagrangeService(
-                lagrangeCommittee,
-                IStakeManager(eigenAdapter)
-            );
-            eigenAdapterImp = new EigenAdapter(
-                address(lagrangeService),
-                IDelegationManager(delegationManagerAddress)
-            );
-            evidenceVerifierImp = new EvidenceVerifier(
-                lagrangeCommittee,
-                IStakeManager(eigenAdapter)
-            );
+            voteWeigherImp = new VoteWeigher(IStakeManager(eigenAdapter));
+            lagrangeServiceImp =
+            new LagrangeService(lagrangeCommittee, IStakeManager(eigenAdapter), avsDirectoryAddress, IVoteWeigher(voteWeigher));
+            eigenAdapterImp = new EigenAdapter(address(lagrangeService), IDelegationManager(delegationManagerAddress));
+            evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(eigenAdapter));
         }
 
         // upgrade proxy contracts

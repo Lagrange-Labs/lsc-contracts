@@ -21,7 +21,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.stopPrank();
     }
 
-    function _registerOperator(address operator, uint256 amount, uint256[2][] memory blsPubKeys, uint32 chainID)
+    function _registerOperator(address operator, uint256 privateKey, uint256 amount, uint256[2][] memory blsPubKeys, uint32 chainID)
         internal
     {
         vm.deal(operator, 1e19);
@@ -36,13 +36,21 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.startPrank(operator);
         // register operator
 
-        (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
-            lagrangeCommittee.committeeParams(chainID);
-        vm.roll(startBlock + duration - freezeDuration - 1);
-        lagrangeService.register(blsPubKeys);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        operatorSignature.expiry = block.timestamp + 60;
+        operatorSignature.salt = bytes32(0x0);
+        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+            operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        operatorSignature.signature = abi.encodePacked(r, s, v);
 
-        uint256 epochNumber = lagrangeCommittee.getEpochNumber(chainID, block.number);
-        (bool isLocked, uint256 blockNumber) = lagrangeCommittee.isLocked(chainID);
+        (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) = lagrangeCommittee.committeeParams(chainID);
+        vm.roll(startBlock + duration - freezeDuration - 1);
+        lagrangeService.register(blsPubKeys, operatorSignature);
+
+        lagrangeCommittee.getEpochNumber(chainID, block.number);
+        lagrangeCommittee.isLocked(chainID);
 
         lagrangeService.subscribe(chainID);
 
@@ -53,7 +61,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         if (blsPubKeys.length > 0) {
             vm.startPrank(operator);
             // register operator
-            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+            (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) =
                 lagrangeCommittee.committeeParams(chainID);
             vm.roll(startBlock + duration - freezeDuration - 1);
             lagrangeService.addBlsPubKeys(blsPubKeys);
@@ -65,7 +73,8 @@ contract CommitteeTreeTest is LagrangeDeployer {
     function testSubscribeChain() public {
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
         blsPubKeys[0] = [uint256(1), 2];
-        address operator = vm.addr(101);
+        uint256 privateKey = 101;
+        address operator = vm.addr(privateKey);
 
         vm.deal(operator, 1e19);
         // add operator to whitelist
@@ -78,9 +87,18 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         vm.startPrank(operator);
 
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        operatorSignature.expiry = block.timestamp + 60;
+        operatorSignature.salt = bytes32(0x0);
+        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+            operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        operatorSignature.signature = abi.encodePacked(r, s, v);
+
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(blsPubKeys);
+        lagrangeService.register(blsPubKeys, operatorSignature);
         // subscribe chain
         vm.expectRevert("Insufficient Vote Weight");
         lagrangeService.subscribe(CHAIN_ID);
@@ -96,13 +114,18 @@ contract CommitteeTreeTest is LagrangeDeployer {
     uint256 private constant OPERATOR_COUNT = 3;
 
     function testTreeConstructForSingleBlsPubKey() public {
+        uint256[OPERATOR_COUNT] memory privateKeys;
         address[OPERATOR_COUNT] memory operators;
         uint256[OPERATOR_COUNT] memory amounts;
         uint256[2][][OPERATOR_COUNT] memory blsPubKeysArray;
 
-        operators[0] = vm.addr(111);
-        operators[1] = vm.addr(222);
-        operators[2] = vm.addr(333);
+        privateKeys[0] = 111;
+        privateKeys[1] = 222;
+        privateKeys[2] = 333;
+
+        for (uint256 i; i < OPERATOR_COUNT; i++) {
+            operators[i] = vm.addr(privateKeys[i]);
+        }
 
         amounts[0] = 1e15;
         amounts[1] = 2e15;
@@ -116,7 +139,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         blsPubKeysArray[2][0] = [uint256(3), 4];
 
         for (uint256 i; i < OPERATOR_COUNT; i++) {
-            _registerOperator(operators[i], amounts[i], blsPubKeysArray[i], CHAIN_ID);
+            _registerOperator(operators[i], privateKeys[i], amounts[i], blsPubKeysArray[i], CHAIN_ID);
         }
 
         // update the tree
@@ -146,15 +169,20 @@ contract CommitteeTreeTest is LagrangeDeployer {
     uint256 private constant OPERATOR_COUNT2 = 4;
 
     function testTreeConstructForMultipleBlsKeys() public {
+        uint256[OPERATOR_COUNT2] memory privateKeys;
         address[OPERATOR_COUNT2] memory operators;
         uint256[OPERATOR_COUNT2] memory amounts;
         uint256[2][][OPERATOR_COUNT2] memory blsPubKeysArray;
         uint256[][OPERATOR_COUNT2] memory expectedVotingPowers;
 
-        operators[0] = vm.addr(111);
-        operators[1] = vm.addr(222);
-        operators[2] = vm.addr(333);
-        operators[3] = vm.addr(444);
+        privateKeys[0] = 111;
+        privateKeys[1] = 222;
+        privateKeys[2] = 333;
+        privateKeys[3] = 444;
+
+        for (uint256 i; i < OPERATOR_COUNT2; i++) {
+            operators[i] = vm.addr(privateKeys[i]);
+        }
 
         // minWeight = 1e6
         // maxWeight = 5e6
@@ -202,12 +230,12 @@ contract CommitteeTreeTest is LagrangeDeployer {
         }
 
         for (uint256 i; i < OPERATOR_COUNT2; i++) {
-            _registerOperator(operators[i], amounts[i], blsPubKeysArray[i], CHAIN_ID);
+            _registerOperator(operators[i], privateKeys[i], amounts[i], blsPubKeysArray[i], CHAIN_ID);
         }
 
         ILagrangeCommittee.CommitteeData memory cur;
         {
-            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+            (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) =
                 lagrangeCommittee.committeeParams(CHAIN_ID);
 
             // update the tree
@@ -240,7 +268,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
             uint256[2][] memory additionalBlsPubKeys;
             additionalBlsPubKeys = new uint256[2][](1);
             additionalBlsPubKeys[0] = [_blsKeyCounter++, _blsKeyCounter];
-            (uint256 startBlock, uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
+            (uint256 startBlock,, uint256 duration, uint256 freezeDuration,,,) =
                 lagrangeCommittee.committeeParams(CHAIN_ID);
 
             _addBlsPubKeys(operators[0], additionalBlsPubKeys, CHAIN_ID);

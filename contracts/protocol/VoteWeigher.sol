@@ -19,6 +19,8 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
 
     IStakeManager public immutable stakeManager;
 
+    uint8[] quorumNumbers; // list of all quorum numbers
+
     event QuorumAdded(uint8 quorumNumber, TokenMultiplier[] multipliers);
     event QuorumRemoved(uint8 quorumNumber);
     event QuorumUpdated(uint8 quorumNumber, uint256 index, TokenMultiplier multiplier);
@@ -35,13 +37,23 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
 
     function addQuorumMultiplier(uint8 quorumNumber, TokenMultiplier[] memory multipliers) external onlyOwner {
         require(quorumMultipliers[quorumNumber].length == 0, "Quorum already exists");
-        for (uint256 i = 0; i < multipliers.length; i++) {
+        for (uint256 i; i < multipliers.length; i++) {
             quorumMultipliers[quorumNumber].push(multipliers[i]);
         }
+        quorumNumbers.push(quorumNumber);
         emit QuorumAdded(quorumNumber, multipliers);
     }
 
     function removeQuorumMultiplier(uint8 quorumNumber) external onlyOwner {
+        require(quorumMultipliers[quorumNumber].length != 0, "Quorum doesn't exist");
+        uint256 _length = quorumNumbers.length;
+        for (uint256 i; i < _length; i++) {
+            if (quorumNumbers[i] == quorumNumber) {
+                quorumNumbers[i] = quorumNumbers[_length - 1];
+                quorumNumbers.pop();
+                break;
+            }
+        }
         delete quorumMultipliers[quorumNumber];
         emit QuorumRemoved(quorumNumber);
     }
@@ -63,10 +75,48 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
     {
         uint256 totalWeight = 0;
         TokenMultiplier[] memory multipliers = quorumMultipliers[quorumNumber];
-        for (uint256 i = 0; i < multipliers.length; i++) {
+        for (uint256 i; i < multipliers.length; i++) {
             uint256 balance = stakeManager.operatorShares(operator, multipliers[i].token);
             totalWeight += balance * multipliers[i].multiplier;
         }
         return uint96(totalWeight / WEIGHTING_DIVISOR);
+    }
+
+    function getTokenList() external view returns (address[] memory) {
+        return _getTokenListForQuorumNumbers(quorumNumbers);
+    }
+
+    function getTokenListForQuorumNumbers(uint8[] memory quorumNumbers_) external view returns (address[] memory) {
+        return _getTokenListForQuorumNumbers(quorumNumbers_);
+    }
+
+    function _getTokenListForQuorumNumbers(uint8[] memory _quorumNumbers) internal view returns (address[] memory) {
+        uint256 _length = _quorumNumbers.length;
+        uint256 _totalCount;
+        for (uint256 i; i < _length; i++) {
+            _totalCount += quorumMultipliers[_quorumNumbers[i]].length;
+        }
+        address[] memory _tokens = new address[](_totalCount);
+        uint256 _index;
+        for (uint256 i; i < _length; i++) {
+            for (uint256 j; j < quorumMultipliers[_quorumNumbers[i]].length; j++) {
+                bool _exist = false;
+                for (uint256 k; k < _index; k++) {
+                    if (_tokens[k] == quorumMultipliers[_quorumNumbers[i]][j].token) {
+                        _exist = true;
+                        break;
+                    }
+                }
+                if (!_exist) {
+                    _tokens[_index] = quorumMultipliers[_quorumNumbers[i]][j].token;
+                    _index++;
+                }
+            }
+        }
+        address[] memory _tokenList = new address[](_index);
+        for (uint256 i; i < _index; i++) {
+            _tokenList[i] = _tokens[i];
+        }
+        return _tokenList;
     }
 }

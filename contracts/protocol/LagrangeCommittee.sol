@@ -297,15 +297,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return (blockNumber - startBlockNumber) / epochPeriod + 1;
     }
 
-    // Returns the leaf hash for a given operator
-    function _leafHash(address opAddr, uint256[2] memory blsPubKey, uint96 _votingPower)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encodePacked(LEAF_NODE_PREFIX, blsPubKey[0], blsPubKey[1], opAddr, _votingPower));
-    }
-
     // Get the operator's voting power for the given chainID
     function getOperatorVotingPower(address opAddr, uint32 chainID) public view returns (uint96) {
         CommitteeDef memory _committeeParam = committeeParams[chainID];
@@ -328,6 +319,20 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint96 _minWeight = committeeParams[chainID].minWeight;
         uint96 _maxWeight = committeeParams[chainID].maxWeight;
         return _divideVotingPower(_votingPower, _minWeight, _maxWeight);
+    }
+
+    function getTokenListForOperator(address operator) external view returns (address[] memory) {
+        uint256 _length = chainIDs.length;
+        uint8[] memory _quorumNumbers = new uint8[](operatorsStatus[operator].subscribedChainCount);
+        uint256 _count;
+        for (uint256 i; i < _length; i++) {
+            uint32 _chainID = chainIDs[i];
+            if (subscribedChains[_chainID][operator]) {
+                _quorumNumbers[_count++] = committeeParams[_chainID].quorumNumber;
+            }
+        }
+
+        return voteWeigher.getTokenListForQuorumNumbers(_quorumNumbers);
     }
 
     // Initialize new committee.
@@ -418,6 +423,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         for (uint256 i; i < _length; i++) {
             require(_blsPubKeys[i][0] != 0 && _blsPubKeys[i][1] != 0, "Invalid BLS Public Key.");
         }
+    }
+
+    // Returns the leaf hash for a given operator
+    function _leafHash(address opAddr, uint256[2] memory blsPubKey, uint96 _votingPower)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(LEAF_NODE_PREFIX, blsPubKey[0], blsPubKey[1], opAddr, _votingPower));
     }
 
     // Calculate the inner node hash from left and right children

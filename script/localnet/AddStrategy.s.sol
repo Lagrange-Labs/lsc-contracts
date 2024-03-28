@@ -27,7 +27,9 @@ contract AddStrategy is Script, Test {
 
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = WETHStrategy;
-        strategyManager.addStrategiesToDepositWhitelist(strategies);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
+        _thirdPartyTransfersForbiddenValues[0] = false;
+        strategyManager.addStrategiesToDepositWhitelist(strategies, _thirdPartyTransfersForbiddenValues);
 
         vm.stopBroadcast();
     }

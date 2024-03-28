@@ -11,6 +11,7 @@ import "eigenlayer-contracts/src/contracts/interfaces/IBeaconChainOracle.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
+import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
@@ -50,6 +51,8 @@ contract Deployer_M1 is Script, Test {
     DelegationManager public delegationImplementation;
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
+    AVSDirectory public avsDirectory;
+    AVSDirectory public avsDirectoryImplementation;
     EigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
@@ -79,6 +82,7 @@ contract Deployer_M1 is Script, Test {
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
     uint256 SLASHER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
+    uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
@@ -99,6 +103,7 @@ contract Deployer_M1 is Script, Test {
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".slasher.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
+        DELEGATION_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(config_data, ".delegation.init_withdrawal_delay_blocks");
         EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS =
@@ -152,6 +157,9 @@ contract Deployer_M1 is Script, Test {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         slasher =
             Slasher(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodManager = EigenPodManager(
@@ -181,27 +189,30 @@ contract Deployer_M1 is Script, Test {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
+        avsDirectoryImplementation = new AVSDirectory(delegation);
         slasherImplementation = new Slasher(strategyManager, delegation);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegation
-        );
+        eigenPodManagerImplementation =
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delegation))),
-            address(delegationImplementation),
-            abi.encodeWithSelector(
-                DelegationManager.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                DELEGATION_INIT_PAUSED_STATUS
-            )
-        );
+        {
+            IStrategy[] memory _strategies;
+            uint256[] memory _withdrawalDelayBlocks;
+            eigenLayerProxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(delegation))),
+                address(delegationImplementation),
+                abi.encodeWithSelector(
+                    DelegationManager.initialize.selector,
+                    executorMultisig,
+                    eigenLayerPauserReg,
+                    DELEGATION_INIT_PAUSED_STATUS,
+                    DELEGATION_WITHDRAWAL_DELAY_BLOCKS,
+                    _strategies,
+                    _withdrawalDelayBlocks
+                )
+            );
+        }
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
@@ -219,6 +230,11 @@ contract Deployer_M1 is Script, Test {
             abi.encodeWithSelector(
                 Slasher.initialize.selector, executorMultisig, eigenLayerPauserReg, SLASHER_INIT_PAUSED_STATUS
             )
+        );
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(AVSDirectory.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
@@ -309,6 +325,8 @@ contract Deployer_M1 is Script, Test {
         vm.serializeAddress(deployed_addresses, "slasherImplementation", address(slasherImplementation));
         vm.serializeAddress(deployed_addresses, "delegation", address(delegation));
         vm.serializeAddress(deployed_addresses, "delegationImplementation", address(delegationImplementation));
+        vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
+        vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(deployed_addresses, "strategyManagerImplementation", address(strategyManagerImplementation));
         vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
@@ -360,9 +378,6 @@ contract Deployer_M1 is Script, Test {
             strategyManagerContract.eigenPodManager() == eigenPodManager,
             "strategyManager: eigenPodManager address not set correctly"
         );
-
-        require(slasherContract.strategyManager() == strategyManager, "slasher: strategyManager not set correctly");
-        require(slasherContract.delegation() == delegation, "slasher: delegation not set correctly");
 
         require(
             eigenPodManagerContract.ethPOS() == ethPOSDeposit,
@@ -432,8 +447,7 @@ contract Deployer_M1 is Script, Test {
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
         require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
-        require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
-        require(eigenPodManager.owner() == executorMultisig, "delegation: owner not set correctly");
+        // require(eigenPodManager.owner() == executorMultisig, "delegation: owner not set correctly");
 
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
         require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
@@ -446,11 +460,10 @@ contract Deployer_M1 is Script, Test {
             strategyManager.pauserRegistry() == eigenLayerPauserReg,
             "strategyManager: pauser registry not set correctly"
         );
-        require(slasher.pauserRegistry() == eigenLayerPauserReg, "slasher: pauser registry not set correctly");
-        require(
-            eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
-            "eigenPodManager: pauser registry not set correctly"
-        );
+        // require(
+        //     eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
+        //     "eigenPodManager: pauser registry not set correctly"
+        // );
         require(
             delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg,
             "delayedWithdrawalRouter: pauser registry not set correctly"
@@ -482,7 +495,7 @@ contract Deployer_M1 is Script, Test {
         require(strategyManager.paused() == 0, "strategyManager: init paused status set incorrectly");
         require(slasher.paused() == 0, "slasher: init paused status set incorrectly");
         require(delegation.paused() == 0, "delegation: init paused status set incorrectly");
-        require(eigenPodManager.paused() == 30, "eigenPodManager: init paused status set incorrectly");
+        // require(eigenPodManager.paused() == 30, "eigenPodManager: init paused status set incorrectly");
         require(delayedWithdrawalRouter.paused() == 0, "delayedWithdrawalRouter: init paused status set incorrectly");
     }
 

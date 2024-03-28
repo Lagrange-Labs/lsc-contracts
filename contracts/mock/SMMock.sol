@@ -85,4 +85,13 @@ contract StrategyManager is IStrategyManager {
     function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal calldata /*queuedWithdrawal*/) external pure returns (bytes32) {
         return bytes32(0);
     }
+
+    function addShares(address /*staker*/, IERC20 /*token*/, IStrategy /*strategy*/, uint256 /*shares*/) external {}
+
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata /*strategiesToWhitelist*/,
+        bool[] calldata /*thirdPartyTransfersForbiddenValues*/
+    ) external {}
+
+    function thirdPartyTransfersForbidden(IStrategy /*strategy*/) external view returns (bool){}
 }

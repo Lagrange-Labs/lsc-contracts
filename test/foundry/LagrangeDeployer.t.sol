@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import "../../contracts/protocol/LagrangeService.sol";
 import "../../contracts/protocol/LagrangeCommittee.sol";
@@ -14,6 +15,7 @@ import "../../contracts/protocol/VoteWeigher.sol";
 import "../../contracts/library/StakeManager.sol";
 
 import {WETH9} from "../../contracts/mock/WETH9.sol";
+import {AVSDirectoryMock} from "../../contracts/mock/AVSDirectoryMock.sol";
 
 // This contract is used to deploy LagrangeService contract to the testnet
 contract LagrangeDeployer is Test {
@@ -27,6 +29,7 @@ contract LagrangeDeployer is Test {
     EvidenceVerifier public evidenceVerifierImp;
     VoteWeigher public voteWeigher;
     VoteWeigher public voteWeigherImp;
+    IAVSDirectory public avsDirectory;
 
     WETH9 public token;
     ProxyAdmin public proxyAdmin;
@@ -40,6 +43,8 @@ contract LagrangeDeployer is Test {
     uint96 public constant MAX_WEIGHT = 5e6;
 
     function setUp() public virtual {
+        avsDirectory = IAVSDirectory(new AVSDirectoryMock());
+
         _deployLagrangeContracts();
         _registerChain();
     }
@@ -73,7 +78,8 @@ contract LagrangeDeployer is Test {
         lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
         voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
         stakeManagerImp = new StakeManager(address(lagrangeService));
-        lagrangeServiceImp = new LagrangeService(lagrangeCommittee, stakeManager);
+        lagrangeServiceImp =
+            new LagrangeService(lagrangeCommittee, stakeManager, address(avsDirectory), IVoteWeigher(voteWeigher));
         evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, stakeManager);
 
         // upgrade proxy contracts

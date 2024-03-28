@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
+import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
 contract SubscribeOperator is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
@@ -37,7 +38,8 @@ contract SubscribeOperator is Script, Test {
             LagrangeService(stdJson.readAddress(deployLGRData, ".addresses.lagrangeService"));
         uint256[2][] memory _blsPublicPoints = new uint256[2][](1);
         _blsPublicPoints[0] = operator.blsPublicPoint;
-        lagrangeService.register(_blsPublicPoints);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
+        lagrangeService.register(_blsPublicPoints, operatorSignature);
         lagrangeService.subscribe(operator.chainId);
 
         vm.stopBroadcast();

@@ -71,6 +71,8 @@ interface ILagrangeCommittee {
 
     function getBlsPubKeyVotingPowers(address opAddr, uint32 chainID) external view returns (uint96[] memory);
 
+    function getTokenListForOperator(address operator) external view returns (address[] memory);
+
     // Event fired on initialization of a new committee
     event InitCommittee(
         uint256 chainID,
