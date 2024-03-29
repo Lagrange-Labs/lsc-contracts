@@ -12,8 +12,9 @@ const avsDirectoryABI =
   require('../out/IAVSDirectory.sol/IAVSDirectory.json').abi;
 const deployedAddresses = require('../script/output/deployed_lgr.json');
 
-const operator = "0x3Ea592963Db02A3b6a68211676492F137987caeE";
-const blsPubKey = "0x08a1fe4e6dc41f627676a49261ce9707b5180c1ac2a116c163e8c49a7a6609d510b36e0d5b66dd8c9a96d54a3fc0ae83b50ec4151a23f99deb9038ba0a19e2cb";
+const operator = '0x3Ea592963Db02A3b6a68211676492F137987caeE';
+const blsPubKey =
+  '0x08a1fe4e6dc41f627676a49261ce9707b5180c1ac2a116c163e8c49a7a6609d510b36e0d5b66dd8c9a96d54a3fc0ae83b50ec4151a23f99deb9038ba0a19e2cb';
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 
@@ -54,7 +55,9 @@ const convertBLSPubKey = (oldPubKey) => {
 
   const chainParams = [];
   for (let i = 0; i < serviceConfig.chains.length; i++) {
-    chainParams.push(await committee.committeeParams(serviceConfig.chains[i].chain_id));
+    chainParams.push(
+      await committee.committeeParams(serviceConfig.chains[i].chain_id),
+    );
   }
   console.log('Chain Params', chainParams);
 
@@ -87,11 +90,11 @@ const convertBLSPubKey = (oldPubKey) => {
   const signingKey = new ethers.utils.SigningKey(hexPrivKey);
   const signature = signingKey.signDigest(digestHash).compact;
 
-  const tx1 = await contract.register(
-    operator,
-    [convertBLSPubKey(blsPubKey)],
-    { signature, salt, expiry },
-  );
+  const tx1 = await contract.register(operator, [convertBLSPubKey(blsPubKey)], {
+    signature,
+    salt,
+    expiry,
+  });
   console.log(
     `Starting to register operator for address: ${operator} tx hash: ${tx1.hash}`,
   );
