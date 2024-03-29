@@ -25,12 +25,12 @@ fs.readFile(filePath, 'utf8', (err, data) => {
       jsonObject.tokens = [token];
     } else {
       if (jsonObject.isMock) {
-        const strategy = jsonObject.strategies[0];
-        strategy.strategy_address = deployedMock.addresses.strategy;
+        const token = jsonObject.tokens[0];
+        token.token_address = deployedMock.addresses.strategy;
       } else {
-        for (const strategy of jsonObject.strategies) {
-          strategy.strategy_address =
-            deployedEigens.addresses.strategies[strategy.strategy_name];
+        for (const token of jsonObject.tokens) {
+          token.token_address =
+            deployedEigens.addresses.strategies[token.token_name];
         }
       }
     }

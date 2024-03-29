@@ -1,8 +1,8 @@
 {
     "tokens": [
         {
-            "token_name": "mantle",
-            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
+            "token_name": "Wrapped Ether",
+            "token_address": "0x0C601f8E4776bD47e1c460547c457B4A5EE93faA",
             "multiplier": 1000000000
         }
     ],
@@ -32,7 +32,7 @@
         "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
         "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
     },
-    "isNative": true,
+    "isNative": false,
     "isMock": false,
     "eigenlayer_addresses": {
         "mainnet": {
