@@ -1,0 +1,48 @@
+{
+    "tokens": [
+        {
+            "token_name": "Wrapped Ether",
+            "token_address": "0x0C601f8E4776bD47e1c460547c457B4A5EE93faA",
+            "multiplier": 1000000000
+        }
+    ],
+    "chains": [
+        {
+            "chain_name": "mantle",
+            "chain_id": 1337,
+            "epoch_period": 10,
+            "freeze_duration": 4,
+            "genesis_block": 20,
+            "max_weight": 5000000,
+            "min_weight": 1000000,
+            "quorum_number": 0
+        },
+        {
+            "chain_name": "optimism",
+            "chain_id": 420,
+            "epoch_period": 43200,
+            "freeze_duration": 6000,
+            "genesis_block": 20,
+            "max_weight": 5000,
+            "min_weight": 1000,
+            "quorum_number": 0
+        }
+    ],
+    "settlement": {
+        "opt_l2outputoracle": "0x4200000000000000000000000000000000000016",
+        "arb_outbox": "0x45Af9Ed1D03703e480CE7d328fB684bb67DA5049"
+    },
+    "isNative": false,
+    "isMock": false,
+    "eigenlayer_addresses": {
+        "mainnet": {
+            "avsDirectory": "0x0000000000000000000000000000000000000000",
+            "delegation": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
+        },
+        "holesky": {
+            "avsDirectory": "0x055733000064333CaDDbC92763c58BF0192fFeBf",
+            "delegation": "0xA44151489861Fe9e3055d95adC98FbD462B948e7"
+        }
+    },
+    "ownerMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9"
+}

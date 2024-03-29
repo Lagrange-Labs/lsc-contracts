@@ -123,6 +123,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     function updateChain(
         uint32 chainID,
+        int256 l1Bias,
+        uint256 genesisBlock,
         uint256 epochPeriod,
         uint256 freezeDuration,
         uint8 quorumNumber,
@@ -135,14 +137,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _validateVotingPowerRange(minWeight, maxWeight);
 
         _updateCommitteeParams(
-            chainID,
-            _startBlock,
-            committeeParams[chainID].genesisBlock,
-            epochPeriod,
-            freezeDuration,
-            quorumNumber,
-            minWeight,
-            maxWeight
+            chainID, l1Bias, _startBlock, genesisBlock, epochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight
         );
     }
 
@@ -279,6 +274,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     // Computes epoch number for a chain's committee at a given block
     function getEpochNumber(uint32 chainID, uint256 blockNumber) public view returns (uint256) {
+        // we don't need to care about safeCast here, only getting API
+        blockNumber = uint256(int256(blockNumber) + committeeParams[chainID].l1Bias);
         if (blockNumber < committeeParams[chainID].genesisBlock) {
             return 0;
         }
@@ -338,8 +335,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint96 _minWeight,
         uint96 _maxWeight
     ) internal {
-        committeeParams[_chainID] =
-            CommitteeDef(block.number, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
+        committeeParams[_chainID] = CommitteeDef(
+            block.number, 0, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
+        );
         committees[_chainID][0] = CommitteeData(0, 0, 0);
 
         chainIDs.push(_chainID);
@@ -350,6 +348,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // Update committee.
     function _updateCommitteeParams(
         uint32 _chainID,
+        int256 _l1Bias,
         uint256 _startBlock,
         uint256 _genesisBlock,
         uint256 _duration,
@@ -358,9 +357,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint96 _minWeight,
         uint96 _maxWeight
     ) internal {
-        committeeParams[_chainID] =
-            CommitteeDef(_startBlock, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
-        emit UpdateCommitteeParams(_chainID, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
+        committeeParams[_chainID] = CommitteeDef(
+            _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
+        );
+        emit UpdateCommitteeParams(
+            _chainID, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
+        );
     }
 
     function _registerOperator(address _operator, address _signAddress, uint256[2][] memory _blsPubKeys) internal {

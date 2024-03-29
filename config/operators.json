@@ -1,7 +1,7 @@
 [
   {
-    "chain_name": "mantle",
-    "chain_id": 1337,
+    "chain_name": "base",
+    "chain_id": 8453,
     "operators": [
       "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
       "0x516D6C27C23CEd21BF7930E2a01F0BcA9A141a0d",
@@ -53,7 +53,7 @@
   },
   {
     "chain_name": "optimism",
-    "chain_id": 420,
+    "chain_id": 10,
     "operators": [
       "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
       "0x516D6C27C23CEd21BF7930E2a01F0BcA9A141a0d",
