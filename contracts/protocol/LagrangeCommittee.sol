@@ -194,7 +194,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     function update(uint32 chainID, uint256 epochNumber) public {
         require(isUpdatable(chainID, epochNumber), "Block number is prior to committee freeze window.");
 
-        require(updatedEpoch[chainID] < epochNumber, "Already updated.");
+        require(updatedEpoch[chainID] + 1 == epochNumber, "The epochNumber is not sequential.");
 
         CommitteeDef memory _committeeParam = committeeParams[chainID];
         uint8 _quorumNumber = _committeeParam.quorumNumber;

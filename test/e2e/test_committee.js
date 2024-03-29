@@ -28,19 +28,23 @@ provider.getNetwork().then((network) => {
   console.log('chainID: ', network.chainId);
 });
 
-const arbChainID = 1337;
-const optChainID = 420;
+const arbChainID = 8453;
+const optChainID = 10;
 
-contract.getCommittee(optChainID, 5000).then((current) => {
+contract.getCommittee(arbChainID, 1236552).then((current) => {
   console.log('Opt Current committee: ', current[0]);
   console.log('Opt Next committee: ', current[1]);
 });
 
-contract.getCommittee(arbChainID, 165).then((current) => {
-  console.log('Arb Current committee: ', current[0]);
-  console.log('Arb Next committee: ', current[1]);
+contract.getEpochNumber(arbChainID, 1236552).then((epoch) => {
+  console.log('Epoch: ', epoch);
 });
 
-contract.committeeParams(arbChainID).then((params) => {
-  console.log('Arb params: ', params);
-});
+// contract.getCommittee(arbChainID, 165).then((current) => {
+//   console.log('Arb Current committee: ', current[0]);
+//   console.log('Arb Next committee: ', current[1]);
+// });
+
+// contract.committeeParams(arbChainID).then((params) => {
+//   console.log('Arb params: ', params);
+// });
