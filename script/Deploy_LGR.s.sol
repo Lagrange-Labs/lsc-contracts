@@ -76,14 +76,16 @@ contract Deploy is Script, Test {
                 }
                 avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
             }
+            console.log(delegationManagerAddress, avsDirectoryAddress);
         } else if (block.chainid == 1) {
             // mainnet
             if (!isNative) {
                 delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.delegation");
             }
             avsDirectoryAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.mainnet.avsDirectory");
+            console.log(delegationManagerAddress, avsDirectoryAddress);
         } else if (block.chainid == 17000) {
-            // Holesky
+            // holesky
             if (!isNative) {
                 delegationManagerAddress = stdJson.readAddress(configData, ".eigenlayer_addresses.holesky.delegation");
             }

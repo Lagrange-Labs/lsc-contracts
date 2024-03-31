@@ -16,6 +16,11 @@ interface ILagrangeCommittee {
 
     struct CommitteeDef {
         uint256 startBlock;
+        // l1Bias is the difference between the base L1 block number of the given L2 chain and
+        // the maintained L1 block number, for example, if we want to register the Base Mainnet
+        // chain in the Holesky, the l1Bias should be the difference between the Mainnet block
+        // number and the Holesky block number.
+        int256 l1Bias;
         uint256 genesisBlock;
         uint256 duration;
         uint256 freezeDuration;
@@ -45,6 +50,8 @@ interface ILagrangeCommittee {
 
     function updateChain(
         uint32 chainID,
+        int256 l1Bias,
+        uint256 genesisBlock,
         uint256 epochPeriod,
         uint256 freezeDuration,
         uint8 quorumNumber,
@@ -87,6 +94,8 @@ interface ILagrangeCommittee {
     // Event fired on updating a committee params
     event UpdateCommitteeParams(
         uint256 chainID,
+        int256 l1Bias,
+        uint256 genesisBlock,
         uint256 duration,
         uint256 freezeDuration,
         uint8 quorumNumber,

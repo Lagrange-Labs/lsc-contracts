@@ -81,11 +81,13 @@ clean: stop
 	sudo rm -rf docker/geth_db
 
 # Deploy
-deploy-eigen-localnet: run-geth init-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee deposit-stake deploy-register
+deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee  deploy-register
 
-deploy-mock-localnet: run-geth init-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee
+deploy-mock-localnet: run-geth init-accounts generate-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee
 
-deploy-native-localnet: run-geth init-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee	deposit-stake deploy-register
+deploy-native-localnet: run-geth init-accounts generate-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee	deposit-stake deploy-register
+
+deploy-lagrange-testnet: deploy-lagrange add-quorum init-committee
 
 .PHONY: deploy-eigen-localnet deploy-mock-localnet deploy-native-localnet
 
