@@ -10,10 +10,10 @@
         {
             "chain_name": "base",
             "chain_id": 8453,
-            "epoch_period": 20,
-            "freeze_duration": 4,
+            "epoch_period": 7000,
+            "freeze_duration": 700,
             "genesis_block": 1235534,
-            "max_weight": 100000000000,
+            "max_weight": 1000000000000,
             "min_weight": 1000000000,
             "quorum_number": 0
         },
@@ -22,8 +22,8 @@
             "chain_id": 10,
             "epoch_period": 7000,
             "freeze_duration": 700,
-            "genesis_block": 20,
-            "max_weight": 100000000000,
+            "genesis_block": 1235534,
+            "max_weight": 1000000000000,
             "min_weight": 1000000000,
             "quorum_number": 0
         }
@@ -36,7 +36,7 @@
             "delegation": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
         },
         "holesky": {
-            "avsDirectory": "0xd54Bef698C446B226d7f38b8533AFe0C049542cF",
+            "avsDirectory": "0x055733000064333CaDDbC92763c58BF0192fFeBf",
             "delegation": "0xA44151489861Fe9e3055d95adC98FbD462B948e7"
         }
     },
