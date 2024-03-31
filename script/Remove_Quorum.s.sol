@@ -20,7 +20,7 @@ contract RemoveQuorum is Script, Test {
 
         LagrangeCommittee committee =
             LagrangeCommittee(stdJson.readAddress(deployLGRData, ".addresses.lagrangeCommittee"));
-        committee.updateChain(8453, -18190018, 1235534, 20, 4, 0, 1000000000, 100000000000);
+        committee.updateChain(8453, -18190018, 1235534, 7000, 700, 0, 1000000000, 1000000000000);
 
         vm.stopBroadcast();
     }
