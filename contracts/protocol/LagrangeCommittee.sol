@@ -58,13 +58,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Adds address stake data and flags it for committee addition
-    function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) public onlyService {
+    function addOperator(address operator, address signAddress, uint256[2][] calldata blsPubKeys) public onlyService {
         _validateBlsPubKeys(blsPubKeys);
         _registerOperator(operator, signAddress, blsPubKeys);
     }
 
     // Adds address stake data and flags it for committee addition
-    function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) public onlyService {
+    function addBlsPubKeys(address operator, uint256[2][] calldata additionalBlsPubKeys) public onlyService {
         _validateBlsPubKeys(additionalBlsPubKeys);
         _addBlsPubKeys(operator, additionalBlsPubKeys);
     }
@@ -342,7 +342,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
         chainIDs.push(_chainID);
 
-        emit InitCommittee(_chainID, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
+        emit InitCommittee(_chainID, _quorumNumber, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight);
     }
 
     // Update committee.
@@ -361,7 +361,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
         );
         emit UpdateCommitteeParams(
-            _chainID, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
+            _chainID, _quorumNumber, _l1Bias, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight
         );
     }
 
@@ -369,7 +369,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         require(_opStatus.blsPubKeys.length == 0, "Operator is already registered.");
         _opStatus.signAddress = _signAddress;
-        _opStatus.blsPubKeys = _blsPubKeys;
+        uint256 _length = _blsPubKeys.length;
+        for (uint256 i; i < _length; i++) {
+            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsPubKeys[i]);
+            _opStatus.blsPubKeys.push(_blsPubKeys[i]);
+        }
     }
 
     function _addBlsPubKeys(address _operator, uint256[2][] memory _additionalBlsPubKeys) internal {
@@ -377,7 +381,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
         uint256 _length = _additionalBlsPubKeys.length;
         for (uint256 i; i < _length; i++) {
+            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _additionalBlsPubKeys[i]);
             _opStatus.blsPubKeys.push(_additionalBlsPubKeys[i]);
+        }
+    }
+
+    function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
+        uint256 _length = _blsPubKeys.length;
+        for (uint256 i; i < _length; i++) {
+            require(
+                _blsPubKeys[i][0] != _blsPubKey[0]
+                    || _blsPubKeys[i][1] != _blsPubKey[1],
+                "Duplicated BlsPubKey"
+            );
         }
     }
 
@@ -413,6 +429,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     function _validateBlsPubKeys(uint256[2][] memory _blsPubKeys) internal pure {
+        require(_blsPubKeys.length != 0, "Empty BLS Public Keys.");
         // TODO: need to add validation for blsPubKeys with signatures
         uint256 _length = _blsPubKeys.length;
         for (uint256 i; i < _length; i++) {

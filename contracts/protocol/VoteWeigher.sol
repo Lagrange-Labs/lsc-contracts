@@ -21,9 +21,9 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
 
     uint8[] quorumNumbers; // list of all quorum numbers
 
-    event QuorumAdded(uint8 quorumNumber, TokenMultiplier[] multipliers);
-    event QuorumRemoved(uint8 quorumNumber);
-    event QuorumUpdated(uint8 quorumNumber, uint256 index, TokenMultiplier multiplier);
+    event QuorumAdded(uint8 indexed quorumNumber, TokenMultiplier[] multipliers);
+    event QuorumRemoved(uint8 indexed quorumNumber);
+    event QuorumUpdated(uint8 indexed quorumNumber, uint256 index, TokenMultiplier multiplier);
 
     constructor(IStakeManager _stakeManager)
     {
@@ -35,9 +35,11 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
         _transferOwnership(initialOwner);
     }
 
-    function addQuorumMultiplier(uint8 quorumNumber, TokenMultiplier[] memory multipliers) external onlyOwner {
+    function addQuorumMultiplier(uint8 quorumNumber, TokenMultiplier[] calldata multipliers) external onlyOwner {
+        require(multipliers.length != 0, "Empty list of multipliers");
         require(quorumMultipliers[quorumNumber].length == 0, "Quorum already exists");
         for (uint256 i; i < multipliers.length; i++) {
+            _checkMultiplierDuplicate(quorumMultipliers[quorumNumber], multipliers[i].token);
             quorumMultipliers[quorumNumber].push(multipliers[i]);
         }
         quorumNumbers.push(quorumNumber);
@@ -58,11 +60,18 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
         emit QuorumRemoved(quorumNumber);
     }
 
-    function updateQuorumMultiplier(uint8 quorumNumber, uint256 index, TokenMultiplier memory multiplier) external onlyOwner {
-        require(quorumMultipliers[quorumNumber].length > index, "Index out of bounds");
+    function updateQuorumMultiplier(uint8 quorumNumber, uint256 index, TokenMultiplier calldata multiplier) external onlyOwner {
+        require(quorumMultipliers[quorumNumber].length >= index, "Index out of bounds");
         if (quorumMultipliers[quorumNumber].length == index) {
+            _checkMultiplierDuplicate(quorumMultipliers[quorumNumber], multiplier.token);
             quorumMultipliers[quorumNumber].push(multiplier);
         } else {
+            uint256 _length = quorumMultipliers[quorumNumber].length;
+            for (uint i; i < _length; i++) {
+                if (i != index) {
+                    require(quorumMultipliers[quorumNumber][i].token != multiplier.token, "Multiplier already exists");
+                }
+            }
             quorumMultipliers[quorumNumber][index] = multiplier;
         }
         emit QuorumUpdated(quorumNumber, index, multiplier);
@@ -86,7 +95,7 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
         return _getTokenListForQuorumNumbers(quorumNumbers);
     }
 
-    function getTokenListForQuorumNumbers(uint8[] memory quorumNumbers_) external view returns (address[] memory) {
+    function getTokenListForQuorumNumbers(uint8[] calldata quorumNumbers_) external view returns (address[] memory) {
         return _getTokenListForQuorumNumbers(quorumNumbers_);
     }
 
@@ -118,5 +127,12 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
             _tokenList[i] = _tokens[i];
         }
         return _tokenList;
+    }
+
+    function _checkMultiplierDuplicate(TokenMultiplier[] memory _multipliers, address _token) internal pure {
+        uint256 _length = _multipliers.length;
+        for (uint256 i; i < _length; i++) {
+            require(_multipliers[i].token != _token, "Multiplier already exists");
+        }
     }
 }

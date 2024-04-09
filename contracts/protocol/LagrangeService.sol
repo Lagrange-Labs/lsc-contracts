@@ -19,10 +19,10 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     IAVSDirectory public immutable avsDirectory;
     IVoteWeigher public immutable voteWeigher;
 
-    event OperatorRegistered(address operator, uint32 serveUntilBlock);
-    event OperatorDeregistered(address operator);
-    event OperatorSubscribed(address operator, uint32 chainID);
-    event OperatorUnsubscribed(address operator, uint32 chainID);
+    event OperatorRegistered(address indexed operator, uint32 serveUntilBlock);
+    event OperatorDeregistered(address indexed operator);
+    event OperatorSubscribed(address indexed operator, uint32 indexed chainID);
+    event OperatorUnsubscribed(address indexed operator, uint32 indexed chainID);
 
     modifier onlyWhitelisted() {
         require(operatorWhitelist[msg.sender], "Operator is not whitelisted");
@@ -63,7 +63,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     /// Add the operator to the service.
     function register(
         address signAddress,
-        uint256[2][] memory blsPubKeys,
+        uint256[2][] calldata blsPubKeys,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhitelisted {
         address _operator = msg.sender;
@@ -75,7 +75,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add extra BlsPubKeys
-    function addBlsPubKeys(uint256[2][] memory additionalBlsPubKeys) external onlyWhitelisted {
+    function addBlsPubKeys(uint256[2][] calldata additionalBlsPubKeys) external onlyWhitelisted {
         address _operator = msg.sender;
         committee.addBlsPubKeys(_operator, additionalBlsPubKeys);
         uint32 serveUntilBlock = type(uint32).max;
@@ -111,7 +111,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     // Updates the metadata URI for the AVS
-    function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
+    function updateAVSMetadataURI(string calldata _metadataURI) public virtual onlyOwner {
         avsDirectory.updateAVSMetadataURI(_metadataURI);
     }
 
