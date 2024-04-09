@@ -369,7 +369,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         require(_opStatus.blsPubKeys.length == 0, "Operator is already registered.");
         _opStatus.signAddress = _signAddress;
-        _opStatus.blsPubKeys = _blsPubKeys;
+        uint256 _length = _blsPubKeys.length;
+        for (uint256 i; i < _length; i++) {
+            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsPubKeys[i]);
+            _opStatus.blsPubKeys.push(_blsPubKeys[i]);
+        }
     }
 
     function _addBlsPubKeys(address _operator, uint256[2][] memory _additionalBlsPubKeys) internal {
@@ -377,15 +381,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
         uint256 _length = _additionalBlsPubKeys.length;
         for (uint256 i; i < _length; i++) {
-            uint256 _orgLength = _opStatus.blsPubKeys.length;
-            for (uint256 j; j < _orgLength; j++) {
-                require(
-                    _opStatus.blsPubKeys[j][0] != _additionalBlsPubKeys[i][0]
-                        || _opStatus.blsPubKeys[j][1] != _additionalBlsPubKeys[i][1],
-                    "Duplicated BlsPubKey"
-                );
-            }
+            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _additionalBlsPubKeys[i]);
             _opStatus.blsPubKeys.push(_additionalBlsPubKeys[i]);
+        }
+    }
+
+    function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
+        uint256 _length = _blsPubKeys.length;
+        for (uint256 i; i < _length; i++) {
+            require(
+                _blsPubKeys[i][0] != _blsPubKey[0]
+                    || _blsPubKeys[i][1] != _blsPubKey[1],
+                "Duplicated BlsPubKey"
+            );
         }
     }
 
