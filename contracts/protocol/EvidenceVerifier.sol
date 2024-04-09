@@ -25,10 +25,10 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
     // single signature verifier
     ISlashingSingleVerifier public singleVerifier;
 
-    event OperatorSlashed(address operator);
+    event OperatorSlashed(address indexed operator);
 
     event UploadEvidence(
-        address operator,
+        address indexed operator,
         bytes32 blockHash,
         bytes32 currentCommitteeRoot,
         bytes32 nextCommitteeRoot,
@@ -36,7 +36,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
         uint256 epochNumber,
         bytes blockSignature,
         bytes commitSignature,
-        uint32 chainID
+        uint32 indexed chainID
     );
 
     constructor(ILagrangeCommittee _committee, IStakeManager _stakeManager) {

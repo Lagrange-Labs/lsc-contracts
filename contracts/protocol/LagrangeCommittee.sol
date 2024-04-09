@@ -58,13 +58,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Adds address stake data and flags it for committee addition
-    function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) public onlyService {
+    function addOperator(address operator, address signAddress, uint256[2][] calldata blsPubKeys) public onlyService {
         _validateBlsPubKeys(blsPubKeys);
         _registerOperator(operator, signAddress, blsPubKeys);
     }
 
     // Adds address stake data and flags it for committee addition
-    function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) public onlyService {
+    function addBlsPubKeys(address operator, uint256[2][] calldata additionalBlsPubKeys) public onlyService {
         _validateBlsPubKeys(additionalBlsPubKeys);
         _addBlsPubKeys(operator, additionalBlsPubKeys);
     }
@@ -377,6 +377,14 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
         uint256 _length = _additionalBlsPubKeys.length;
         for (uint256 i; i < _length; i++) {
+            uint256 _orgLength = _opStatus.blsPubKeys.length;
+            for (uint256 j; j < _orgLength; j++) {
+                require(
+                    _opStatus.blsPubKeys[j][0] != _additionalBlsPubKeys[i][0]
+                        || _opStatus.blsPubKeys[j][1] != _additionalBlsPubKeys[i][1],
+                    "Duplicated BlsPubKey"
+                );
+            }
             _opStatus.blsPubKeys.push(_additionalBlsPubKeys[i]);
         }
     }
@@ -413,6 +421,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     function _validateBlsPubKeys(uint256[2][] memory _blsPubKeys) internal pure {
+        require(_blsPubKeys.length != 0, "Empty BLS Public Keys.");
         // TODO: need to add validation for blsPubKeys with signatures
         uint256 _length = _blsPubKeys.length;
         for (uint256 i; i < _length; i++) {
