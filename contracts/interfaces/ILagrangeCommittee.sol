@@ -84,21 +84,21 @@ interface ILagrangeCommittee {
     // Event fired on initialization of a new committee
     event InitCommittee(
         uint256 indexed chainID,
+        uint8 indexed quorumNumber,
         uint256 genesisBlock,
         uint256 duration,
         uint256 freezeDuration,
-        uint8 indexed quorumNumber,
         uint96 minWeight,
         uint96 maxWeight
     );
     // Event fired on updating a committee params
     event UpdateCommitteeParams(
         uint256 indexed chainID,
+        uint8 indexed quorumNumber,
         int256 l1Bias,
         uint256 genesisBlock,
         uint256 duration,
         uint256 freezeDuration,
-        uint8 indexed quorumNumber,
         uint96 minWeight,
         uint96 maxWeight
     );

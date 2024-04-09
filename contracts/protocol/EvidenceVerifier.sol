@@ -29,14 +29,14 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
 
     event UploadEvidence(
         address indexed operator,
+        uint32 indexed chainID,
         bytes32 blockHash,
         bytes32 currentCommitteeRoot,
         bytes32 nextCommitteeRoot,
         uint256 blockNumber,
         uint256 epochNumber,
         bytes blockSignature,
-        bytes commitSignature,
-        uint32 indexed chainID
+        bytes commitSignature
     );
 
     constructor(ILagrangeCommittee _committee, IStakeManager _stakeManager) {
@@ -88,17 +88,16 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
         }
 
         // TODO what is this for (no condition)?
-
         emit UploadEvidence(
             evidence.operator,
+            evidence.chainID,
             evidence.blockHash,
             evidence.currentCommitteeRoot,
             evidence.nextCommitteeRoot,
             evidence.blockNumber,
             evidence.l1BlockNumber,
             evidence.blockSignature,
-            evidence.commitSignature,
-            evidence.chainID
+            evidence.commitSignature
         );
     }
 

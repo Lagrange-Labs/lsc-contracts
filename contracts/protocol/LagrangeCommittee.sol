@@ -342,7 +342,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
         chainIDs.push(_chainID);
 
-        emit InitCommittee(_chainID, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight);
+        emit InitCommittee(_chainID, _quorumNumber, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight);
     }
 
     // Update committee.
@@ -361,7 +361,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
         );
         emit UpdateCommitteeParams(
-            _chainID, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
+            _chainID, _quorumNumber, _l1Bias, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight
         );
     }
 
