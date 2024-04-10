@@ -49,6 +49,11 @@ contract InitCommittee is Script, Test {
             );
         }
 
+        LagrangeService service = LagrangeService(stdJson.readAddress(deployLGRData, ".addresses.lagrangeService"));
+        service.updateAVSMetadataURI(
+            "https://raw.githubusercontent.com/Lagrange-Labs/AVS-config/main/config/lsc-avs.json"
+        );
+
         vm.stopBroadcast();
     }
 }

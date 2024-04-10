@@ -389,11 +389,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
         uint256 _length = _blsPubKeys.length;
         for (uint256 i; i < _length; i++) {
-            require(
-                _blsPubKeys[i][0] != _blsPubKey[0]
-                    || _blsPubKeys[i][1] != _blsPubKey[1],
-                "Duplicated BlsPubKey"
-            );
+            require(_blsPubKeys[i][0] != _blsPubKey[0] || _blsPubKeys[i][1] != _blsPubKey[1], "Duplicated BlsPubKey");
         }
     }
 
