@@ -1,33 +1,33 @@
 {
   "addresses": {
-    "avsDirectory": "0x6Bf0fF4eBa00E3668c0241bb1C622CDBFE55bbE0",
-    "avsDirectoryImplementation": "0x9E6F4600a8C6c91EC5158D752824467B4c6B9c17",
-    "baseStrategyImplementation": "0x11b59cE6E2b4509218bf45AF3582dC7E2a1e8a57",
-    "delayedWithdrawalRouter": "0x0E0E7FAF5165D7EaB192F1c18a86E0406021d6a5",
-    "delayedWithdrawalRouterImplementation": "0x2008D5344b209B4DE89e5ba218A097FFc6DcdA99",
-    "delegation": "0xF2740f6A6333c7B405aD7EfC68c74adAd83cC30D",
-    "delegationImplementation": "0x1387E373a9fe3c8DdF77ea9E66616678e5B9D918",
-    "eigenLayerPauserReg": "0x189d4f39f158664185DBB101791F47485B5bE993",
-    "eigenLayerProxyAdmin": "0x2f947E51B9A7cF1d6651D0a568261673233ba42b",
-    "eigenPodBeacon": "0xe509Dea686816C3c64ed4950dA54792a70A25239",
-    "eigenPodImplementation": "0x0AEd0dC7f53CB452A34A3Fe4d6a7E4Fdd110ed0f",
-    "eigenPodManager": "0x5bA2061A8ab6D0c61b3e29f5b49C37A5FDF4AE72",
-    "eigenPodManagerImplementation": "0xb5f6560d0F0323afF85fA33790BAdB99D65Aa613",
-    "emptyContract": "0x91E333A3d61862B1FE976351cf0F3b30aff1D202",
-    "slasher": "0x0E7C083DEEdB9a0EA3e06A316148fc110F7Fe49a",
-    "slasherImplementation": "0xdE13D29456810eD75139240C2B4e5DfDab7A6f6f",
+    "avsDirectory": "0xC185b41D3a1f6C8087D4503b70BbF3711D9d0944",
+    "avsDirectoryImplementation": "0x139fDe79277bAa552fF3F9Bfa8328958300Ec38B",
+    "baseStrategyImplementation": "0xe6dE4446E0C46A476d35C79812E89073251B70a5",
+    "delayedWithdrawalRouter": "0x96aC858985496631E9EDA130c38e06924f113c79",
+    "delayedWithdrawalRouterImplementation": "0x5d4852e2F5c7c3bB1fA264C837dd5Ced46CF11af",
+    "delegation": "0x06A9d09b80d8862caeE956804ED8Bd6e62E67964",
+    "delegationImplementation": "0x607AAb0B7F6E6f9E164251F6C343c64435D33211",
+    "eigenLayerPauserReg": "0xDcDC995EA082F967A89208dA1b56891044262eF1",
+    "eigenLayerProxyAdmin": "0xD1d3d9163FbFa9874A2A27D0757fe426Ff8af2fb",
+    "eigenPodBeacon": "0x359A329eB4b30574E9d998f301b60aa25E3EFE8b",
+    "eigenPodImplementation": "0x1500174a24c352964c5f0aB9D8c36A12d1B53F35",
+    "eigenPodManager": "0x7E6a6Df034928ABF15FcD165CD37e0dAA4dA9BDf",
+    "eigenPodManagerImplementation": "0x97F736681f761a01892628374D29331C0047a049",
+    "emptyContract": "0xB1bb50dbfdCacC4F93340BF79db97a7a1F73CF59",
+    "slasher": "0xa92D237cB09d8Af497F9FaA4B6F20Aa2B9a391cD",
+    "slasherImplementation": "0x178fABa165D90948c3449A3BEA6ce8a076f0FAa1",
     "strategies": {
-      "Coinbase Wrapped Staked ETH": "0xf32358f5C8FFfCF1a7bDb58b270a082abb7Ba1A6",
-      "Liquid staked Ether 2.0": "0x660A09d2776fB3A4F4c2da6eBAa66996748Ec061",
-      "Rocket Pool ETH": "0xa6045E9a60517Cf29435663a7f47f425e6020D53",
-      "Wrapped Ether": "0x0C601f8E4776bD47e1c460547c457B4A5EE93faA"
+      "Coinbase Wrapped Staked ETH": "0x6D8814463b0342bc55667756A69742059677B4B3",
+      "Liquid staked Ether 2.0": "0x9b3D40D9348e4A50D4932Ca1D97dde45a396BC4D",
+      "Rocket Pool ETH": "0x979453bc1dBBc95fAF2F29F43B5a64cDd6FB35De",
+      "Wrapped Ether": "0xAFcaDbD4d64d2548435685B46081a1227B9ecf9e"
     },
-    "strategyManager": "0x3074DB604785eEeC6c4Fadf4226137024764faD5",
-    "strategyManagerImplementation": "0xFb7c846bD3285A9CC856eEa80792CAf51347befF"
+    "strategyManager": "0xD489e4Fa2fc1289638328D13eFcdb24d5d863178",
+    "strategyManagerImplementation": "0x4BCA27f9B8A39D88E5978DC702b309C28e229b2D"
   },
   "chainInfo": {
     "chainId": 1337,
-    "deploymentBlock": 12
+    "deploymentBlock": 105176
   },
   "parameters": {
     "executorMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
