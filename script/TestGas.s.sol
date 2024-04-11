@@ -110,7 +110,7 @@ contract TestGas is Script {
 contract MockedVoteWeigher {
     constructor() {}
 
-    function weightOfOperator(uint8 quorumNumber, address operator) external returns (uint96) {
+    function weightOfOperator(uint8, /*quorumNumber*/ address /*operator*/ ) external pure returns (uint96) {
         return 6000;
     }
 }
