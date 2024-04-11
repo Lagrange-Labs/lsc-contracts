@@ -10,10 +10,7 @@
     "dotenv": "^16.3.1",
     "hardhat": "^2.14.0",
     "hardhat-preprocessor": "^0.1.5",
-    "hermez-contracts": "github:hermeznetwork/contracts",
     "js-sha3": "^0.8.0",
-    "rlp": "^3.0.0",
-    "solidity-rlp": "github:hamdiallam/Solidity-RLP",
     "web3": "^1.10.4"
   },
   "devDependencies": {

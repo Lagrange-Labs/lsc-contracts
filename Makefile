@@ -73,8 +73,10 @@ docker-build: stop
 
 # Test
 test:
-	forge test  -vvvvv
+	forge test -vvvvv
 	npx hardhat test
+test-gas:
+	forge script ./script/TestGas.s.sol:TestGas -vvvv
 .PHONY: test
 
 clean: stop
