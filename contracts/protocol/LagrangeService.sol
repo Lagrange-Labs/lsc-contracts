@@ -21,6 +21,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
 
     event OperatorRegistered(address indexed operator, uint32 serveUntilBlock);
     event OperatorDeregistered(address indexed operator);
+    event OperatorForceDeregistered(address indexed operator);
     event OperatorSubscribed(address indexed operator, uint32 indexed chainID);
     event OperatorUnsubscribed(address indexed operator, uint32 indexed chainID);
 
@@ -101,9 +102,20 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         (bool possible, uint256 unsubscribeBlockNumber) = committee.isUnregisterable(_operator);
         require(possible, "The operator is not able to deregister");
         stakeManager.lockStakeUntil(_operator, unsubscribeBlockNumber);
-
+        committee.removeOperator(_operator);
         avsDirectory.deregisterOperatorFromAVS(_operator);
         emit OperatorDeregistered(_operator);
+    }
+
+    /// Forcibly deregister the operator from the service.
+    function forceDeregister(address operator) external onlyOwner {
+        uint256 lockBlockNumber = committee.deregisterOperator(operator);
+        stakeManager.lockStakeUntil(operator, lockBlockNumber);
+        try avsDirectory.deregisterOperatorFromAVS(operator) {
+            emit OperatorForceDeregistered(operator);
+        } catch {
+            emit OperatorForceDeregistered(operator);
+        }
     }
 
     function owner() public view override(OwnableUpgradeable, ILagrangeService) returns (address) {

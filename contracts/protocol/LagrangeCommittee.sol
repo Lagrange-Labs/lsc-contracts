@@ -57,14 +57,41 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _transferOwnership(initialOwner);
     }
 
-    // Adds address stake data and flags it for committee addition
-    function addOperator(address operator, address signAddress, uint256[2][] calldata blsPubKeys) public onlyService {
+    // Adds a new operator to the committee
+    function addOperator(address operator, address signAddress, uint256[2][] calldata blsPubKeys)
+        external
+        onlyService
+    {
         _validateBlsPubKeys(blsPubKeys);
         _registerOperator(operator, signAddress, blsPubKeys);
     }
 
-    // Adds address stake data and flags it for committee addition
-    function addBlsPubKeys(address operator, uint256[2][] calldata additionalBlsPubKeys) public onlyService {
+    // Removes an operator from the committee
+    function removeOperator(address operator) external onlyService {
+        delete operatorsStatus[operator];
+    }
+
+    // Remove an operator from the committee and unsubscribe from all chains
+    // NOTE: This is used to deregister an operator from the committee forcibly.
+    function deregisterOperator(address operator) external onlyService returns (uint256 lockBlockNumber) {
+        uint256 _length = chainIDs.length;
+
+        for (uint256 i; i < _length; i++) {
+            uint32 _chainID = chainIDs[i];
+            if (subscribedChains[_chainID][operator]) {
+                (, uint256 blockNumber) = isLocked(_chainID);
+                _unsubscribeChain(operator, _chainID, blockNumber);
+                if (blockNumber > lockBlockNumber) {
+                    lockBlockNumber = blockNumber;
+                }
+            }
+        }
+
+        delete operatorsStatus[operator];
+    }
+
+    // Adds additional BLS public keys to an operator
+    function addBlsPubKeys(address operator, uint256[2][] calldata additionalBlsPubKeys) external onlyService {
         _validateBlsPubKeys(additionalBlsPubKeys);
         _addBlsPubKeys(operator, additionalBlsPubKeys);
     }
@@ -270,6 +297,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         }
 
         _updateCommittee(chainID, epochNumber, _root, uint32(_leafCounter));
+    }
+
+    function revertEpoch(uint32 chainID, uint256 epochNumber) public onlyOwner {
+        require(updatedEpoch[chainID] == epochNumber, "The epochNumber is not the latest.");
+        delete committees[chainID][epochNumber];
+        updatedEpoch[chainID] = epochNumber - 1;
     }
 
     // Computes epoch number for a chain's committee at a given block
