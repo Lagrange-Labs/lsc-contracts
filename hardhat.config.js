@@ -13,7 +13,15 @@ function getRemappings() {
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: '0.8.12',
+  solidity: {
+    version: '0.8.12',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    }
+  },
   preprocess: {
     eachLine: (hre) => ({
       transform: (line) => {
@@ -32,6 +40,6 @@ module.exports = {
   paths: {
     sources: './contracts',
     cache: './cache_hardhat',
-    tests: './test/hardhat-sim', // TODO: fix the hardhat tests
+    tests: './test/hardhat',
   },
 };
