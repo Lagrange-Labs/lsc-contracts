@@ -87,7 +87,7 @@ deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 upd
 
 deploy-mock-localnet: run-geth init-accounts generate-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee
 
-deploy-native-localnet: run-geth init-accounts generate-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee	deposit-stake deploy-register
+deploy-native-localnet: run-geth init-accounts generate-accounts deploy-weth9 deploy-lagrange update-config add-quorum init-committee deposit-stake deploy-register
 
 deploy-lagrange-testnet: deploy-lagrange add-quorum init-committee
 
