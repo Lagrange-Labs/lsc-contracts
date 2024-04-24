@@ -170,6 +170,58 @@ contract CommitteeTreeTest is LagrangeDeployer {
         assertEq(cur.root, 0x02f507202eec14a32171bbca5d048778e4c67238b21037a90b90608c71b6276a);
     }
 
+    function testRevertEpoch() public {
+        uint256[OPERATOR_COUNT] memory privateKeys;
+        address[OPERATOR_COUNT] memory operators;
+        uint256[OPERATOR_COUNT] memory amounts;
+        uint256[2][][OPERATOR_COUNT] memory blsPubKeysArray;
+
+        privateKeys[0] = 111;
+        privateKeys[1] = 222;
+        privateKeys[2] = 333;
+
+        for (uint256 i; i < OPERATOR_COUNT; i++) {
+            operators[i] = vm.addr(privateKeys[i]);
+        }
+
+        amounts[0] = 1e15;
+        amounts[1] = 2e15;
+        amounts[2] = 3e15;
+
+        blsPubKeysArray[0] = new uint256[2][](1);
+        blsPubKeysArray[0][0] = [uint256(1), 2];
+        blsPubKeysArray[1] = new uint256[2][](1);
+        blsPubKeysArray[1][0] = [uint256(2), 3];
+        blsPubKeysArray[2] = new uint256[2][](1);
+        blsPubKeysArray[2][0] = [uint256(3), 4];
+
+        for (uint256 i; i < OPERATOR_COUNT; i++) {
+            _registerOperator(operators[i], privateKeys[i], amounts[i], blsPubKeysArray[i], CHAIN_ID);
+        }
+
+        // update the tree
+        vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
+        lagrangeCommittee.update(CHAIN_ID, 1);
+
+        _deposit(operators[0], 1e15);
+
+        vm.roll(START_EPOCH + EPOCH_PERIOD * 2 - FREEZE_DURATION + 1);
+        lagrangeCommittee.update(CHAIN_ID, 2);
+
+        vm.startPrank(lagrangeService.owner());
+        vm.expectRevert("The epochNumber is not the latest.");
+        lagrangeCommittee.revertEpoch(CHAIN_ID, 1);
+        lagrangeCommittee.revertEpoch(CHAIN_ID, 2);
+        vm.stopPrank();
+
+        vm.roll(START_EPOCH + EPOCH_PERIOD * 2);
+        lagrangeCommittee.update(CHAIN_ID, 2);
+        ILagrangeCommittee.CommitteeData memory cur =
+            lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD * 2);
+        assertEq(cur.leafCount, 3);
+        assertEq(cur.updatedBlock, START_EPOCH + EPOCH_PERIOD * 2);
+    }
+
     uint256 private constant OPERATOR_COUNT2 = 4;
 
     function testTreeConstructForMultipleBlsKeys() public {
