@@ -101,7 +101,7 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         (bool possible, uint256 unsubscribeBlockNumber) = committee.isUnregisterable(_operator);
         require(possible, "The operator is not able to deregister");
         stakeManager.lockStakeUntil(_operator, unsubscribeBlockNumber);
-
+        committee.removeOperator(_operator);
         avsDirectory.deregisterOperatorFromAVS(_operator);
         emit OperatorDeregistered(_operator);
     }

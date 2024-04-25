@@ -5,20 +5,19 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {VoteWeigher} from "../contracts/protocol/VoteWeigher.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
 contract Deploy is Script, Test {
-    string public deployDataPath = string(bytes("script/output/deployed_goerli.json"));
+    string public deployDataPath = string(bytes("script/output/deployed_lgr.json"));
 
     // Lagrange Contracts
     ProxyAdmin public proxyAdmin;
     LagrangeCommittee public lagrangeCommittee;
     LagrangeCommittee public lagrangeCommitteeImp;
     LagrangeService public lagrangeService;
-    VoteWeigher public voteWeigher;
+    LagrangeService public lagrangeServiceImp;
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
@@ -29,14 +28,16 @@ contract Deploy is Script, Test {
         proxyAdmin = ProxyAdmin(stdJson.readAddress(deployData, ".lagrange.addresses.proxyAdmin"));
         lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeService"));
         lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeCommittee"));
-        voteWeigher = VoteWeigher(stdJson.readAddress(deployData, ".lagrange.addresses.voteWeigher"));
         // deploy implementation contracts
-        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, voteWeigher);
+        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
+        lagrangeServiceImp =
+        new LagrangeService(lagrangeCommittee, lagrangeService.stakeManager(), address(lagrangeService.avsDirectory()), lagrangeService.voteWeigher());
 
         // upgrade proxy contracts
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
         );
+        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeService))), address(lagrangeServiceImp));
 
         vm.stopBroadcast();
     }

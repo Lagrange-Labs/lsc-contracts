@@ -61,6 +61,8 @@ interface ILagrangeCommittee {
 
     function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) external;
 
+    function removeOperator(address operator) external;
+
     function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) external;
 
     function isLocked(uint32 chainID) external view returns (bool, uint256);
@@ -91,6 +93,7 @@ interface ILagrangeCommittee {
         uint96 minWeight,
         uint96 maxWeight
     );
+
     // Event fired on updating a committee params
     event UpdateCommitteeParams(
         uint256 indexed chainID,

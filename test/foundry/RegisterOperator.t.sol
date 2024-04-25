@@ -88,14 +88,15 @@ contract RegisterOperatorTest is LagrangeDeployer {
         vm.startPrank(operator);
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
-        operatorSignature.expiry = block.timestamp + 60;
-        operatorSignature.salt = bytes32(0x0);
-        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
-            operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
-        operatorSignature.signature = abi.encodePacked(r, s, v);
-
+        {
+            operatorSignature.expiry = block.timestamp + 60;
+            operatorSignature.salt = bytes32(0x0);
+            bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+                operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
+            );
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+            operatorSignature.signature = abi.encodePacked(r, s, v);
+        }
         // deposit tokens to stake manager
         token.deposit{value: amount}();
         token.approve(address(stakeManager), amount);
@@ -122,6 +123,30 @@ contract RegisterOperatorTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
         lagrangeService.unsubscribe(CHAIN_ID);
         lagrangeService.deregister();
+
+        // re-register operator
+        vm.roll(START_EPOCH + EPOCH_PERIOD);
+        vm.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
+        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+        // new operator signature
+        {
+            operatorSignature.expiry = block.timestamp + 60;
+            operatorSignature.salt = bytes32(0x0000000000000000000000000000000000000000000000000000000000000001);
+            bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+                operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
+            );
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+            operatorSignature.signature = abi.encodePacked(r, s, v);
+        }
+        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+        lagrangeService.subscribe(CHAIN_ID);
+
+        // unsubscribe and subscribe operator
+        lagrangeService.unsubscribe(CHAIN_ID);
+        vm.expectRevert("The dedciated chain is while unsubscribing.");
+        lagrangeService.subscribe(CHAIN_ID);
+        vm.roll(START_EPOCH + EPOCH_PERIOD * 2 + 1);
+        lagrangeService.subscribe(CHAIN_ID);
 
         vm.stopPrank();
     }
