@@ -49,88 +49,10 @@ Here are the [audit reports](./audits/)
 
 ## Local Deployment
 
-The following walks through the necessary steps to deploy the Lagrange contracts, interfacing with mock contracts for EigenLayer, as well as Arbitrum Nitro and Optimism Bedrock settlement mock contracts.
+The following walks through the necessary steps to deploy the Lagrange contracts locally.
 
 ```
 make deploy-eigen-localnet
-```
-
-## Local Deployment
-
-**Note**: _The following steps are deprecated as of July 2023._
-
-1. Eigenlayer Deployment
-
-   - Run the `geth` node using the following command
-
-     ```bash
-     make run-geth
-     ```
-
-   - Execute `make init-accounts` to initialize the accounts
-   - Execute `make generate-accounts` to create the accounts configuration file
-   - Deploy the mock `WETH9` smart contract for the virtual strategy
-
-     ```bash
-     make deploy-weth9
-     ```
-
-   - Execute `make update-strategy-config` to update the strategy config of Eigenlayer Deployment
-
-   - Deploy the `Eigenlayer` smart contracts,
-
-     ```bash
-     make deploy-eigenlayer
-     ```
-
-   - Add the `WETH` strategy to the `Eigenlayer` StrategyManager
-
-     ```bash
-     make add-strategy
-     ```
-
-   - Register the `Operator`
-
-     ```bash
-     make register-operator
-     ```
-
-2. Deploy the `Lagrange` smart contracts
-
-   ```bash
-   make deploy-lagrange
-   ```
-
-   - Execute `make update-config` to update the token config of `Add Quorum`
-
-3. Add the quorum to the `Lagrange` smart contracts
-
-   ```bash
-   make add-quorum
-   ```
-
-4. Opt into the `Lagrange` smart contracts
-
-   ```bash
-   make register-lagrange
-   ```
-
-5. Register operators and subscribe the given chains
-
-   ```bash
-   make deploy-register
-   ```
-
-6. Init the committee
-
-   ```bash
-   make init-committee
-   ```
-
-To clean up the deployment, run the following command
-
-```bash
-make clean
 ```
 
 ## Build the docker image

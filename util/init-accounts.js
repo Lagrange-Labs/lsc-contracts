@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const DEFAULT_MNEMONIC =
   'exchange holiday girl alone head gift unfair resist void voice people tobacco';
-const DEFAULT_NUM_ACCOUNTS = 10;
+const DEFAULT_NUM_ACCOUNTS = 15;
 
 async function main() {
   const currentProvider = new ethers.providers.JsonRpcProvider(
