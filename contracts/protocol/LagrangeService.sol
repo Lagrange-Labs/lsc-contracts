@@ -83,6 +83,24 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         emit OperatorRegistered(_operator, serveUntilBlock);
     }
 
+    /// Update the BlsPubKey for the given index
+    function updateBlsPubKey(uint32 index, uint256[2] calldata blsPubKey) external onlyWhitelisted {
+        address _operator = msg.sender;
+        committee.updateBlsPubKey(_operator, index, blsPubKey);
+    }
+
+    /// Remove the BlsPubKeys for the given indices
+    function removeBlsPubKeys(uint32[] calldata indices) external onlyWhitelisted {
+        address _operator = msg.sender;
+        committee.removeBlsPubKeys(_operator, indices);
+    }
+
+    /// Update the sign address for the operator
+    function updateSignAddress(address newSignAddress) external onlyWhitelisted {
+        address _operator = msg.sender;
+        committee.updateSignAddress(_operator, newSignAddress);
+    }
+
     /// Subscribe the dedicated chain.
     function subscribe(uint32 chainID) external onlyWhitelisted {
         committee.subscribeChain(msg.sender, chainID);

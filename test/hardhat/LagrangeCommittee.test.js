@@ -140,12 +140,14 @@ describe('LagrangeCommittee', function () {
       await token.connect(operator).approve(stakeManager.address, stake * j);
       await stakeManager.connect(operator).deposit(token.address, stake * j);
 
-      await committee.addOperator(operator.address, operator.address, [[bls_pub_key, bls_pub_key]]);
+      await committee.addOperator(operator.address, operator.address, [
+        [bls_pub_key, bls_pub_key],
+      ]);
       operators.push(operator);
     }
     for (i = 1; i <= chainCount; i++) {
       await committee.registerChain(i, 0, 10000, 1000, 0, minWeight, maxWeight);
-      
+
       console.log('Building trie of size ' + i + '...');
       await Promise.all(
         operators.map(async (operator) => {
@@ -184,7 +186,15 @@ describe('LagrangeCommittee', function () {
     );
 
     await mineUpTo(20000);
-    await committee.registerChain(operators[0].chain_id, 0, 10000, 1000, 0, minWeight, maxWeight);
+    await committee.registerChain(
+      operators[0].chain_id,
+      0,
+      10000,
+      1000,
+      0,
+      minWeight,
+      maxWeight,
+    );
 
     // deposit stake
     const signer = await ethers.getSigner(1);
@@ -212,7 +222,8 @@ describe('LagrangeCommittee', function () {
       35000,
     );
     const expectVotingPower = await committee.getOperatorVotingPower(
-      signer.address, operators[0].chain_id
+      signer.address,
+      operators[0].chain_id,
     );
     expect(stake).to.equal(expectVotingPower.toNumber() * 1e3);
     expect(leaf).to.equal(committeeRoot.root);
@@ -231,12 +242,21 @@ describe('LagrangeCommittee', function () {
     );
 
     await mineUpTo(40000);
-    await committee.registerChain(operators[0].chain_id, 0, 10000, 1000, 0, minWeight, maxWeight);
+    await committee.registerChain(
+      operators[0].chain_id,
+      0,
+      10000,
+      1000,
+      0,
+      minWeight,
+      maxWeight,
+    );
 
     // deposit stake
     for (let i = 0; i < operators[0].operators.length; i++) {
       const signer = await ethers.getSigner(i + 1);
-      const _stake = 1000 * Math.floor(minWeight + Math.random() * (maxWeight - minWeight));
+      const _stake =
+        1000 * Math.floor(minWeight + Math.random() * (maxWeight - minWeight));
       await token.connect(signer).deposit({ value: _stake });
       await token.connect(signer).approve(stakeManager.address, _stake);
       await stakeManager.connect(signer).deposit(token.address, _stake);
@@ -258,22 +278,25 @@ describe('LagrangeCommittee', function () {
       operators[0].operators.map(async (_, index) => {
         const signer = await ethers.getSigner(index + 1);
         const operator = signer.address;
-        const votingPowers = await committee.getBlsPubKeyVotingPowers(operator, operators[0].chain_id);
+        const votingPowers = await committee.getBlsPubKeyVotingPowers(
+          operator,
+          operators[0].chain_id,
+        );
         const _leaves = [];
         for (let i = 0; i < votingPowers.length; i++) {
           const Gx = operators[0].bls_pub_keys[index].slice(0, 66);
           const Gy = '0x' + operators[0].bls_pub_keys[index].slice(66);
           const leaf = ethers.utils.solidityKeccak256(
             ['bytes1', 'uint256', 'uint256', 'address', 'uint96'],
-            ['0x01', Gx, Gy, operator, (votingPowers[i]).toNumber()],
+            ['0x01', Gx, Gy, operator, votingPowers[i].toNumber()],
           );
           _leaves.push(leaf);
         }
         return _leaves;
       }),
     );
-    console.log({_leavesList});
-    _leavesList.forEach(_leaves => leaves.push(..._leaves));
+    console.log({ _leavesList });
+    _leavesList.forEach((_leaves) => leaves.push(..._leaves));
 
     const committeeRoot = await committee.getCommittee(
       operators[0].chain_id,
