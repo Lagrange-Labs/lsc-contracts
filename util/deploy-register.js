@@ -14,6 +14,7 @@ const m1DeployedAddresses = require('../script/output/M1_deployment_data.json');
 const operators = require('../config/operators.json');
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+const REGISTERED_OPERATOR_COUNT = 10;
 
 const convertBLSPubKey = (oldPubKey) => {
   const Gx = BigInt(oldPubKey.slice(0, 66));
@@ -35,7 +36,7 @@ const convertBLSPubKey = (oldPubKey) => {
     owallet,
   );
 
-  const tx = await ocontract.addOperatorsToWhitelist(operators[0].operators);
+  const tx = await ocontract.addOperatorsToWhitelist(operators[0].operators.slice(0, REGISTERED_OPERATOR_COUNT + 3));
   console.log(
     `Starting to add operator to whitelist for address: ${operators[0].operators} tx hash: ${tx.hash}`,
   );
@@ -58,6 +59,9 @@ const convertBLSPubKey = (oldPubKey) => {
 
   await Promise.all(
     operators[0].operators.map(async (operator, index) => {
+      if (index >= REGISTERED_OPERATOR_COUNT) {
+        return;
+      }
       const privKey = operators[0].ecdsa_priv_keys[index];
       const wallet = new ethers.Wallet(privKey, provider);
       const contract = new ethers.Contract(
@@ -100,7 +104,7 @@ const convertBLSPubKey = (oldPubKey) => {
 
   for (let k = 0; k < operators.length; k++) {
     const chain = operators[k];
-    for (let index = 0; index < chain.operators.length; index++) {
+    for (let index = 0; index < REGISTERED_OPERATOR_COUNT; index++) {
       const address = chain.operators[index];
       const privKey = operators[0].ecdsa_priv_keys[index];
       const wallet = new ethers.Wallet(privKey, provider);
