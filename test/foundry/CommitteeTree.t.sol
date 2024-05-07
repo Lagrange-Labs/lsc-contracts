@@ -332,4 +332,52 @@ contract CommitteeTreeTest is LagrangeDeployer {
             lagrangeCommittee.update(CHAIN_ID, 2);
         }
     }
+
+    function testOperatorUpdateBLSKeys() public {
+        uint256 privateKey = 101;
+        address operator = vm.addr(privateKey);
+        uint256 amount = 1e19;
+        uint256[2][] memory blsPubKeys = new uint256[2][](1);
+        blsPubKeys[0][0] = 1;
+        blsPubKeys[0][1] = 2;
+
+        _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
+
+        uint256[2][] memory additionalBlsPubKeys = new uint256[2][](2);
+        additionalBlsPubKeys[0][0] = 3;
+        additionalBlsPubKeys[0][1] = 4;
+        additionalBlsPubKeys[1][0] = 5;
+        additionalBlsPubKeys[1][1] = 6;
+
+        vm.startPrank(address(lagrangeService));
+        lagrangeCommittee.addBlsPubKeys(operator, additionalBlsPubKeys);
+        uint256[2][] memory _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
+        assertEq(_blsPubKeys.length, 3);
+        assertEq(_blsPubKeys[0][0], 1);
+        assertEq(_blsPubKeys[1][1], 4);
+        assertEq(_blsPubKeys[2][0], 5);
+
+        uint256[2] memory newBlsPubKey;
+        newBlsPubKey[0] = 7;
+        newBlsPubKey[1] = 8;
+        lagrangeCommittee.updateBlsPubKey(operator, 1, newBlsPubKey);
+        _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
+        assertEq(_blsPubKeys[1][0], 7);
+        assertEq(_blsPubKeys[1][1], 8);
+        assertEq(_blsPubKeys[0][1], 2);
+        assertEq(_blsPubKeys[2][1], 6);
+
+        uint32[] memory indices = new uint32[](2);
+        indices[0] = 2;
+        indices[1] = 0;
+        lagrangeCommittee.removeBlsPubKeys(operator, indices);
+        _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
+        assertEq(_blsPubKeys.length, 1);
+        assertEq(_blsPubKeys[0][0], 7);
+        assertEq(_blsPubKeys[0][1], 8);
+
+        lagrangeCommittee.updateSignAddress(operator, vm.addr(102));
+        (address signAddress,) = lagrangeCommittee.operatorsStatus(operator);
+        assertEq(signAddress, vm.addr(102));
+    }
 }

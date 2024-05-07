@@ -77,6 +77,42 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _addBlsPubKeys(operator, additionalBlsPubKeys);
     }
 
+    // Updates an operator's BLS public key for the given index
+    function updateBlsPubKey(address operator, uint32 index, uint256[2] calldata blsPubKey) external onlyService {
+        require(blsPubKey[0] != 0 && blsPubKey[1] != 0, "Invalid BLS Public Key.");
+        uint256[2][] storage _blsPubKeys = operatorsStatus[operator].blsPubKeys;
+        require(_blsPubKeys.length > index, "Invalid index");
+        _checkBlsPubKeyDuplicate(_blsPubKeys, blsPubKey);
+        _blsPubKeys[index] = blsPubKey;
+    }
+
+    // Removes BLS public keys from an operator for the given indices
+    function removeBlsPubKeys(address operator, uint32[] calldata indices) external onlyService {
+        uint256[2][] memory _blsPubKeys = operatorsStatus[operator].blsPubKeys;
+        uint256 _length = _blsPubKeys.length;
+        for (uint256 i; i < indices.length; i++) {
+            require(_length > indices[i], "Invalid index");
+            _blsPubKeys[indices[i]][0] = 0;
+            _blsPubKeys[indices[i]][1] = 0;
+        }
+        uint32 count;
+        for (uint256 i; i < _length; i++) {
+            if (_blsPubKeys[i][0] != 0 || _blsPubKeys[i][1] != 0) {
+                _blsPubKeys[count] = _blsPubKeys[i];
+                count++;
+            }
+        }
+        operatorsStatus[operator].blsPubKeys = _blsPubKeys;
+        for (uint256 i = count; i < _length; i++) {
+            operatorsStatus[operator].blsPubKeys.pop();
+        }
+    }
+
+    // Updates an operator's sign address
+    function updateSignAddress(address operator, address newSignAddress) external onlyService {
+        operatorsStatus[operator].signAddress = newSignAddress;
+    }
+
     function subscribeChain(address operator, uint32 chainID) external onlyService {
         // Check if the chainID is already registered
         require(committeeParams[chainID].startBlock > 0, "The dedicated chain is not registered.");
@@ -380,8 +416,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     function _registerOperator(address _operator, address _signAddress, uint256[2][] memory _blsPubKeys) internal {
+        delete operatorsStatus[_operator];
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
-        require(_opStatus.blsPubKeys.length == 0, "Operator is already registered.");
         _opStatus.signAddress = _signAddress;
         uint256 _length = _blsPubKeys.length;
         for (uint256 i; i < _length; i++) {
@@ -418,7 +454,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         delete subscribedChains[_chainID][_operator];
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         _opStatus.unsubscribedParams.push(UnsubscribedParam(_chainID, _blockNumber));
-        _opStatus.subscribedChainCount = _opStatus.subscribedChainCount - 1;
+        _opStatus.subscribedChainCount--;
 
         uint256 _length = committeeAddrs[_chainID].length;
         for (uint256 i; i < _length; i++) {
