@@ -30,8 +30,12 @@ contract Deploy is Script, Test {
         lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeCommittee"));
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
-        lagrangeServiceImp =
-        new LagrangeService(lagrangeCommittee, lagrangeService.stakeManager(), address(lagrangeService.avsDirectory()), lagrangeService.voteWeigher());
+        lagrangeServiceImp = new LagrangeService(
+            lagrangeCommittee,
+            lagrangeService.stakeManager(),
+            address(lagrangeService.avsDirectory()),
+            lagrangeService.voteWeigher()
+        );
 
         // upgrade proxy contracts
         proxyAdmin.upgrade(

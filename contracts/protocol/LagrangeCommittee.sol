@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
@@ -21,6 +22,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     uint32[] public chainIDs;
     // ChainID => Committee
     mapping(uint32 => CommitteeDef) public committeeParams;
+
+    // committees is also used for external storage for epoch period modification
+    //   committees[chainID][uint256.max].leafCount = modified times of epoch
+    //   committees[chainID][uint256.max - 1] : original epoch_period
+    //          updatedBlock - epoch_period
+    //          leafCount - updated blocknumber
+    //   committees[chainID][uint256.max - 2] : second epoch_period updated
+    //   committees[chainID][uint256.max - 3] : third epoch_period updated
+    //      ...   ...   ...
     // ChainID => Epoch => CommitteeData
     mapping(uint32 => mapping(uint256 => CommitteeData)) public committees;
 
@@ -55,6 +65,18 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         }
 
         _transferOwnership(initialOwner);
+    }
+
+    // Initializes epoch history
+    // @dev This function can be called for the chainID registered in the previous version
+    function initEpochHistory(uint32 chainID) public onlyOwner {
+        uint32 _historyCount = _getEpochHistoryCount(chainID);
+        if (_historyCount > 0) return; // already initialized
+        CommitteeDef memory _committeeParam = committeeParams[chainID];
+
+        _setEpochHistory(chainID, 1, _committeeParam.startBlock, 0, _committeeParam.duration);
+
+        _setEpochHistoryCount(chainID, 1);
     }
 
     // Adds a new operator to the committee
@@ -221,17 +243,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     // Checks if a chain's committee is updatable at a given block
     function isUpdatable(uint32 chainID, uint256 epochNumber) public view returns (bool) {
-        uint256 epochEnd = epochNumber * committeeParams[chainID].duration + committeeParams[chainID].startBlock;
-        return block.number > epochEnd - committeeParams[chainID].freezeDuration;
+        (, uint256 _freezeBlock,) = _getEpochInterval(chainID, epochNumber);
+        return block.number > _freezeBlock;
     }
 
     // Checks if a chain's committee is locked at a given block
     function isLocked(uint32 chainID) public view returns (bool, uint256) {
-        uint256 startNumber = committeeParams[chainID].startBlock;
-        uint256 epochPeriod = committeeParams[chainID].duration;
-        uint256 epochNumber = (block.number - startNumber) / epochPeriod + 1;
-        uint256 epochEnd = epochNumber * epochPeriod + startNumber;
-        return (block.number > epochEnd - committeeParams[chainID].freezeDuration, epochEnd);
+        uint256 _epochNumber = _getEpochNumber(chainID, block.number);
+        (, uint256 _freezeBlock, uint256 _endBlock) = _getEpochInterval(chainID, _epochNumber);
+        return (block.number > _freezeBlock, _endBlock);
     }
 
     // If applicable, updates committee based on staking, unstaking, and slashing.
@@ -313,6 +333,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             if (_leafCounter > 0) _root = _committeeLeaves[0];
         }
 
+
         _updateCommittee(chainID, epochNumber, _root, uint32(_leafCounter));
     }
 
@@ -323,18 +344,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Computes epoch number for a chain's committee at a given block
-    function getEpochNumber(uint32 chainID, uint256 blockNumber) public view returns (uint256) {
+    function getEpochNumber(uint32 chainID, uint256 l1BlockNumber) public view returns (uint256) {
         // we don't need to care about safeCast here, only getting API
-        blockNumber = uint256(int256(blockNumber) + committeeParams[chainID].l1Bias);
-        if (blockNumber < committeeParams[chainID].genesisBlock) {
-            return 0;
-        }
-        uint256 startBlockNumber = committeeParams[chainID].startBlock;
-        uint256 epochPeriod = committeeParams[chainID].duration;
-        if (blockNumber < startBlockNumber + epochPeriod) {
-            return 1;
-        }
-        return (blockNumber - startBlockNumber) / epochPeriod;
+        uint256 blockNumber = uint256(int256(l1BlockNumber) + committeeParams[chainID].l1Bias);
+
+        return _getEpochNumber(chainID, blockNumber);
     }
 
     // Get the operator's voting power for the given chainID
@@ -392,6 +406,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
         chainIDs.push(_chainID);
 
+        initEpochHistory(_chainID);
+
         emit InitCommittee(_chainID, _quorumNumber, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight);
     }
 
@@ -407,13 +423,96 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint96 _minWeight,
         uint96 _maxWeight
     ) internal {
+        bool _isEpochPeriodUpdating = committeeParams[_chainID].duration != _duration;
+
         committeeParams[_chainID] = CommitteeDef(
             _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
         );
+
+        if (_isEpochPeriodUpdating) {
+            uint32 _historyCount = _getEpochHistoryCount(_chainID);
+            uint256 _flagEpoch = _getEpochNumber(_chainID, block.number - 1) + 1;
+            (,,uint256 _flagBlock) = _getEpochInterval(_chainID, _flagEpoch - 1);
+            _setEpochHistory(_chainID, _historyCount + 1, _flagBlock, _flagEpoch, block.number);
+            _setEpochHistoryCount(_chainID, _historyCount + 1);
+        }
+
         emit UpdateCommitteeParams(
             _chainID, _quorumNumber, _l1Bias, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight
         );
     }
+
+    // ------------ Internal functions for Epoch Number ------------ //
+    function _getEpochHistoryCount(uint32 _chainID) internal view returns (uint32) {
+        return committees[_chainID][type(uint256).max].leafCount;
+    }
+    function _setEpochHistoryCount(uint32 _chainID, uint32 _count) internal {
+        committees[_chainID][type(uint256).max].leafCount = _count;
+    }
+
+    function _getEpochHisotry(uint32 _chainID, uint32 _historyIndex)
+        internal
+        view
+        returns (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration)
+    {
+        CommitteeData memory _epochHistory = committees[_chainID][type(uint256).max - _historyIndex];
+        return (_epochHistory.updatedBlock >> 112, (_epochHistory.updatedBlock << 112) >> 112, _epochHistory.leafCount);
+    }
+
+    function _setEpochHistory(
+        uint32 _chainID,
+        uint32 _historyIndex,
+        uint256 _flagBlock,
+        uint256 _flagEpoch,
+        uint256 _duration
+    ) internal {
+        committees[_chainID][type(uint256).max - _historyIndex] = CommitteeData(
+            0,
+            (uint224(SafeCast.toUint112(_flagBlock)) << 112) + uint224(SafeCast.toUint112(_flagEpoch)),
+            SafeCast.toUint32(_duration)
+        );
+    }
+
+    function _getEpochNumber(uint32 _chainID, uint256 _blockNumber) internal view returns (uint256 _epochNumber) {
+        if (_blockNumber < committeeParams[_chainID].genesisBlock) {
+            return 0;
+        }
+        // We assume that _historyHistoryCount is not bigger than 10
+        uint32 _historyIndex = _getEpochHistoryCount(_chainID);
+        while (_historyIndex > 0) {
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _getEpochHisotry(_chainID, _historyIndex);
+            if (_blockNumber >= _flagBlock) {
+                _epochNumber = _flagEpoch + (_blockNumber - _flagBlock) / _duration;
+                break;
+            }
+            unchecked {
+                _historyIndex--;
+            }
+        }
+        if (_epochNumber == 0) _epochNumber = 1;
+    }
+
+    function _getEpochInterval(
+        uint32 _chainID,
+        uint256 _epochNumber
+    ) internal view returns (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock) {
+        // We assume that _historyHistoryCount is not bigger than 10
+        uint32 _historyIndex = _getEpochHistoryCount(_chainID);
+        while (_historyIndex > 0) {
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _getEpochHisotry(_chainID, _historyIndex);
+            if (_epochNumber >= _flagEpoch) {
+                _startBlock = (_epochNumber - _flagEpoch) * _duration + _flagBlock;
+                _endBlock = _startBlock + _duration;
+                _freezeBlock = _endBlock - committeeParams[_chainID].freezeDuration;
+                break;
+            }
+            unchecked {
+                _historyIndex--;
+            }
+        }
+        require(_historyIndex > 0, "Invalid epoch number.");
+    }
+    // ------------------------------------------------------------- //
 
     function _registerOperator(address _operator, address _signAddress, uint256[2][] memory _blsPubKeys) internal {
         delete operatorsStatus[_operator];
