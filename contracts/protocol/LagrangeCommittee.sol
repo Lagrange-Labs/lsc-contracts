@@ -24,12 +24,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     mapping(uint32 => CommitteeDef) public committeeParams;
 
     // committees is also used for external storage for epoch period modification
-    //   committees[chainID][uint256.max].leafCount = modified times of epoch
-    //   committees[chainID][uint256.max - 1] : original epoch_period
-    //          updatedBlock - epoch_period
-    //          leafCount - updated blocknumber
-    //   committees[chainID][uint256.max - 2] : second epoch_period updated
-    //   committees[chainID][uint256.max - 3] : third epoch_period updated
+    //   committees[chainID][uint256.max].leafCount = current index of epoch period
+    //   committees[chainID][uint256.max - 1] : 1-index
+    //          updatedBlock:  (flagBlock << 112) | flagEpoch
+    //          leafCount:  epochPeriod
+    //   committees[chainID][uint256.max - 2] : 2-index
+    //   committees[chainID][uint256.max - 3] : 3-index
     //      ...   ...   ...
     // ChainID => Epoch => CommitteeData
     mapping(uint32 => mapping(uint256 => CommitteeData)) public committees;
@@ -67,16 +67,14 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _transferOwnership(initialOwner);
     }
 
-    // Initializes epoch history
+    // Initializes epoch period
     // @dev This function can be called for the chainID registered in the previous version
-    function initEpochHistory(uint32 chainID) public onlyOwner {
-        uint32 _historyCount = _getEpochHistoryCount(chainID);
-        if (_historyCount > 0) return; // already initialized
+    function setFirstEpochPeriod(uint32 chainID) public onlyOwner {
+        uint32 _count = _getEpochPeriodCount(chainID);
+        if (_count > 0) return; // already initialized
         CommitteeDef memory _committeeParam = committeeParams[chainID];
 
-        _writeEpochHistory(chainID, 1, _committeeParam.startBlock, 0, _committeeParam.duration);
-
-        _setEpochHistoryCount(chainID, 1);
+        _writeEpochPeriod(chainID, _committeeParam.startBlock, 0, _committeeParam.duration);
     }
 
     // Adds a new operator to the committee
@@ -391,19 +389,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return voteWeigher.getTokenListForQuorumNumbers(_quorumNumbers);
     }
 
-    // Get epoch period history count
-    function getEpochHistoryCount(uint32 chainID) public view returns (uint32) {
-        return _getEpochHistoryCount(chainID);
+    // Get epoch period period count
+    function getEpochPeriodCount(uint32 chainID) public view returns (uint32) {
+        return _getEpochPeriodCount(chainID);
     }
 
-    // Get epoch period history
+    // Get epoch period Period
     // @note 1-indexed
-    function getEpochHisotry(uint32 chainID, uint32 historyIndex)
+    function getPastEpochPeriod(uint32 chainID, uint32 index)
         public
         view
-        returns (uint256 flagBlock, uint256 flagEpoch, uint256 duration)
+        returns (uint256 flagBlock, uint256 flagEpoch, uint256 epochPeriod)
     {
-        return _readEpochHisotry(chainID, historyIndex);
+        return _readEpochPeriod(chainID, index);
     }
 
     // Initialize new committee.
@@ -423,7 +421,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
         chainIDs.push(_chainID);
 
-        initEpochHistory(_chainID);
+        setFirstEpochPeriod(_chainID);
 
         emit InitCommittee(_chainID, _quorumNumber, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight);
     }
@@ -440,19 +438,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint96 _minWeight,
         uint96 _maxWeight
     ) internal {
-        bool _isEpochPeriodUpdating = committeeParams[_chainID].duration != _duration;
+        if (committeeParams[_chainID].duration != _duration) {
+            uint256 _flagEpoch = _getEpochNumber(_chainID, block.number - 1) + 1;
+            (,, uint256 _flagBlock) = _getEpochInterval(_chainID, _flagEpoch - 1);
+            _writeEpochPeriod(_chainID, _flagBlock, _flagEpoch, _duration);
+        }
 
         committeeParams[_chainID] = CommitteeDef(
             _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
         );
-
-        if (_isEpochPeriodUpdating) {
-            uint32 _historyCount = _getEpochHistoryCount(_chainID);
-            uint256 _flagEpoch = _getEpochNumber(_chainID, block.number - 1) + 1;
-            (,, uint256 _flagBlock) = _getEpochInterval(_chainID, _flagEpoch - 1);
-            _writeEpochHistory(_chainID, _historyCount + 1, _flagBlock, _flagEpoch, _duration);
-            _setEpochHistoryCount(_chainID, _historyCount + 1);
-        }
 
         emit UpdateCommitteeParams(
             _chainID, _quorumNumber, _l1Bias, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight
@@ -460,52 +454,52 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // ------------ Internal functions for Epoch Number ------------ //
-    function _getEpochHistoryCount(uint32 _chainID) internal view returns (uint32) {
+    function _getEpochPeriodCount(uint32 _chainID) internal view returns (uint32) {
         return committees[_chainID][type(uint256).max].leafCount;
     }
 
-    function _setEpochHistoryCount(uint32 _chainID, uint32 _count) internal {
+    function _setEpochPeriodCount(uint32 _chainID, uint32 _count) internal {
         committees[_chainID][type(uint256).max].leafCount = _count;
     }
 
-    function _readEpochHisotry(uint32 _chainID, uint32 _historyIndex)
+    function _readEpochPeriod(uint32 _chainID, uint32 _index)
         internal
         view
         returns (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration)
     {
-        CommitteeData memory _epochHistory = committees[_chainID][type(uint256).max - _historyIndex];
-        return (_epochHistory.updatedBlock >> 112, (_epochHistory.updatedBlock << 112) >> 112, _epochHistory.leafCount);
+        CommitteeData memory _epochPeriodContext = committees[_chainID][type(uint256).max - _index];
+        return (
+            _epochPeriodContext.updatedBlock >> 112,
+            (_epochPeriodContext.updatedBlock << 112) >> 112,
+            _epochPeriodContext.leafCount
+        );
     }
 
-    function _writeEpochHistory(
-        uint32 _chainID,
-        uint32 _historyIndex,
-        uint256 _flagBlock,
-        uint256 _flagEpoch,
-        uint256 _duration
-    ) internal {
-        committees[_chainID][type(uint256).max - _historyIndex] = CommitteeData(
+    function _writeEpochPeriod(uint32 _chainID, uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) internal {
+        uint32 _index = committees[_chainID][type(uint256).max].leafCount + 1;
+        committees[_chainID][type(uint256).max - _index] = CommitteeData(
             0,
             (uint224(SafeCast.toUint112(_flagBlock)) << 112) + uint224(SafeCast.toUint112(_flagEpoch)),
             SafeCast.toUint32(_duration)
         );
-        emit EpochHistoryWritten(_chainID, _historyIndex, _flagBlock, _flagEpoch, _duration);
+        committees[_chainID][type(uint256).max].leafCount = _index;
+        emit EpochPeriodUpdated(_chainID, _index, _flagBlock, _flagEpoch, _duration);
     }
 
     function _getEpochNumber(uint32 _chainID, uint256 _blockNumber) internal view returns (uint256 _epochNumber) {
         if (_blockNumber < committeeParams[_chainID].genesisBlock) {
             return 0;
         }
-        // We assume that _historyHistoryCount is not bigger than 10
-        uint32 _historyIndex = _getEpochHistoryCount(_chainID);
-        while (_historyIndex > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _readEpochHisotry(_chainID, _historyIndex);
+        // epoch period would be updated rarely
+        uint32 _index = _getEpochPeriodCount(_chainID);
+        while (_index > 0) {
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _readEpochPeriod(_chainID, _index);
             if (_blockNumber >= _flagBlock) {
                 _epochNumber = _flagEpoch + (_blockNumber - _flagBlock) / _duration;
                 break;
             }
             unchecked {
-                _historyIndex--;
+                _index--;
             }
         }
     }
@@ -515,10 +509,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         view
         returns (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock)
     {
-        // We assume that _historyHistoryCount is not bigger than 10
-        uint32 _historyIndex = _getEpochHistoryCount(_chainID);
-        while (_historyIndex > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _readEpochHisotry(_chainID, _historyIndex);
+        // epoch period would be updated rarely
+        uint32 _index = _getEpochPeriodCount(_chainID);
+        while (_index > 0) {
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _readEpochPeriod(_chainID, _index);
             if (_epochNumber >= _flagEpoch) {
                 _startBlock = (_epochNumber - _flagEpoch) * _duration + _flagBlock;
                 _endBlock = _startBlock + _duration;
@@ -526,7 +520,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
                 break;
             }
             unchecked {
-                _historyIndex--;
+                _index--;
             }
         }
     }
