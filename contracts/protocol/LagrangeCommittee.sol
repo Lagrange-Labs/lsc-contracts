@@ -74,7 +74,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         if (_historyCount > 0) return; // already initialized
         CommitteeDef memory _committeeParam = committeeParams[chainID];
 
-        _setEpochHistory(chainID, 1, _committeeParam.startBlock, 0, _committeeParam.duration);
+        _writeEpochHistory(chainID, 1, _committeeParam.startBlock, 0, _committeeParam.duration);
 
         _setEpochHistoryCount(chainID, 1);
     }
@@ -183,6 +183,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     ) public onlyOwner {
         require(committeeParams[chainID].startBlock == 0, "Committee has already been initialized.");
         _validateVotingPowerRange(minWeight, maxWeight);
+        _validateFreezeDuration(epochPeriod, freezeDuration);
 
         _initCommittee(chainID, genesisBlock, epochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight);
     }
@@ -201,6 +202,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         require(_startBlock != 0, "Chain not initialized");
 
         _validateVotingPowerRange(minWeight, maxWeight);
+        _validateFreezeDuration(epochPeriod, freezeDuration);
 
         _updateCommitteeParams(
             chainID, l1Bias, _startBlock, genesisBlock, epochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight
@@ -243,7 +245,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     // Checks if a chain's committee is updatable at a given block
     function isUpdatable(uint32 chainID, uint256 epochNumber) public view returns (bool) {
-        (, uint256 _freezeBlock,) = _getEpochInterval(chainID, epochNumber);
+        (, uint256 _freezeBlock,) = _getEpochInterval(chainID, epochNumber - 1);
         return block.number > _freezeBlock;
     }
 
@@ -333,7 +335,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             if (_leafCounter > 0) _root = _committeeLeaves[0];
         }
 
-
         _updateCommittee(chainID, epochNumber, _root, uint32(_leafCounter));
     }
 
@@ -344,11 +345,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Computes epoch number for a chain's committee at a given block
-    function getEpochNumber(uint32 chainID, uint256 l1BlockNumber) public view returns (uint256) {
+    function getEpochNumber(uint32 chainID, uint256 l1BlockNumber) public view returns (uint256 epochNumber) {
         // we don't need to care about safeCast here, only getting API
         uint256 blockNumber = uint256(int256(l1BlockNumber) + committeeParams[chainID].l1Bias);
 
-        return _getEpochNumber(chainID, blockNumber);
+        epochNumber = _getEpochNumber(chainID, blockNumber);
+        if (epochNumber == 0) epochNumber = 1;
     }
 
     // Get the operator's voting power for the given chainID
@@ -387,6 +389,21 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         }
 
         return voteWeigher.getTokenListForQuorumNumbers(_quorumNumbers);
+    }
+
+    // Get epoch period history count
+    function getEpochHistoryCount(uint32 chainID) public view returns (uint32) {
+        return _getEpochHistoryCount(chainID);
+    }
+
+    // Get epoch period history
+    // @note 1-indexed
+    function getEpochHisotry(uint32 chainID, uint32 historyIndex)
+        public
+        view
+        returns (uint256 flagBlock, uint256 flagEpoch, uint256 duration)
+    {
+        return _readEpochHisotry(chainID, historyIndex);
     }
 
     // Initialize new committee.
@@ -432,8 +449,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         if (_isEpochPeriodUpdating) {
             uint32 _historyCount = _getEpochHistoryCount(_chainID);
             uint256 _flagEpoch = _getEpochNumber(_chainID, block.number - 1) + 1;
-            (,,uint256 _flagBlock) = _getEpochInterval(_chainID, _flagEpoch - 1);
-            _setEpochHistory(_chainID, _historyCount + 1, _flagBlock, _flagEpoch, block.number);
+            (,, uint256 _flagBlock) = _getEpochInterval(_chainID, _flagEpoch - 1);
+            _writeEpochHistory(_chainID, _historyCount + 1, _flagBlock, _flagEpoch, _duration);
             _setEpochHistoryCount(_chainID, _historyCount + 1);
         }
 
@@ -446,11 +463,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     function _getEpochHistoryCount(uint32 _chainID) internal view returns (uint32) {
         return committees[_chainID][type(uint256).max].leafCount;
     }
+
     function _setEpochHistoryCount(uint32 _chainID, uint32 _count) internal {
         committees[_chainID][type(uint256).max].leafCount = _count;
     }
 
-    function _getEpochHisotry(uint32 _chainID, uint32 _historyIndex)
+    function _readEpochHisotry(uint32 _chainID, uint32 _historyIndex)
         internal
         view
         returns (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration)
@@ -459,7 +477,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return (_epochHistory.updatedBlock >> 112, (_epochHistory.updatedBlock << 112) >> 112, _epochHistory.leafCount);
     }
 
-    function _setEpochHistory(
+    function _writeEpochHistory(
         uint32 _chainID,
         uint32 _historyIndex,
         uint256 _flagBlock,
@@ -471,6 +489,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             (uint224(SafeCast.toUint112(_flagBlock)) << 112) + uint224(SafeCast.toUint112(_flagEpoch)),
             SafeCast.toUint32(_duration)
         );
+        emit EpochHistoryWritten(_chainID, _historyIndex, _flagBlock, _flagEpoch, _duration);
     }
 
     function _getEpochNumber(uint32 _chainID, uint256 _blockNumber) internal view returns (uint256 _epochNumber) {
@@ -480,7 +499,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         // We assume that _historyHistoryCount is not bigger than 10
         uint32 _historyIndex = _getEpochHistoryCount(_chainID);
         while (_historyIndex > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _getEpochHisotry(_chainID, _historyIndex);
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _readEpochHisotry(_chainID, _historyIndex);
             if (_blockNumber >= _flagBlock) {
                 _epochNumber = _flagEpoch + (_blockNumber - _flagBlock) / _duration;
                 break;
@@ -489,17 +508,17 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
                 _historyIndex--;
             }
         }
-        if (_epochNumber == 0) _epochNumber = 1;
     }
 
-    function _getEpochInterval(
-        uint32 _chainID,
-        uint256 _epochNumber
-    ) internal view returns (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock) {
+    function _getEpochInterval(uint32 _chainID, uint256 _epochNumber)
+        internal
+        view
+        returns (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock)
+    {
         // We assume that _historyHistoryCount is not bigger than 10
         uint32 _historyIndex = _getEpochHistoryCount(_chainID);
         while (_historyIndex > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _getEpochHisotry(_chainID, _historyIndex);
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = _readEpochHisotry(_chainID, _historyIndex);
             if (_epochNumber >= _flagEpoch) {
                 _startBlock = (_epochNumber - _flagEpoch) * _duration + _flagBlock;
                 _endBlock = _startBlock + _duration;
@@ -510,7 +529,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
                 _historyIndex--;
             }
         }
-        require(_historyIndex > 0, "Invalid epoch number.");
     }
     // ------------------------------------------------------------- //
 
@@ -598,6 +616,10 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     function _validateVotingPowerRange(uint96 _minWeight, uint96 _maxWeight) internal pure {
         require(_minWeight > 0 && _maxWeight >= _minWeight * 2, "Invalid min/max Weight");
+    }
+
+    function _validateFreezeDuration(uint256 _epochPeriod, uint256 _freezeDuration) internal pure {
+        require(_epochPeriod > _freezeDuration, "Invalid freeze duration");
     }
 
     function _checkVotingPower(uint32 blsPubKeysCount, uint96 votingPower, uint96 minWeight, uint96 maxWeight)

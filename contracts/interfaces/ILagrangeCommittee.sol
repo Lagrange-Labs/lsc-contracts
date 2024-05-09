@@ -114,4 +114,9 @@ interface ILagrangeCommittee {
 
     // Fired on successful rotation of committee
     event UpdateCommittee(uint256 indexed chainID, uint256 indexed epochNumber, bytes32 current);
+
+    // Event fired on writing epoch history
+    event EpochHistoryWritten(
+        uint32 indexed chainID, uint32 indexed historyIndex, uint256 flagBlock, uint256 flagEpoch, uint256 duration
+    );
 }
