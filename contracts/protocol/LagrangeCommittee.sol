@@ -444,7 +444,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         return committees[chainID][type(uint256).max].leafCount;
     }
 
-    function getEpochPeriod(uint32 chainID, uint32 index)
+    function getEpochPeriodByIndex(uint32 chainID, uint32 index)
         public
         view
         returns (uint256 flagBlock, uint256 flagEpoch, uint256 duration)
@@ -475,7 +475,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         // epoch period would be updated rarely
         uint32 _index = getEpochPeriodCount(_chainID);
         while (_index > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriod(_chainID, _index);
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriodByIndex(_chainID, _index);
             if (_blockNumber >= _flagBlock) {
                 _epochNumber = _flagEpoch + (_blockNumber - _flagBlock) / _duration;
                 break;
@@ -494,7 +494,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         // epoch period would be updated rarely
         uint32 _index = getEpochPeriodCount(_chainID);
         while (_index > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriod(_chainID, _index);
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriodByIndex(_chainID, _index);
             if (_epochNumber >= _flagEpoch) {
                 _startBlock = (_epochNumber - _flagEpoch) * _duration + _flagBlock;
                 _endBlock = _startBlock + _duration;
