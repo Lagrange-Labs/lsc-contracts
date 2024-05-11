@@ -36,7 +36,9 @@ const convertBLSPubKey = (oldPubKey) => {
     owallet,
   );
 
-  const tx = await ocontract.addOperatorsToWhitelist(operators[0].operators.slice(0, REGISTERED_OPERATOR_COUNT + 3));
+  const tx = await ocontract.addOperatorsToWhitelist(
+    operators[0].operators.slice(0, REGISTERED_OPERATOR_COUNT + 3),
+  );
   console.log(
     `Starting to add operator to whitelist for address: ${operators[0].operators} tx hash: ${tx.hash}`,
   );
