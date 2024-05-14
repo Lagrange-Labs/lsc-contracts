@@ -376,6 +376,12 @@ contract CommitteeTreeTest is LagrangeDeployer {
         assertEq(_blsPubKeys[0][0], 7);
         assertEq(_blsPubKeys[0][1], 8);
 
+        // removing all blsPubKeys should revert
+        uint32[] memory indices2 = new uint32[](1);
+        indices2[0] = 0;
+        vm.expectRevert("Invalid indices length, BLS keys cannot be empty.");
+        lagrangeCommittee.removeBlsPubKeys(operator, indices2);
+
         lagrangeCommittee.updateSignAddress(operator, vm.addr(102));
         (address signAddress,) = lagrangeCommittee.operatorsStatus(operator);
         assertEq(signAddress, vm.addr(102));

@@ -110,6 +110,8 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     function removeBlsPubKeys(address operator, uint32[] calldata indices) external onlyService {
         uint256[2][] memory _blsPubKeys = operatorsStatus[operator].blsPubKeys;
         uint256 _length = _blsPubKeys.length;
+        // it ensures that keep at least one BLS public key
+        require(_length > indices.length, "Invalid indices length, BLS keys cannot be empty.");
         for (uint256 i; i < indices.length; i++) {
             require(_length > indices[i], "Invalid index");
             _blsPubKeys[indices[i]][0] = 0;
