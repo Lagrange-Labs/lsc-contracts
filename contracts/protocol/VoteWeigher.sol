@@ -19,7 +19,7 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
 
     IStakeManager public immutable stakeManager;
 
-    uint8[] private quorumNumbers; // list of all quorum numbers
+    uint8[] public quorumNumbers; // list of all quorum numbers
 
     event QuorumAdded(uint8 indexed quorumNumber, TokenMultiplier[] multipliers);
     event QuorumRemoved(uint8 indexed quorumNumber);
