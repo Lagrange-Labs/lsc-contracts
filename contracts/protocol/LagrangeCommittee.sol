@@ -37,7 +37,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // ChainID => Operator address[]
     mapping(uint32 => address[]) public committeeAddrs;
     // Tree Depth => Node Value
-    mapping(uint8 => bytes32) zeroHashes;
+    mapping(uint8 => bytes32) private zeroHashes;
 
     mapping(address => OperatorStatus) public operatorsStatus;
 

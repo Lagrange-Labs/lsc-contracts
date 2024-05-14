@@ -1,0 +1,21 @@
+name: Solhint
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+
+jobs:
+  solhint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install node dependencies
+        run: npm install solhint
+
+      - name: Validate PR commits with solhint
+        run: npx solhint "contracts/protocol/*.sol" --max-warnings 0

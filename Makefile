@@ -98,6 +98,9 @@ format:
 	npx prettier --write {test,util}/**/*.js
 	forge fmt
 
+solhint:
+	npx solhint "contracts/protocol/*.sol"
+
 .PHONY: format
 
 # Register one random operator

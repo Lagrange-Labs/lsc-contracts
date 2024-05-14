@@ -21,6 +21,9 @@
     "contract-name-camelcase": "off",
     "func-name-mixedcase": "off",
     "var-name-mixedcase": "off",
-    "compiler-version": "off"
+    "compiler-version": "off",
+    "custom-errors": "off",
+    "no-global-import": "off",
+    "immutable-vars-naming": "off"
   }
 }
