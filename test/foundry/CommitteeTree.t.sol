@@ -348,7 +348,6 @@ contract CommitteeTreeTest is LagrangeDeployer {
         additionalBlsPubKeys[0][1] = 4;
         additionalBlsPubKeys[1][0] = 5;
         additionalBlsPubKeys[1][1] = 6;
-
         vm.startPrank(address(lagrangeService));
         lagrangeCommittee.addBlsPubKeys(operator, additionalBlsPubKeys);
         uint256[2][] memory _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
@@ -375,6 +374,42 @@ contract CommitteeTreeTest is LagrangeDeployer {
         assertEq(_blsPubKeys.length, 1);
         assertEq(_blsPubKeys[0][0], 7);
         assertEq(_blsPubKeys[0][1], 8);
+
+        // removing all blsPubKeys should revert
+        uint32[] memory indices2 = new uint32[](1);
+        indices2[0] = 0;
+        vm.expectRevert("Invalid indices length, BLS keys cannot be empty.");
+        lagrangeCommittee.removeBlsPubKeys(operator, indices2);
+
+        // zero value should revert
+        uint256[2][] memory additionalBlsPubKeys1 = new uint256[2][](1);
+        additionalBlsPubKeys1[0][0] = 9;
+        additionalBlsPubKeys1[0][1] = 0;
+        vm.expectRevert("Invalid BLS Public Key.");
+        lagrangeCommittee.addBlsPubKeys(operator, additionalBlsPubKeys1);
+
+        additionalBlsPubKeys1[0][1] = 10;
+        lagrangeCommittee.addBlsPubKeys(operator, additionalBlsPubKeys1);
+        uint256[2][] memory _blsPubKeys1 = lagrangeCommittee.getBlsPubKeys(operator);
+        assertEq(_blsPubKeys1.length, 2);
+        assertEq(_blsPubKeys1[1][1], 10);
+        assertEq(_blsPubKeys1[1][0], 9);
+
+        // removing non-existing blsPubKeys should revert
+        uint32[] memory indices3 = new uint32[](1);
+        indices3[0] = 2;
+        vm.expectRevert("Invalid index");
+        lagrangeCommittee.removeBlsPubKeys(operator, indices3);
+
+        uint256[2] memory newBlsPubKey1;
+        newBlsPubKey1[0] = 1;
+        newBlsPubKey1[1] = 2;
+        lagrangeCommittee.updateBlsPubKey(operator, 0, newBlsPubKey1);
+        _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
+        assertEq(_blsPubKeys[1][0], 9);
+        assertEq(_blsPubKeys[1][1], 10);
+        assertEq(_blsPubKeys[0][1], 2);
+        assertEq(_blsPubKeys[0][0], 1);
 
         lagrangeCommittee.updateSignAddress(operator, vm.addr(102));
         (address signAddress,) = lagrangeCommittee.operatorsStatus(operator);
