@@ -19,7 +19,7 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
 
     IStakeManager public immutable stakeManager;
 
-    uint8[] quorumNumbers; // list of all quorum numbers
+    uint8[] private quorumNumbers; // list of all quorum numbers
 
     event QuorumAdded(uint8 indexed quorumNumber, TokenMultiplier[] multipliers);
     event QuorumRemoved(uint8 indexed quorumNumber);
@@ -67,7 +67,7 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
             quorumMultipliers[quorumNumber].push(multiplier);
         } else {
             uint256 _length = quorumMultipliers[quorumNumber].length;
-            for (uint i; i < _length; i++) {
+            for (uint256 i; i < _length; i++) {
                 if (i != index) {
                     require(quorumMultipliers[quorumNumber][i].token != multiplier.token, "Multiplier already exists");
                 }
