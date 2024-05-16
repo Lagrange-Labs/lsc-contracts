@@ -150,4 +150,46 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         vm.stopPrank();
     }
+
+    function testEjectOperator() public {
+        uint256 privateKey = 123;
+        address operator = vm.addr(privateKey);
+        uint256 amount = 1e15;
+        uint256[2][] memory blsPubKeys = new uint256[2][](1);
+        blsPubKeys[0] = [uint256(1), 2];
+
+        _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
+        vm.prank(operator);
+        lagrangeService.subscribe(CHAIN_ID + 1);
+
+        // check if the operator is subscribed on such chains
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), true);
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID + 1, operator), true);
+
+        vm.prank(lagrangeService.owner());
+        lagrangeService.ejectOperator(operator);
+
+        // check if the operator is subscribed on such chains
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), false);
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID + 1, operator), false);
+
+        // free to subscribeagain
+        vm.prank(operator);
+        lagrangeService.subscribe(CHAIN_ID);
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), true);
+
+        // deregister is possible, after ejected
+        vm.prank(lagrangeService.owner());
+        lagrangeService.ejectOperator(operator);
+        vm.prank(operator);
+        lagrangeService.deregister();
+    }
+
+    function testEjectOperator_failOnMainnet() public {
+        vm.chainId(1);
+
+        vm.prank(lagrangeService.owner());
+        vm.expectRevert("Only testnet allowed");
+        lagrangeService.ejectOperator(vm.addr(123));
+    }
 }

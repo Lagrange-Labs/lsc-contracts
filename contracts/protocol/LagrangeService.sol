@@ -23,9 +23,15 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     event OperatorDeregistered(address indexed operator);
     event OperatorSubscribed(address indexed operator, uint32 indexed chainID);
     event OperatorUnsubscribed(address indexed operator, uint32 indexed chainID);
+    event OperatorEjected(address indexed operator);
 
     modifier onlyWhitelisted() {
         require(operatorWhitelist[msg.sender], "Operator is not whitelisted");
+        _;
+    }
+
+    modifier onlyTestnet() {
+        require(block.chainid != 1, "Only testnet allowed");
         _;
     }
 
@@ -122,6 +128,13 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         committee.removeOperator(_operator);
         avsDirectory.deregisterOperatorFromAVS(_operator);
         emit OperatorDeregistered(_operator);
+    }
+
+    /// Owner can eject the operator from the service.
+    /// note This function is available only on testnet.
+    function ejectOperator(address operator) external onlyOwner onlyTestnet {
+        committee.ejectOperator(operator);
+        emit OperatorEjected(operator);
     }
 
     function owner() public view override(OwnableUpgradeable, ILagrangeService) returns (address) {
