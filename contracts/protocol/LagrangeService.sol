@@ -23,15 +23,15 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     event OperatorDeregistered(address indexed operator);
     event OperatorSubscribed(address indexed operator, uint32 indexed chainID);
     event OperatorUnsubscribed(address indexed operator, uint32 indexed chainID);
-    event OperatorEjected(address indexed operator);
+    event UnsubscribedByAdmin(address indexed operator, uint32 indexed chainID);
 
     modifier onlyWhitelisted() {
         require(operatorWhitelist[msg.sender], "Operator is not whitelisted");
         _;
     }
 
-    modifier onlyTestnet() {
-        require(block.chainid != 1, "Only testnet allowed");
+    modifier onlyHolesky() {
+        require(block.chainid == 17000, "Only Holesky testnet is allowed");
         _;
     }
 
@@ -130,11 +130,11 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
         emit OperatorDeregistered(_operator);
     }
 
-    /// Owner can eject the operator from the service.
-    /// note This function is available only on testnet.
-    function ejectOperator(address operator) external onlyOwner onlyTestnet {
-        committee.ejectOperator(operator);
-        emit OperatorEjected(operator);
+    /// Owner can unsubscribe chain for an operator
+    /// note This function is available only on holesky testnet.
+    function unsubscribeByAdmin(address operator, uint32 chainID) external onlyOwner onlyHolesky {
+        committee.unsubscribeByAdmin(operator, chainID);
+        emit UnsubscribedByAdmin(operator, chainID);
     }
 
     function owner() public view override(OwnableUpgradeable, ILagrangeService) returns (address) {

@@ -26,6 +26,8 @@ interface ILagrangeService {
 
     function unsubscribe(uint32 chainID) external;
 
+    function unsubscribeByAdmin(address operator, uint32 chainID) external;
+
     function deregister() external;
 
     function owner() external view returns (address);

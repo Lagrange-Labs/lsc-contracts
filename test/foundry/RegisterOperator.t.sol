@@ -151,7 +151,8 @@ contract RegisterOperatorTest is LagrangeDeployer {
         vm.stopPrank();
     }
 
-    function testEjectOperator() public {
+    function testEjection() public {
+        vm.chainId(17000); // holesky testnet
         uint256 privateKey = 123;
         address operator = vm.addr(privateKey);
         uint256 amount = 1e15;
@@ -167,11 +168,11 @@ contract RegisterOperatorTest is LagrangeDeployer {
         assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID + 1, operator), true);
 
         vm.prank(lagrangeService.owner());
-        lagrangeService.ejectOperator(operator);
+        lagrangeService.unsubscribeByAdmin(operator, CHAIN_ID);
 
         // check if the operator is subscribed on such chains
         assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), false);
-        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID + 1, operator), false);
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID + 1, operator), true); // this chain should be still subscribed
 
         // free to subscribeagain
         vm.prank(operator);
@@ -180,16 +181,18 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // deregister is possible, after ejected
         vm.prank(lagrangeService.owner());
-        lagrangeService.ejectOperator(operator);
+        lagrangeService.unsubscribeByAdmin(operator, CHAIN_ID);
+        vm.prank(lagrangeService.owner());
+        lagrangeService.unsubscribeByAdmin(operator, CHAIN_ID + 1);
         vm.prank(operator);
         lagrangeService.deregister();
     }
 
-    function testEjectOperator_failOnMainnet() public {
+    function testEjection_failOnMainnet() public {
         vm.chainId(1);
 
         vm.prank(lagrangeService.owner());
-        vm.expectRevert("Only testnet allowed");
-        lagrangeService.ejectOperator(vm.addr(123));
+        vm.expectRevert("Only Holesky testnet is allowed");
+        lagrangeService.unsubscribeByAdmin(vm.addr(123), CHAIN_ID);
     }
 }

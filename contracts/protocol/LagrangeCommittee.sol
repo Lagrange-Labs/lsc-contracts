@@ -91,15 +91,11 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         delete operatorsStatus[operator];
     }
 
-    // Ejects an operator from the committee
-    function ejectOperator(address operator) external onlyService {
-        for (uint256 i; i < chainIDs.length; i++) {
-            uint32 _chainID = chainIDs[i];
-            if (subscribedChains[_chainID][operator]) {
-                delete subscribedChains[_chainID][operator];
-                _removeOperatorFromCommitteeAddrs(_chainID, operator);
-            }
-        }
+    // Unsubscribe chain by admin
+    function unsubscribeByAdmin(address operator, uint32 chainID) external onlyService {
+        require(subscribedChains[chainID][operator], "The dedicated chain is not subscribed");
+        delete subscribedChains[chainID][operator];
+        _removeOperatorFromCommitteeAddrs(chainID, operator);
         OperatorStatus storage _opStatus = operatorsStatus[operator];
         delete _opStatus.unsubscribedParams;
         delete _opStatus.subscribedChainCount;
