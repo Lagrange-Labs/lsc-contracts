@@ -96,9 +96,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         require(subscribedChains[chainID][operator], "The dedicated chain is not subscribed");
         delete subscribedChains[chainID][operator];
         _removeOperatorFromCommitteeAddrs(chainID, operator);
-        OperatorStatus storage _opStatus = operatorsStatus[operator];
-        delete _opStatus.unsubscribedParams;
-        delete _opStatus.subscribedChainCount;
+        operatorsStatus[operator].subscribedChainCount--;
     }
 
     // Adds additional BLS public keys to an operator

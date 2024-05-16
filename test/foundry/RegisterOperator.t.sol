@@ -151,6 +151,44 @@ contract RegisterOperatorTest is LagrangeDeployer {
         vm.stopPrank();
     }
 
+    function testEjection_failOnMainnet() public {
+        vm.chainId(1);
+
+        vm.prank(lagrangeService.owner());
+        vm.expectRevert("Only Holesky testnet is allowed");
+        lagrangeService.unsubscribeByAdmin(vm.addr(123), CHAIN_ID);
+    }
+
+    function testEjection_failNonOwner() public {
+        vm.chainId(17000);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        lagrangeService.unsubscribeByAdmin(vm.addr(123), CHAIN_ID);
+    }
+
+    function testEjection_single() public {
+        vm.chainId(17000); // holesky testnet
+        uint256 privateKey = 123;
+        address operator = vm.addr(privateKey);
+        uint256 amount = 1e15;
+        uint256[2][] memory blsPubKeys = new uint256[2][](1);
+        blsPubKeys[0] = [uint256(1), 2];
+
+        _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
+
+        // check if the operator is subscribed on such chains
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), true);
+        (, uint8 subscribedChainCountOrg) = lagrangeCommittee.operatorsStatus(operator);
+
+        vm.prank(lagrangeService.owner());
+        lagrangeService.unsubscribeByAdmin(operator, CHAIN_ID);
+
+        // check if the operator is subscribed on such chains
+        assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), false);
+        (, uint8 subscribedChainCountNew) = lagrangeCommittee.operatorsStatus(operator);
+        assertEq(subscribedChainCountNew + 1, subscribedChainCountOrg);
+    }
+
     function testEjection() public {
         vm.chainId(17000); // holesky testnet
         uint256 privateKey = 123;
@@ -174,7 +212,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
         assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), false);
         assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID + 1, operator), true); // this chain should be still subscribed
 
-        // free to subscribeagain
+        // free to subscribe again
         vm.prank(operator);
         lagrangeService.subscribe(CHAIN_ID);
         assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), true);
@@ -188,11 +226,4 @@ contract RegisterOperatorTest is LagrangeDeployer {
         lagrangeService.deregister();
     }
 
-    function testEjection_failOnMainnet() public {
-        vm.chainId(1);
-
-        vm.prank(lagrangeService.owner());
-        vm.expectRevert("Only Holesky testnet is allowed");
-        lagrangeService.unsubscribeByAdmin(vm.addr(123), CHAIN_ID);
-    }
 }
