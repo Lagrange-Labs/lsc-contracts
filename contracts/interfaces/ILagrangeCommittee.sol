@@ -63,6 +63,8 @@ interface ILagrangeCommittee {
 
     function removeOperator(address operator) external;
 
+    function unsubscribeByAdmin(address[] memory operators, uint32 chainID) external;
+
     function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) external;
 
     function updateBlsPubKey(address operator, uint32 index, uint256[2] memory blsPubKey) external;

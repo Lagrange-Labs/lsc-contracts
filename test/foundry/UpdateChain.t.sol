@@ -151,8 +151,7 @@ contract UpdateChainTest is LagrangeDeployer {
         vm.roll(startBlock + duration * 200);
         _updateEpochPeriod(CHAIN_ID, duration);
 
-        (uint256[] memory flagBlocks, uint256[] memory flagEpoches, uint256[] memory durations) =
-            _getAllEpochHistory(CHAIN_ID);
+        (uint256[] memory flagBlocks, uint256[] memory flagEpoches,) = _getAllEpochHistory(CHAIN_ID);
 
         assertEq(flagBlocks.length, 4);
         {
@@ -167,6 +166,7 @@ contract UpdateChainTest is LagrangeDeployer {
 
     function _getAllEpochHistory(uint32 chainID)
         internal
+        view
         returns (uint256[] memory _flagBlocks, uint256[] memory _flagEpoches, uint256[] memory _durations)
     {
         uint32 _epochHistoryCount = lagrangeCommittee.getEpochPeriodCount(chainID);
@@ -183,7 +183,7 @@ contract UpdateChainTest is LagrangeDeployer {
             , // startBlock
             int256 l1Bias,
             uint256 genesisBlock,
-            uint256 duration,
+            ,
             uint256 freezeDuration,
             uint8 quorumNumber,
             uint96 minWeight,

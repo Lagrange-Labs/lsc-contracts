@@ -147,4 +147,69 @@ contract LagrangeDeployer is Test {
 
         vm.stopPrank();
     }
+
+    function _deposit(address operator, uint256 amount) internal {
+        vm.startPrank(operator);
+
+        token.deposit{value: amount}();
+        token.approve(address(stakeManager), amount);
+
+        // deposit tokens to stake manager
+        stakeManager.deposit(IERC20(address(token)), amount);
+
+        vm.stopPrank();
+    }
+
+    function _registerOperator(
+        address operator,
+        uint256 privateKey,
+        uint256 amount,
+        uint256[2][] memory blsPubKeys,
+        uint32 chainID
+    ) internal {
+        vm.deal(operator, 1e19);
+        // add operator to whitelist
+        vm.prank(lagrangeService.owner());
+        address[] memory operators = new address[](1);
+        operators[0] = operator;
+        lagrangeService.addOperatorsToWhitelist(operators);
+
+        _deposit(operator, amount);
+
+        vm.startPrank(operator);
+        // register operator
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
+        operatorSignature.expiry = block.timestamp + 60;
+        operatorSignature.salt = bytes32(0x0);
+        bytes32 digest = avsDirectory.calculateOperatorAVSRegistrationDigestHash(
+            operator, address(lagrangeService), operatorSignature.salt, operatorSignature.expiry
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        operatorSignature.signature = abi.encodePacked(r, s, v);
+
+        (uint256 startBlock,,, uint256 duration, uint256 freezeDuration,,,) = lagrangeCommittee.committeeParams(chainID);
+        vm.roll(startBlock + duration - freezeDuration - 1);
+        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+
+        lagrangeCommittee.getEpochNumber(chainID, block.number);
+        lagrangeCommittee.isLocked(chainID);
+
+        lagrangeService.subscribe(chainID);
+
+        vm.stopPrank();
+    }
+
+    function _addBlsPubKeys(address operator, uint256[2][] memory blsPubKeys, uint32 chainID) internal {
+        if (blsPubKeys.length > 0) {
+            vm.startPrank(operator);
+            // register operator
+            (uint256 startBlock,,, uint256 duration, uint256 freezeDuration,,,) =
+                lagrangeCommittee.committeeParams(chainID);
+            vm.roll(startBlock + duration - freezeDuration - 1);
+            lagrangeService.addBlsPubKeys(blsPubKeys);
+
+            vm.stopPrank();
+        }
+    }
 }

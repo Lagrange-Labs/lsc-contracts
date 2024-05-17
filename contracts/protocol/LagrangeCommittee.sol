@@ -91,6 +91,18 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         delete operatorsStatus[operator];
     }
 
+    // Unsubscribe chain by admin
+    function unsubscribeByAdmin(address[] calldata operators, uint32 chainID) external onlyService {
+        uint256 _length = operators.length;
+        for (uint256 i; i < _length; i++) {
+            address _operator = operators[i];
+            require(subscribedChains[chainID][_operator], "The dedicated chain is not subscribed");
+            delete subscribedChains[chainID][_operator];
+            _removeOperatorFromCommitteeAddrs(chainID, _operator);
+            operatorsStatus[_operator].subscribedChainCount--;
+        }
+    }
+
     // Adds additional BLS public keys to an operator
     function addBlsPubKeys(address operator, uint256[2][] calldata additionalBlsPubKeys) external onlyService {
         _validateBlsPubKeys(additionalBlsPubKeys);
@@ -551,13 +563,19 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _opStatus.unsubscribedParams.push(UnsubscribedParam(_chainID, _blockNumber));
         _opStatus.subscribedChainCount--;
 
+        _removeOperatorFromCommitteeAddrs(_chainID, _operator);
+    }
+
+    function _removeOperatorFromCommitteeAddrs(uint32 _chainID, address _operator) internal {
         uint256 _length = committeeAddrs[_chainID].length;
         for (uint256 i; i < _length; i++) {
             if (committeeAddrs[_chainID][i] == _operator) {
                 committeeAddrs[_chainID][i] = committeeAddrs[_chainID][_length - 1];
+                committeeAddrs[_chainID].pop();
+                break;
             }
         }
-        committeeAddrs[_chainID].pop();
+        require(_length == committeeAddrs[_chainID].length + 1, "Operator doesn't exist in committeeAddrs.");
     }
 
     function _updateCommittee(uint32 _chainID, uint256 _epochNumber, bytes32 _root, uint32 _leafCount) internal {
