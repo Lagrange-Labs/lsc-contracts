@@ -92,11 +92,15 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Unsubscribe chain by admin
-    function unsubscribeByAdmin(address operator, uint32 chainID) external onlyService {
-        require(subscribedChains[chainID][operator], "The dedicated chain is not subscribed");
-        delete subscribedChains[chainID][operator];
-        _removeOperatorFromCommitteeAddrs(chainID, operator);
-        operatorsStatus[operator].subscribedChainCount--;
+    function unsubscribeByAdmin(address[] calldata operators, uint32 chainID) external onlyService {
+        uint256 _length = operators.length;
+        for (uint256 i; i < _length; i++) {
+            address _operator = operators[i];
+            require(subscribedChains[chainID][_operator], "The dedicated chain is not subscribed");
+            delete subscribedChains[chainID][_operator];
+            _removeOperatorFromCommitteeAddrs(chainID, _operator);
+            operatorsStatus[_operator].subscribedChainCount--;
+        }
     }
 
     // Adds additional BLS public keys to an operator

@@ -9,7 +9,6 @@ import "./LagrangeDeployer.t.sol";
 // import {ILagrangeCommitte} from "../../contracts/interfaces/ILagrangeCommitte.sol";
 
 contract CommitteeTreeTest is LagrangeDeployer {
-
     function testSubscribeChain() public {
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
         blsPubKeys[0] = [uint256(1), 2];

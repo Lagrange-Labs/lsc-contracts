@@ -147,7 +147,7 @@ contract LagrangeDeployer is Test {
 
         vm.stopPrank();
     }
-    
+
     function _deposit(address operator, uint256 amount) internal {
         vm.startPrank(operator);
 

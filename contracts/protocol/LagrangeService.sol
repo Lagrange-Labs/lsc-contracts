@@ -132,9 +132,12 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
 
     /// Owner can unsubscribe chain for an operator
     /// note This function is available only on holesky testnet.
-    function unsubscribeByAdmin(address operator, uint32 chainID) external onlyOwner onlyHolesky {
-        committee.unsubscribeByAdmin(operator, chainID);
-        emit UnsubscribedByAdmin(operator, chainID);
+    function unsubscribeByAdmin(address[] calldata operators, uint32 chainID) external onlyOwner onlyHolesky {
+        committee.unsubscribeByAdmin(operators, chainID);
+        uint256 _length = operators.length;
+        for (uint256 i; i < _length; i++) {
+            emit UnsubscribedByAdmin(operators[i], chainID);
+        }
     }
 
     function owner() public view override(OwnableUpgradeable, ILagrangeService) returns (address) {
