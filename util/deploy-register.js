@@ -14,7 +14,9 @@ const m1DeployedAddresses = require('../script/output/M1_deployment_data.json');
 const operators = require('../config/operators.json');
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
-const REGISTERED_OPERATOR_COUNT = 10;
+
+const NUM_ACCOUNTS = parseInt(process.env.NUM_ACCOUNTS || '15');
+const REGISTERED_OPERATOR_COUNT = NUM_ACCOUNTS - 5;
 
 const convertBLSPubKey = (oldPubKey) => {
   const Gx = BigInt(oldPubKey.slice(0, 66));
@@ -72,7 +74,7 @@ const convertBLSPubKey = (oldPubKey) => {
         wallet,
       );
 
-      const timestamp = (await provider._getBlock()).timestamp;
+      const timestamp = Math.floor(new Date().getTime() / 1000);
 
       const salt =
         '0x0000000000000000000000000000000000000000000000000000000000000011'; //

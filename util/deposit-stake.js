@@ -29,7 +29,7 @@ const batch_size = 10;
     const exec_batch = batch.map((address, index) => {
       const command = `forge script script/localnet/Deposit_Stake.s.sol:DepositStake --rpc-url ${rpcURL} --private-key ${
         privateKeys[i + index]
-      } --broadcast -vvvvv`;
+      } --broadcast -vvvvv --slow`;
       console.log(`Starting to deposit stake for address: ${address}`);
       return executeCommand(command);
     });
