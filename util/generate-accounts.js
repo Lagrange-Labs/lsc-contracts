@@ -8,7 +8,14 @@ require('dotenv').config();
 
 const DEFAULT_MNEMONIC =
   'exchange holiday girl alone head gift unfair resist void voice people tobacco';
-const DEFAULT_NUM_ACCOUNTS = 15;
+
+const NUM_ACCOUNTS = parseInt(process.env.NUM_ACCOUNTS || '15');
+
+let MNEMONIC = process.env.MNEMONIC;
+
+if (!MNEMONIC) {
+  MNEMONIC = DEFAULT_MNEMONIC;
+}
 
 function genBLSKey(i) {
   const privateKey = BigInt(1234567890 + i + 1);
@@ -23,12 +30,9 @@ async function main() {
   const accounts = {};
   const blsPairs = {};
 
-  for (let i = 0; i < DEFAULT_NUM_ACCOUNTS; i++) {
+  for (let i = 0; i < NUM_ACCOUNTS; i++) {
     const pathWallet = `m/44'/60'/0'/0/${i}`;
-    const accountWallet = ethers.Wallet.fromMnemonic(
-      DEFAULT_MNEMONIC,
-      pathWallet,
-    );
+    const accountWallet = ethers.Wallet.fromMnemonic(MNEMONIC, pathWallet);
     accounts[accountWallet.address] = accountWallet.privateKey;
 
     blsKey = await genBLSKey(i);

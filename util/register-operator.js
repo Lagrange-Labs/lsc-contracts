@@ -10,7 +10,7 @@ const chain = operators[0];
 chain.operators.forEach((address, index) => {
   console.log('Starting to register operator for address: ', address);
   const privKey = chain.ecdsa_priv_keys[index];
-  const command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url ${rpcURL} --private-key ${privKey} --broadcast -vvvvv`;
+  const command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url ${rpcURL} --private-key ${privKey} --broadcast -vvvvv --slow`;
   exec(command, (error, stdout, stderr) => {
     console.log(`Command output: ${stdout}`);
     if (error) {
