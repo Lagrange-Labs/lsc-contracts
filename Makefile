@@ -91,7 +91,7 @@ deploy-native-localnet: run-geth init-accounts generate-accounts deploy-weth9 de
 
 deploy-lagrange-testnet: deploy-lagrange add-quorum init-committee
 
-depoloy-eigen-testnet: init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum deploy-register
+depoloy-eigen-private-testnet: init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum deploy-register
 
 .PHONY: deploy-eigen-localnet deploy-mock-localnet deploy-native-localnet
 
