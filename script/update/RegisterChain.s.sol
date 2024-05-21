@@ -36,8 +36,8 @@ contract RegisterChain is Script, Test {
         uint256 epochPeriod = 1500;
         uint256 freezeDuration = 150;
         uint256 genesisBlock = 0;
-        uint96 maxWeight = 100000;
-        uint96 minWeight = 1000;
+        uint96 maxWeight = 10000000000000;
+        uint96 minWeight = 1000000000;
         uint8 quorumNumber = 0;
 
         // Check if it is not registered yet
