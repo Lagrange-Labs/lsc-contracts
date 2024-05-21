@@ -33,8 +33,8 @@ contract RegisterChain is Script, Test {
 
         // need to put values manually here
         uint32 chainId = 42161;
-        uint256 epochPeriod = 8000;
-        uint256 freezeDuration = 400;
+        uint256 epochPeriod = 1500;
+        uint256 freezeDuration = 150;
         uint256 genesisBlock = 0;
         uint96 maxWeight = 100000;
         uint96 minWeight = 1000;
