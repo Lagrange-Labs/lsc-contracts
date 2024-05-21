@@ -35,7 +35,7 @@ contract RegisterChain is Script, Test {
         uint32 chainId = 42161;
         uint256 epochPeriod = 1500;
         uint256 freezeDuration = 150;
-        uint256 genesisBlock = 0;
+        uint256 genesisBlock = 19920587;
         uint96 maxWeight = 10000000000000;
         uint96 minWeight = 1000000000;
         uint8 quorumNumber = 0;
