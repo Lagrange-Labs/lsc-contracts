@@ -1,31 +1,10 @@
 pragma solidity ^0.8.12;
 
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "./BaseScript.s.sol";
 
-import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
-import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
-
-import "forge-std/Script.sol";
-import "forge-std/Test.sol";
-
-contract RegisterChain is Script, Test {
-    string public deployDataPath = string(bytes("script/output/deployed_main.json"));
-
-    // Lagrange Contracts
-    ProxyAdmin public proxyAdmin;
-    LagrangeCommittee public lagrangeCommittee;
-    LagrangeCommittee public lagrangeCommitteeImp;
-    LagrangeService public lagrangeService;
-    LagrangeService public lagrangeServiceImp;
-
+contract RegisterChain is BaseScript {
     function run() public {
-        string memory deployData = vm.readFile(deployDataPath);
-
-        // deploy proxy admin for ability to upgrade proxy contracts
-        proxyAdmin = ProxyAdmin(stdJson.readAddress(deployData, ".addresses.proxyAdmin"));
-        lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".addresses.lagrangeService"));
-        lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".addresses.lagrangeCommittee"));
+        _readContracts();
         
         address owner = lagrangeCommittee.owner();
 
