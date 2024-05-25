@@ -21,6 +21,12 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: forge-build
+
       - name: Install node dependencies
         run: npm install
 
