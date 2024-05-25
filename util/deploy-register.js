@@ -128,7 +128,7 @@ const convertBLSPubKey = (oldPubKey) => {
         );
         if (
           blockNumber <
-          isLocked[1].toNumber() - chainParams[k].freezeDuration.toNumber() - 1
+          isLocked[1].toNumber() - chainParams[k].freezeDuration.toNumber() - 2
         ) {
           break;
         }
