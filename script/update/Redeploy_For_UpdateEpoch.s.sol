@@ -1,4 +1,5 @@
-pragma solidity ^0.8.12;pragma solidity ^0.8.12;
+pragma solidity ^0.8.12;
+pragma solidity ^0.8.12;
 
 import "./BaseScript.s.sol";
 
@@ -7,7 +8,7 @@ contract Redeploy_For_UpdateEpoch is BaseScript {
         _readContracts();
 
         vm.startBroadcast(msg.sender);
-        
+
         // deploy lagrangeCommittee implementation
         LagrangeCommittee lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
         // upgrade proxy contract
@@ -20,7 +21,7 @@ contract Redeploy_For_UpdateEpoch is BaseScript {
         for (uint256 i = 0; i < chainCount; i++) {
             // Get Chain ID
             uint32 chainID = lagrangeCommittee.chainIDs(0);
-            // set first epoch period for CHAIN_ID_BASE
+            // set first epoch period for CHAIN_ID
             lagrangeCommittee.setFirstEpochPeriod(chainID);
         }
 

@@ -5,7 +5,7 @@ import "./BaseScript.s.sol";
 contract RegisterChain is BaseScript {
     function run() public {
         _readContracts();
-        
+
         address owner = lagrangeCommittee.owner();
 
         vm.startBroadcast(owner);
@@ -27,15 +27,8 @@ contract RegisterChain is BaseScript {
 
         // Register chain
         lagrangeCommittee.registerChain(
-            chainId,
-            genesisBlock,
-            epochPeriod,
-            freezeDuration,
-            quorumNumber,
-            minWeight,
-            maxWeight
+            chainId, genesisBlock, epochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight
         );
-
 
         // Check if it is registered correctly
         {

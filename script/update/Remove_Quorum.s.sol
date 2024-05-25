@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 import "./BaseScript.s.sol";
 
 contract RemoveQuorum is BaseScript {
-
     function run() public {
         deployDataPath = string(bytes("script/output/deployed_lgr.json"));
         _readContracts();
