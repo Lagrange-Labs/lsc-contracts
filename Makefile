@@ -67,7 +67,7 @@ stop:
 	cd docker && docker-compose down --remove-orphans
 
 docker-build: stop
-	cd docker && sudo docker build . -t lagrange/contracts
+	sudo chmod -R go+rxw docker/geth_db && cd docker && docker build . -t lagrange/contracts
 
 .PHONY: docker-build stop run-docker
 
@@ -81,6 +81,9 @@ test-gas:
 
 clean: stop
 	sudo rm -rf docker/geth_db
+
+give-permission:
+	sudo chmod -R go+rxw docker/geth_db
 
 # Deploy
 deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee  deploy-register
