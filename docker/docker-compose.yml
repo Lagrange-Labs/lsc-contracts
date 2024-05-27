@@ -17,5 +17,7 @@ services:
       - --dev
       - --dev.period
       - $DEV_PERIOD
+      - --gcmode
+      - archive
       - --datadir
       - /geth_db
