@@ -71,7 +71,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // @dev This function can be called for the chainID registered in the previous version
     function setFirstEpochPeriod(uint32 chainID) public onlyOwner {
         uint32 _count = getEpochPeriodCount(chainID);
-        if (_count > 0) return; // already initialized
+        if (_count != 0) return; // already initialized
         CommitteeDef memory _committeeParam = committeeParams[chainID];
 
         _writeEpochPeriod(chainID, _committeeParam.startBlock, 0, _committeeParam.duration);
@@ -136,15 +136,18 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
                 count++;
             }
         }
-        operatorsStatus[operator].blsPubKeys = _blsPubKeys;
-        for (uint256 i = count; i < _length; i++) {
-            operatorsStatus[operator].blsPubKeys.pop();
+        uint256[2][] memory _newBlsPubKeys = new uint256[2][](count);
+        for (uint256 i; i < count; i++) {
+            _newBlsPubKeys[i] = _blsPubKeys[i];
         }
+        operatorsStatus[operator].blsPubKeys = _newBlsPubKeys;
     }
 
     // Updates an operator's sign address
     function updateSignAddress(address operator, address newSignAddress) external onlyService {
+        require(operatorsStatus[operator].blsPubKeys.length != 0, "Operator is not registered.");
         operatorsStatus[operator].signAddress = newSignAddress;
+        emit SignAddressUpdated(operator, newSignAddress);
     }
 
     function subscribeChain(address operator, uint32 chainID) external onlyService {
@@ -257,14 +260,14 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     // Checks if a chain's committee is updatable at a given block
     function isUpdatable(uint32 chainID, uint256 epochNumber) public view returns (bool) {
-        (, uint256 _freezeBlock,) = _getEpochInterval(chainID, epochNumber - 1);
+        (, uint256 _freezeBlock,) = getEpochInterval(chainID, epochNumber - 1);
         return block.number > _freezeBlock;
     }
 
     // Checks if a chain's committee is locked at a given block
     function isLocked(uint32 chainID) public view returns (bool, uint256) {
         uint256 _epochNumber = _getEpochNumber(chainID, block.number);
-        (, uint256 _freezeBlock, uint256 _endBlock) = _getEpochInterval(chainID, _epochNumber);
+        (, uint256 _freezeBlock, uint256 _endBlock) = getEpochInterval(chainID, _epochNumber);
         return (block.number > _freezeBlock, _endBlock);
     }
 
@@ -440,7 +443,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     ) internal {
         if (committeeParams[_chainID].duration != _duration) {
             uint256 _flagEpoch = _getEpochNumber(_chainID, block.number - 1) + 1;
-            (,, uint256 _endBlockPrv) = _getEpochInterval(_chainID, _flagEpoch - 1);
+            (,, uint256 _endBlockPrv) = getEpochInterval(_chainID, _flagEpoch - 1);
             _writeEpochPeriod(_chainID, _endBlockPrv, _flagEpoch, _duration);
         }
 
@@ -471,6 +474,27 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         );
     }
 
+    function getEpochInterval(uint32 _chainID, uint256 _epochNumber)
+        public
+        view
+        returns (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock)
+    {
+        // epoch period would be updated rarely
+        uint32 _index = getEpochPeriodCount(_chainID);
+        while (_index > 0) {
+            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriodByIndex(_chainID, _index);
+            if (_epochNumber >= _flagEpoch) {
+                _startBlock = (_epochNumber - _flagEpoch) * _duration + _flagBlock;
+                _endBlock = _startBlock + _duration;
+                _freezeBlock = _endBlock - committeeParams[_chainID].freezeDuration;
+                break;
+            }
+            unchecked {
+                _index--;
+            }
+        }
+    }
+
     function _writeEpochPeriod(uint32 _chainID, uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) internal {
         uint32 _index = committees[_chainID][type(uint256).max].leafCount + 1;
         committees[_chainID][type(uint256).max - _index] = CommitteeData(
@@ -492,27 +516,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriodByIndex(_chainID, _index);
             if (_blockNumber >= _flagBlock) {
                 _epochNumber = _flagEpoch + (_blockNumber - _flagBlock) / _duration;
-                break;
-            }
-            unchecked {
-                _index--;
-            }
-        }
-    }
-
-    function _getEpochInterval(uint32 _chainID, uint256 _epochNumber)
-        internal
-        view
-        returns (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock)
-    {
-        // epoch period would be updated rarely
-        uint32 _index = getEpochPeriodCount(_chainID);
-        while (_index > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriodByIndex(_chainID, _index);
-            if (_epochNumber >= _flagEpoch) {
-                _startBlock = (_epochNumber - _flagEpoch) * _duration + _flagBlock;
-                _endBlock = _startBlock + _duration;
-                _freezeBlock = _endBlock - committeeParams[_chainID].freezeDuration;
                 break;
             }
             unchecked {
