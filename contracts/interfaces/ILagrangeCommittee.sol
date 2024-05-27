@@ -119,4 +119,7 @@ interface ILagrangeCommittee {
     event EpochPeriodUpdated(
         uint32 indexed chainID, uint32 indexed epochPeriodIndex, uint256 flagBlock, uint256 flagEpoch, uint256 duration
     );
+
+    // Event fired on updating sign address
+    event SignAddressUpdated(address indexed operator, address indexed signAddress);
 }
