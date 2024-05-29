@@ -91,6 +91,8 @@ deploy-native-localnet: run-geth init-accounts generate-accounts deploy-weth9 de
 
 deploy-lagrange-testnet: deploy-lagrange add-quorum init-committee
 
+deploy-lagrange-mainnet: deploy-lagrange add-quorum init-committee
+
 .PHONY: deploy-eigen-localnet deploy-mock-localnet deploy-native-localnet
 
 # Formatter
