@@ -61,7 +61,15 @@ interface ILagrangeCommittee {
 
     function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) external;
 
+    function removeOperator(address operator) external;
+
     function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) external;
+
+    function updateBlsPubKey(address operator, uint32 index, uint256[2] memory blsPubKey) external;
+
+    function removeBlsPubKeys(address operator, uint32[] memory indices) external;
+
+    function updateSignAddress(address operator, address newSignAddress) external;
 
     function isLocked(uint32 chainID) external view returns (bool, uint256);
 
@@ -91,6 +99,7 @@ interface ILagrangeCommittee {
         uint96 minWeight,
         uint96 maxWeight
     );
+
     // Event fired on updating a committee params
     event UpdateCommitteeParams(
         uint256 indexed chainID,
@@ -105,4 +114,12 @@ interface ILagrangeCommittee {
 
     // Fired on successful rotation of committee
     event UpdateCommittee(uint256 indexed chainID, uint256 indexed epochNumber, bytes32 current);
+
+    // Event fired on updating epoch period
+    event EpochPeriodUpdated(
+        uint32 indexed chainID, uint32 indexed epochPeriodIndex, uint256 flagBlock, uint256 flagEpoch, uint256 duration
+    );
+
+    // Event fired on updating sign address
+    event SignAddressUpdated(address indexed operator, address indexed signAddress);
 }

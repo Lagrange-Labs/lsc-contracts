@@ -26,22 +26,24 @@ contract Deploy is Script, Test {
 
         // deploy proxy admin for ability to upgrade proxy contracts
         proxyAdmin = ProxyAdmin(stdJson.readAddress(deployData, ".lagrange.addresses.proxyAdmin"));
-        lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeService"));
+        lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".addresses.lagrangeService"));
         lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeCommittee"));
+
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
-        lagrangeServiceImp = new LagrangeService(
-            lagrangeCommittee,
-            lagrangeService.stakeManager(),
-            address(lagrangeService.avsDirectory()),
-            lagrangeService.voteWeigher()
-        );
-
         // upgrade proxy contracts
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
         );
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeService))), address(lagrangeServiceImp));
+
+        uint32 CHAIN_ID_BASE = lagrangeCommittee.chainIDs(0);
+        uint32 CHAIN_ID_OP = lagrangeCommittee.chainIDs(1);
+
+        // set first epoch period for CHAIN_ID_BASE
+        lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_BASE);
+
+        // set first epoch period for CHAIN_ID_OP
+        lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_OP);
 
         vm.stopBroadcast();
     }
