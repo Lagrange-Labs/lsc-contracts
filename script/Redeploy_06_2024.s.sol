@@ -65,42 +65,5 @@ contract Deploy is Script, Test {
         }
 
         vm.stopBroadcast();
-
-        // update epoch period
-        {
-            // Current epoch period is 1500 blocks = about 5 hours
-            // New epcoh period is 50000 blocks = about 1 week
-            uint256 newEpochPeriod = 50000;
-            _updateEpochPeriod(CHAIN_ID_BASE, newEpochPeriod);
-            _updateEpochPeriod(CHAIN_ID_OP, newEpochPeriod);
-            _updateEpochPeriod(CHAIN_ID_ARB, newEpochPeriod);
-        }
-    }
-
-    function _updateEpochPeriod(uint32 chainId, uint256 newEpochPeriod) private {
-        (
-            , // uint256 startBlock,
-            int256 l1Bias,
-            uint256 genesisBlock,
-            , //uint256 epochPeriod,
-            uint256 freezeDuration,
-            uint8 quorumNumber,
-            uint96 minWeight,
-            uint96 maxWeight
-        ) = lagrangeCommittee.committeeParams(chainId);
-
-        vm.startBroadcast(lagrangeService.owner());
-
-        lagrangeCommittee.updateChain(
-            chainId, l1Bias, genesisBlock, newEpochPeriod, freezeDuration, quorumNumber, minWeight, maxWeight
-        );
-
-        vm.stopBroadcast();
-
-        {
-            (,,, uint256 _newEpochPeriod,,,,) = lagrangeCommittee.committeeParams(chainId);
-
-            require(_newEpochPeriod == newEpochPeriod, "epochPeriod is incorrect");
-        }
     }
 }
