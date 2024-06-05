@@ -82,7 +82,8 @@ contract CommitteeTreeTest is LagrangeDeployer {
         }
 
         // update the tree
-        vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
+        uint256 updatingBlock1 = START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1;
+        vm.roll(updatingBlock1);
         lagrangeCommittee.update(CHAIN_ID, 1);
 
         ILagrangeCommittee.CommitteeData memory cur =
@@ -93,14 +94,15 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         _deposit(operators[0], 1e15);
 
-        vm.roll(START_EPOCH + EPOCH_PERIOD * 2 - FREEZE_DURATION);
+        uint256 updatingBlock2 = updatingBlock1 + EPOCH_PERIOD - FREEZE_DURATION + 1;
+        vm.roll(updatingBlock2 - 1);
         vm.expectRevert("Block number is prior to committee freeze window.");
         lagrangeCommittee.update(CHAIN_ID, 2);
 
-        vm.roll(START_EPOCH + EPOCH_PERIOD * 2 - FREEZE_DURATION + 1);
+        vm.roll(updatingBlock2);
         lagrangeCommittee.update(CHAIN_ID, 2);
 
-        cur = lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD * 2);
+        cur = lagrangeCommittee.getCommittee(CHAIN_ID, updatingBlock2 + 1);
         assertEq(cur.leafCount, 3);
         assertEq(cur.root, 0x02f507202eec14a32171bbca5d048778e4c67238b21037a90b90608c71b6276a);
     }
