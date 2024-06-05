@@ -119,14 +119,16 @@ contract Deploy is Script, Test {
         lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
         if (isNative) {
             voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
-            lagrangeServiceImp =
-            new LagrangeService(lagrangeCommittee, IStakeManager(stakeManager), avsDirectoryAddress, IVoteWeigher(voteWeigher));
+            lagrangeServiceImp = new LagrangeService(
+                lagrangeCommittee, IStakeManager(stakeManager), avsDirectoryAddress, IVoteWeigher(voteWeigher)
+            );
             stakeManagerImp = new StakeManager(address(lagrangeService));
             evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(stakeManager));
         } else {
             voteWeigherImp = new VoteWeigher(IStakeManager(eigenAdapter));
-            lagrangeServiceImp =
-            new LagrangeService(lagrangeCommittee, IStakeManager(eigenAdapter), avsDirectoryAddress, IVoteWeigher(voteWeigher));
+            lagrangeServiceImp = new LagrangeService(
+                lagrangeCommittee, IStakeManager(eigenAdapter), avsDirectoryAddress, IVoteWeigher(voteWeigher)
+            );
             eigenAdapterImp = new EigenAdapter(address(lagrangeService), IDelegationManager(delegationManagerAddress));
             evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(eigenAdapter));
         }

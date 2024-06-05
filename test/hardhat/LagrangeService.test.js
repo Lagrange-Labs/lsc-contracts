@@ -1,7 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const shared = require('./shared');
-const rlp = require('rlp');
 const Big = require('big.js');
 const sha3 = require('js-sha3');
 const fs = require('fs');

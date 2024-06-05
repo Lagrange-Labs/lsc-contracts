@@ -22,12 +22,13 @@ contract Deploy is Script, Test {
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
 
-        vm.startBroadcast(msg.sender);
-
         // deploy proxy admin for ability to upgrade proxy contracts
-        proxyAdmin = ProxyAdmin(stdJson.readAddress(deployData, ".lagrange.addresses.proxyAdmin"));
-        lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeService"));
-        lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".lagrange.addresses.lagrangeCommittee"));
+        proxyAdmin = ProxyAdmin(stdJson.readAddress(deployData, ".addresses.proxyAdmin"));
+        lagrangeService = LagrangeService(stdJson.readAddress(deployData, ".addresses.lagrangeService"));
+        lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".addresses.lagrangeCommittee"));
+
+        vm.startBroadcast(lagrangeService.owner());
+
         // deploy implementation contracts
         lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
         lagrangeServiceImp = new LagrangeService(
@@ -38,10 +39,30 @@ contract Deploy is Script, Test {
         );
 
         // upgrade proxy contracts
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
-        );
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeService))), address(lagrangeServiceImp));
+        {
+            proxyAdmin.upgrade(
+                TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
+            );
+            proxyAdmin.upgrade(
+                TransparentUpgradeableProxy(payable(address(lagrangeService))), address(lagrangeServiceImp)
+            );
+        }
+
+        uint32 CHAIN_ID_BASE = lagrangeCommittee.chainIDs(0); // 8453
+        uint32 CHAIN_ID_OP = lagrangeCommittee.chainIDs(1); // 10
+        uint32 CHAIN_ID_ARB = lagrangeCommittee.chainIDs(2); // 42161
+
+        // set first epoch period
+        {
+            // set first epoch period for CHAIN_ID_BASE
+            lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_BASE);
+
+            // set first epoch period for CHAIN_ID_OP
+            lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_OP);
+
+            // set first epoch period for CHAIN_ID_ARB
+            lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_ARB);
+        }
 
         vm.stopBroadcast();
     }
