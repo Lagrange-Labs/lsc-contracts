@@ -348,7 +348,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
         epochNumber = _getEpochNumber(chainID, blockNumber);
         // All the prior blocks belong to epoch 1
-        if (epochNumber == 0) epochNumber = 1;
+        if (epochNumber == 0 && blockNumber >= committeeParams[chainID].genesisBlock) epochNumber = 1;
     }
 
     // Get the operator's voting power for the given chainID
@@ -465,7 +465,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     function _getEpochNumber(uint32 _chainID, uint256 _blockNumber) internal view returns (uint256 _epochNumber) {
         CommitteeDef memory committeeParam = committeeParams[_chainID];
-        if (_blockNumber < committeeParam.genesisBlock) {
+        if (_blockNumber < committeeParam.startBlock) {
             return 0;
         }
 

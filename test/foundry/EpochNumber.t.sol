@@ -27,12 +27,13 @@ contract UpdateChainTest is LagrangeDeployer {
     }
 
     function testEpochPeriodUpdate() public {
-        (uint256 startBlock,,, uint256 duration, uint256 freezeDuration,,,) =
+        (uint256 startBlock,,uint256 genesisBlock, uint256 duration, uint256 freezeDuration,,,) =
             lagrangeCommittee.committeeParams(CHAIN_ID);
 
         // Originally
         {
-            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, startBlock - 1), 1);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, genesisBlock - 1), 0);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, genesisBlock), 1);
             assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, startBlock), 1);
             assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, startBlock + duration), 1);
             assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, startBlock + duration * 2 - 1), 1);
@@ -67,6 +68,15 @@ contract UpdateChainTest is LagrangeDeployer {
 
         // Test getEpochInterval
         {
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, genesisBlock - 1), 0);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, genesisBlock), 1);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, startBlock), 1);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, updatedBlock1), 1);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, updatedBlock2 - 1), 1);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, updatedBlock2), 2);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, updatedBlock3 - 1), 2);
+            assertEq(lagrangeCommittee.getEpochNumber(CHAIN_ID, updatedBlock3), 3);
+
             {
                 (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock) =
                     lagrangeCommittee.getEpochInterval(CHAIN_ID, 1);
