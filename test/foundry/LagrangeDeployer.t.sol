@@ -119,7 +119,7 @@ contract LagrangeDeployer is Test {
         // register chains
         lagrangeCommittee.registerChain(
             CHAIN_ID,
-            0,
+            1,
             EPOCH_PERIOD,
             FREEZE_DURATION,
             0,
@@ -128,7 +128,7 @@ contract LagrangeDeployer is Test {
         );
         lagrangeCommittee.registerChain(
             CHAIN_ID + 1,
-            0,
+            1,
             EPOCH_PERIOD * 2,
             FREEZE_DURATION * 2,
             0,

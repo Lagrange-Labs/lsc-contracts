@@ -117,11 +117,6 @@ interface ILagrangeCommittee {
     // Fired on successful rotation of committee
     event UpdateCommittee(uint256 indexed chainID, uint256 indexed epochNumber, bytes32 current);
 
-    // Event fired on updating epoch period
-    event EpochPeriodUpdated(
-        uint32 indexed chainID, uint32 indexed epochPeriodIndex, uint256 flagBlock, uint256 flagEpoch, uint256 duration
-    );
-
     // Event fired on updating sign address
     event SignAddressUpdated(address indexed operator, address indexed signAddress);
 }
