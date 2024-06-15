@@ -488,7 +488,7 @@ contract Deployer_M1 is Script, Test {
         // uint256 SLASHER_INIT_PAUSED_STATUS = type(uint256).max;
         // // pause *everything*
         // uint256 DELEGATION_INIT_PAUSED_STATUS = type(uint256).max;
-        // // pause *all of the proof-related functionality* (everything that can be paused other than creation of EigenPods)
+        // // pause *all of the proof-related functionality* (everything that can be paused other than the creation of EigenPods)
         // uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS = (2**1) + (2**2) + (2**3) + (2**4); /* = 30 */
         // // pause *nothing*
         // uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = 0;
