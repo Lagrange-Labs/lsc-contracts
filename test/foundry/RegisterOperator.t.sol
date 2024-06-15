@@ -59,7 +59,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
         // deregister operator
         lagrangeService.deregister();
 
-        // withdraw tokens from stake manager
+        // withdraw tokens from the stake manager
         vm.roll(START_EPOCH + EPOCH_PERIOD * 2);
         vm.expectRevert("Stake is locked");
         stakeManager.withdraw(IERC20(address(token)), amount);
@@ -105,7 +105,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
         lagrangeService.register(operator, blsPubKeys, operatorSignature);
 
-        // it should fail because the committee is in freeze period
+        // it should fail because the committee is in a freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
         vm.expectRevert("The dedicated chain is locked.");
         lagrangeService.subscribe(CHAIN_ID);
@@ -143,7 +143,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // unsubscribe and subscribe operator
         lagrangeService.unsubscribe(CHAIN_ID);
-        vm.expectRevert("The dedciated chain is while unsubscribing.");
+        vm.expectRevert("The dedicated chain is while unsubscribing.");
         lagrangeService.subscribe(CHAIN_ID);
         vm.roll(START_EPOCH + EPOCH_PERIOD * 2 + 1);
         lagrangeService.subscribe(CHAIN_ID);
