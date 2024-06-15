@@ -108,7 +108,7 @@ contract AVSDirectoryMock is IAVSDirectory {
     }
 
     /**
-     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has been updated.
      * @param metadataURI The URI for metadata associated with an avs
      */
     function updateAVSMetadataURI(string calldata metadataURI) external {
