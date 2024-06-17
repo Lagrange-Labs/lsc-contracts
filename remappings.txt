@@ -5,3 +5,4 @@ eigenlayer-contracts/=lib/eigenlayer-middleware/lib/eigenlayer-contracts/
 eigenlayer-middleware/=lib/eigenlayer-middleware/src/
 src/=lib/eigenlayer-middleware/src/
 forge-std/=lib/forge-std/src/
+@safe/=lib/safe-smart-account/
