@@ -6,10 +6,12 @@ import "../LagrangeCommittee.sol";
 contract LagrangeCommitteeTestnet is LagrangeCommittee {
     constructor(ILagrangeService _service, IVoteWeigher _voteWeigher) LagrangeCommittee(_service, _voteWeigher) {}
 
-    function update(uint32 chainID, uint256 epochNumber) external override {
-        uint256 _l1BlockNumber = epochNumber >> 128;
-        uint256 _epochNumber = (epochNumber << 128) >> 128;
-        _updateCommittee(chainID, _epochNumber, _l1BlockNumber);
+    function update(uint32, uint256) external pure override {
+        revert("In testnet mode, you should use updateWithL1BlockNumber.");
+    }
+
+    function updateWithL1BlockNumber(uint32 chainID, uint256 epochNumber, uint256 l1BlockNumber) external {
+        _updateCommittee(chainID, epochNumber, l1BlockNumber);
     }
 
     function getEpochNumber(uint32 chainID, uint256 l1BlockNumber) public view override returns (uint256 epochNumber) {
@@ -17,8 +19,7 @@ contract LagrangeCommitteeTestnet is LagrangeCommittee {
         // All the prior blocks belong to epoch 1
         if (
             epochNumber == 0
-                && uint256(int256(l1BlockNumber) + committeeParams[chainID].l1Bias)
-                    >= committeeParams[chainID].genesisBlock
+                && uint256(int256(l1BlockNumber) + committeeParams[chainID].l1Bias) >= committeeParams[chainID].genesisBlock
         ) epochNumber = 1;
     }
 

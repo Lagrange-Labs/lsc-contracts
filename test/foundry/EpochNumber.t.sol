@@ -178,25 +178,29 @@ contract UpdateChainTest is LagrangeDeployer {
 
         // Update failed before lock period
         vm.roll(startBlock + duration - freezeDuration);
+
+        vm.expectRevert("In testnet mode, you should use updateWithL1BlockNumber.");
+        lagrangeCommittee.update(CHAIN_ID, 1);
+
         vm.expectRevert("Block number is prior to committee freeze window.");
-        lagrangeCommittee.update(CHAIN_ID, _mergeU128(1, block.number + 99));
+        LagrangeCommitteeTestnet(address(lagrangeCommittee)).updateWithL1BlockNumber(CHAIN_ID, 1, block.number + 99);
 
         // Update in some block
         uint256 updatedBlock1 = startBlock + duration - freezeDuration + 4;
         uint256 updatedL1Block1 = updatedBlock1 + 99;
         vm.roll(updatedBlock1);
         console.log("updatedL1Block1", updatedL1Block1);
-        lagrangeCommittee.update(CHAIN_ID, _mergeU128(1, updatedL1Block1));
+        LagrangeCommitteeTestnet(address(lagrangeCommittee)).updateWithL1BlockNumber(CHAIN_ID, 1, updatedL1Block1);
 
         uint256 updatedBlock2 = updatedBlock1 + duration;
         uint256 updatedL1Block2 = updatedBlock2 + 97;
         vm.roll(updatedBlock2);
-        lagrangeCommittee.update(CHAIN_ID, _mergeU128(2, updatedL1Block2));
+        LagrangeCommitteeTestnet(address(lagrangeCommittee)).updateWithL1BlockNumber(CHAIN_ID, 2, updatedL1Block2);
 
         uint256 updatedBlock3 = updatedBlock1 + duration * 100;
         uint256 updatedL1Block3 = updatedBlock3 + 90;
         vm.roll(updatedBlock3);
-        lagrangeCommittee.update(CHAIN_ID, _mergeU128(3, updatedL1Block3));
+        LagrangeCommitteeTestnet(address(lagrangeCommittee)).updateWithL1BlockNumber(CHAIN_ID, 3, updatedL1Block3);
 
         // Test getEpochInterval
         {
@@ -267,10 +271,6 @@ contract UpdateChainTest is LagrangeDeployer {
                 assertEq(_endBlock, updatedBlock3 + newEpochPeriod * 8);
             }
         }
-    }
-
-    function _mergeU128(uint256 a, uint256 b) internal pure returns (uint256) {
-        return (b << 128) | a;
     }
 
     function _updateEpochPeriod(uint32 chainID, uint256 newEpochPeriod) internal {

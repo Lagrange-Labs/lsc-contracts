@@ -359,7 +359,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         CommitteeDef memory committeeParam = committeeParams[chainID];
         uint256 _lastEpoch = updatedEpoch[chainID];
 
-
         if (epochNumber == 0) {
             startBlock = committeeParam.startBlock;
             endBlock =
