@@ -9,9 +9,10 @@ import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.s
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeServiceTestnet} from "../contracts/mock/LagrangeServiceTestnet.sol";
+import {LagrangeServiceTestnet} from "../contracts/protocol/testnet/LagrangeServiceTestnet.sol"; // for sepolia
 import {VoteWeigher} from "../contracts/protocol/VoteWeigher.sol";
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
+import {LagrangeCommitteeTestnet} from "../contracts/protocol/testnet/LagrangeCommitteeTestnet.sol"; // for holesky
 import {EvidenceVerifier} from "../contracts/protocol/EvidenceVerifier.sol";
 
 import {IStakeManager} from "../contracts/interfaces/IStakeManager.sol";
@@ -119,7 +120,12 @@ contract Deploy is Script, Test {
                 EigenAdapter(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
         }
         // deploy implementation contracts
-        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
+        if (block.chainid == 17000) {
+            lagrangeCommitteeImp =
+                LagrangeCommittee(address(new LagrangeCommitteeTestnet(lagrangeService, IVoteWeigher(voteWeigher))));
+        } else {
+            lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
+        }
         if (isNative) {
             voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
             if (block.chainid == 11155111) {
