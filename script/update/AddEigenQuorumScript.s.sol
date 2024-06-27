@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 import "../../script/update/BaseScript.s.sol";
 import "../../contracts/interfaces/IVoteWeigher.sol";
 
-contract AddEigenQuorum is BaseScript {
+contract AddEigenQuorumScript is BaseScript {
     function run() public {
         _readContracts();
 
