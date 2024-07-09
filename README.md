@@ -1,4 +1,4 @@
-# Lagrange Contracts
+# Lagrange State Committee Contracts
 
 ## Prerequisites
 
