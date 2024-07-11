@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+import {IBLSKeyChecker} from "./IBLSKeyChecker.sol";
+
 interface ILagrangeCommittee {
     struct UnsubscribedParam {
         uint32 chainID;
@@ -65,7 +67,7 @@ interface ILagrangeCommittee {
 
     function unsubscribeByAdmin(address[] memory operators, uint32 chainID) external;
 
-    function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) external;
+    function addBlsPubKeys(address operator, IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof) external;
 
     function updateBlsPubKey(address operator, uint32 index, uint256[2] memory blsPubKey) external;
 

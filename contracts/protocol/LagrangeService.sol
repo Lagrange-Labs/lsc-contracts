@@ -10,6 +10,7 @@ import {IStakeManager} from "../interfaces/IStakeManager.sol";
 import {ILagrangeCommittee} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 import {IVoteWeigher} from "../interfaces/IVoteWeigher.sol";
+import {IBLSKeyChecker} from "../interfaces/IBLSKeyChecker.sol";
 
 contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
     mapping(address => bool) public operatorWhitelist;
@@ -81,9 +82,9 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add extra BlsPubKeys
-    function addBlsPubKeys(uint256[2][] calldata additionalBlsPubKeys) external onlyWhitelisted {
+    function addBlsPubKeys(IBLSKeyChecker.BLSKeyWithProof calldata blsKeyWithProof) external onlyWhitelisted {
         address _operator = msg.sender;
-        committee.addBlsPubKeys(_operator, additionalBlsPubKeys);
+        committee.addBlsPubKeys(_operator, blsKeyWithProof);
         uint32 serveUntilBlock = type(uint32).max;
         stakeManager.lockStakeUntil(_operator, serveUntilBlock);
         emit OperatorRegistered(_operator, serveUntilBlock);
