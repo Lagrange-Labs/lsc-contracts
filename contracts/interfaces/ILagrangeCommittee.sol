@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import {IBLSKeyChecker} from "./IBLSKeyChecker.sol";
 
-interface ILagrangeCommittee {
+interface ILagrangeCommittee is IBLSKeyChecker {
     struct UnsubscribedParam {
         uint32 chainID;
         uint256 blockNumber;
@@ -61,15 +61,15 @@ interface ILagrangeCommittee {
         uint96 maxWeight
     ) external;
 
-    function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) external;
+    function addOperator(address operator, address signAddress, BLSKeyWithProof memory blsKeyWithProof) external;
 
     function removeOperator(address operator) external;
 
     function unsubscribeByAdmin(address[] memory operators, uint32 chainID) external;
 
-    function addBlsPubKeys(address operator, IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof) external;
+    function addBlsPubKeys(address operator, BLSKeyWithProof memory blsKeyWithProof) external;
 
-    function updateBlsPubKey(address operator, uint32 index, uint256[2] memory blsPubKey) external;
+    function updateBlsPubKey(address operator, uint32 index, BLSKeyWithProof memory blsKeyWithProof) external;
 
     function removeBlsPubKeys(address operator, uint32[] memory indices) external;
 

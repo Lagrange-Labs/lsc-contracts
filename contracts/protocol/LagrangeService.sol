@@ -70,11 +70,11 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     /// Add the operator to the service.
     function register(
         address signAddress,
-        uint256[2][] calldata blsPubKeys,
+        IBLSKeyChecker.BLSKeyWithProof calldata blsKeyWithProof,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhitelisted {
         address _operator = msg.sender;
-        committee.addOperator(_operator, signAddress, blsPubKeys);
+        committee.addOperator(_operator, signAddress, blsKeyWithProof);
         uint32 serveUntilBlock = type(uint32).max;
         stakeManager.lockStakeUntil(_operator, serveUntilBlock);
         avsDirectory.registerOperatorToAVS(_operator, operatorSignature);
@@ -91,9 +91,12 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Update the BlsPubKey for the given index
-    function updateBlsPubKey(uint32 index, uint256[2] calldata blsPubKey) external onlyWhitelisted {
+    function updateBlsPubKey(uint32 index, IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof)
+        external
+        onlyWhitelisted
+    {
         address _operator = msg.sender;
-        committee.updateBlsPubKey(_operator, index, blsPubKey);
+        committee.updateBlsPubKey(_operator, index, blsKeyWithProof);
     }
 
     /// Remove the BlsPubKeys for the given indices

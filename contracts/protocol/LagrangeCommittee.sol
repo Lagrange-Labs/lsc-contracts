@@ -8,12 +8,11 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
 import "../interfaces/IVoteWeigher.sol";
-import {IBLSKeyChecker} from "../interfaces/IBLSKeyChecker.sol";
+import "../library/BLSKeyChecker.sol";
 
-contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommittee {
+contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, ILagrangeCommittee {
     ILagrangeService public immutable service;
     IVoteWeigher public immutable voteWeigher;
-    IBLSKeyChecker public immutable blsKeyChecker;
 
     // Leaf Node Prefix
     bytes1 public constant LEAF_NODE_PREFIX = 0x01;
@@ -45,10 +44,9 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _;
     }
 
-    constructor(ILagrangeService _service, IVoteWeigher _voteWeigher, IBLSKeyChecker _blsKeyChecker) {
+    constructor(ILagrangeService _service, IVoteWeigher _voteWeigher) {
         service = _service;
         voteWeigher = _voteWeigher;
-        blsKeyChecker = _blsKeyChecker;
         _disableInitializers();
     }
 
@@ -63,12 +61,12 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Adds a new operator to the committee
-    function addOperator(address operator, address signAddress, uint256[2][] calldata blsPubKeys)
+    function addOperator(address operator, address signAddress, BLSKeyWithProof calldata blsKeyWithProof)
         external
         onlyService
     {
-        _validateBlsPubKeys(blsPubKeys);
-        _registerOperator(operator, signAddress, blsPubKeys);
+        _validateBlsPubKeys(blsKeyWithProof.blsG1PublicKeys);
+        _registerOperator(operator, signAddress, blsKeyWithProof);
     }
 
     // Removes an operator from the committee
@@ -89,23 +87,22 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // Adds additional BLS public keys to an operator
-    function addBlsPubKeys(address operator, IBLSKeyChecker.BLSKeyWithProof calldata blsKeyWithProof)
-        external
-        onlyService
-    {
+    function addBlsPubKeys(address operator, BLSKeyWithProof calldata blsKeyWithProof) external onlyService {
         _validateBlsPubKeys(blsKeyWithProof.blsG1PublicKeys);
         _addBlsPubKeys(operator, blsKeyWithProof);
     }
 
     // Updates an operator's BLS public key for the given index
-    //
-    // TODO: It should be verified by the BLSKeyChecker contract
-    function updateBlsPubKey(address operator, uint32 index, uint256[2] calldata blsPubKey) external onlyService {
-        require(blsPubKey[0] != 0 && blsPubKey[1] != 0, "Invalid BLS Public Key.");
+    function updateBlsPubKey(address operator, uint32 index, BLSKeyWithProof calldata blsKeyWithProof)
+        external
+        onlyService
+    {
+        _validateBLSKeyWithProof(operator, blsKeyWithProof);
+        require(blsKeyWithProof.blsG1PublicKeys.length == 1, "Length should be 1 for update");
         uint256[2][] storage _blsPubKeys = operatorsStatus[operator].blsPubKeys;
         require(_blsPubKeys.length > index, "Invalid index");
-        _checkBlsPubKeyDuplicate(_blsPubKeys, blsPubKey);
-        _blsPubKeys[index] = blsPubKey;
+        _checkBlsPubKeyDuplicate(_blsPubKeys, blsKeyWithProof.blsG1PublicKeys[0]);
+        _blsPubKeys[index] = blsKeyWithProof.blsG1PublicKeys[0];
     }
 
     // Removes BLS public keys from an operator for the given indices
@@ -400,6 +397,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
         if (_blockNumber >= _lastEpochBlock) {
             _epochNumber = _lastEpoch + (_blockNumber - _lastEpochBlock) / committeeParam.duration;
+            // _epochNumber = _lastEpoch;
         } else if (_lastEpoch == 0) {
             return 0;
         } else {
@@ -418,18 +416,24 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         }
     }
 
-    function _registerOperator(address _operator, address _signAddress, uint256[2][] memory _blsPubKeys) internal {
+    function _registerOperator(address _operator, address _signAddress, BLSKeyWithProof memory _blsKeyWithProof)
+        internal
+    {
+        _validateBLSKeyWithProof(_operator, _blsKeyWithProof);
+
         delete operatorsStatus[_operator];
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         _opStatus.signAddress = _signAddress;
-        uint256 _length = _blsPubKeys.length;
+        uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
         for (uint256 i; i < _length; i++) {
-            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsPubKeys[i]);
-            _opStatus.blsPubKeys.push(_blsPubKeys[i]);
+            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
+            _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
         }
     }
 
-    function _addBlsPubKeys(address _operator, IBLSKeyChecker.BLSKeyWithProof calldata _blsKeyWithProof) internal {
+    function _addBlsPubKeys(address _operator, BLSKeyWithProof memory _blsKeyWithProof) internal {
+        _validateBLSKeyWithProof(_operator, _blsKeyWithProof);
+
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
         uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
@@ -437,8 +441,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
             _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
         }
-
-        require(blsKeyChecker.checkBLSKeyWithProof(_operator, _blsKeyWithProof), "Invalid BLSKeyWithProof");
     }
 
     function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
@@ -572,7 +574,6 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
 
     function _validateBlsPubKeys(uint256[2][] memory _blsPubKeys) internal pure {
         require(_blsPubKeys.length != 0, "Empty BLS Public Keys.");
-        // TODO: need to add validation for blsPubKeys with signatures
         uint256 _length = _blsPubKeys.length;
         for (uint256 i; i < _length; i++) {
             require(_blsPubKeys[i][0] != 0 && _blsPubKeys[i][1] != 0, "Invalid BLS Public Key.");

@@ -3,9 +3,9 @@ pragma solidity ^0.8.12;
 
 import {BN254} from "eigenlayer-middleware/libraries/BN254.sol";
 
-import {IBLSKeyChecker} from "../interfaces/IBLSKeyChecker.sol";
+import "../interfaces/IBLSKeyChecker.sol";
 
-contract BLSKeyChecker is IBLSKeyChecker {
+abstract contract BLSKeyChecker is IBLSKeyChecker {
     using BN254 for BN254.G1Point;
 
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120000;
@@ -16,18 +16,27 @@ contract BLSKeyChecker is IBLSKeyChecker {
     bytes32 public constant BLS_KEY_WITH_PROOF_TYPEHASH =
         keccak256("BLSKeyWithProof(address operator,bytes32 salt,uint256 expiry)");
 
-    mapping(address => mapping(bytes32 => bool)) operatorSalts;
+    struct SaltStorage {
+        mapping(address => mapping(bytes32 => bool)) operatorSalts;
+    }
 
-    function checkBLSKeyWithProof(address operator, BLSKeyWithProof calldata keyWithProof)
-        external
-        view
-        override
-        returns (bool)
-    {
+    // keccak256(abi.encode(uint256(keccak256("lagrange.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant SaltStorageLocation = 0x50adca83aa63111972389d289609dbddabfef4bc33031ee9d0b004d34ffdac00;
+
+    function _getSaltStorage() private pure returns (SaltStorage storage $) {
+        assembly {
+            $.slot := SaltStorageLocation
+        }
+    }
+
+    function _validateBLSKeyWithProof(address operator, BLSKeyWithProof memory keyWithProof) internal {
         require(
             keyWithProof.expiry >= block.timestamp, "BLSKeyChecker.checkBLSKeyWithProof: operator signature expired"
         );
-        require(!operatorSalts[operator][keyWithProof.salt], "BLSKeyChecker.checkBLSKeyWithProof: salt already spent");
+        SaltStorage storage $ = _getSaltStorage();
+        require(!$.operatorSalts[operator][keyWithProof.salt], "BLSKeyChecker.checkBLSKeyWithProof: salt already spent");
+
+        $.operatorSalts[operator][keyWithProof.salt] = true;
 
         BN254.G1Point memory aggG1 = BN254.G1Point(0, 0);
         for (uint256 i = 0; i < keyWithProof.blsG1PublicKeys.length; i++) {
@@ -50,8 +59,11 @@ contract BLSKeyChecker is IBLSKeyChecker {
         // check the BLS signature
         (pairing, valid) = BN254.safePairing(sig, BN254.negGeneratorG2(), msgHash, aggG2, PAIRING_EQUALITY_CHECK_GAS);
         require(pairing && valid, "BLSKeyChecker.checkBLSKeyWithProof: invalid BLS signature");
+    }
 
-        return true;
+    function isSaltSpent(address operator, bytes32 salt) public view returns (bool) {
+        SaltStorage storage $ = _getSaltStorage();
+        return $.operatorSalts[operator][salt];
     }
 
     function calculateKeyWithProofHash(address operator, bytes32 salt, uint256 expiry) public view returns (bytes32) {

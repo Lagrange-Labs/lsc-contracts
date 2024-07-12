@@ -39,7 +39,7 @@ contract SubscribeOperator is Script, Test {
         uint256[2][] memory _blsPublicPoints = new uint256[2][](1);
         _blsPublicPoints[0] = operator.blsPublicPoint;
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
-        lagrangeService.register(operator.operatorAddress, _blsPublicPoints, operatorSignature);
+        // lagrangeService.register(operator.operatorAddress, _blsPublicPoints, operatorSignature);
         lagrangeService.subscribe(operator.chainId);
 
         vm.stopBroadcast();

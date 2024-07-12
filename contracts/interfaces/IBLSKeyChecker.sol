@@ -10,8 +10,12 @@ interface IBLSKeyChecker {
         uint256 expiry;
     }
 
-    function checkBLSKeyWithProof(address operator, BLSKeyWithProof calldata keyWithProof)
+    function isSaltSpent(address operator, bytes32 salt) external view returns (bool);
+
+    function calculateKeyWithProofHash(address operator, bytes32 salt, uint256 expiry)
         external
         view
-        returns (bool);
+        returns (bytes32);
+
+    function domainSeparator() external view returns (bytes32);
 }

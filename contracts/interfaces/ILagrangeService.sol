@@ -11,13 +11,13 @@ interface ILagrangeService {
 
     function register(
         address signAddress,
-        uint256[2][] memory blsPubKeys,
+        IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
     function addBlsPubKeys(IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof) external;
 
-    function updateBlsPubKey(uint32 index, uint256[2] memory blsPubKey) external;
+    function updateBlsPubKey(uint32 index, IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof) external;
 
     function removeBlsPubKeys(uint32[] memory indices) external;
 

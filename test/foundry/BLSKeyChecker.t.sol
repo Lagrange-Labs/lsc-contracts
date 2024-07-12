@@ -3,13 +3,13 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 
-import {BLSKeyChecker} from "contracts/library/BLSKeyChecker.sol";
+import "../../contracts/mock/BLSKeyCheckerMock.sol";
 
 contract BLSKeyCheckerTest is Test {
-    BLSKeyChecker public blsKeyChecker;
+    BLSKeyCheckerMock blsKeyChecker;
 
     function setUp() public virtual {
-        blsKeyChecker = new BLSKeyChecker();
+        blsKeyChecker = new BLSKeyCheckerMock();
     }
 
     function testDeploy() public view {
@@ -24,7 +24,7 @@ contract BLSKeyCheckerTest is Test {
         bytes32 digestHash = blsKeyChecker.calculateKeyWithProofHash(operator, salt, expiry);
         assertEq(digestHash, bytes32(0xe7419ae945e234b771ebf93cbf198d6cfcdbd8447301f1c24500b95a22cf38ee));
 
-        BLSKeyChecker.BLSKeyWithProof memory keyWithProof;
+        IBLSKeyChecker.BLSKeyWithProof memory keyWithProof;
         keyWithProof.blsG1PublicKeys = new uint256[2][](2);
         keyWithProof.salt = salt;
         keyWithProof.expiry = expiry;
