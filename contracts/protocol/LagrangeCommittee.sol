@@ -397,10 +397,16 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
 
         if (_blockNumber >= _lastEpochBlock) {
             _epochNumber = _lastEpoch + (_blockNumber - _lastEpochBlock) / committeeParam.duration;
-            // _epochNumber = _lastEpoch;
         } else if (_lastEpoch == 0) {
             return 0;
         } else {
+            if (_blockNumber >= _lastEpochBlock - committeeParam.duration) {
+                _epochNumber = _lastEpoch;
+                while (_blockNumber < _getUpdatedBlock(_chainID, _epochNumber)) {
+                    _epochNumber--;
+                }
+                return _epochNumber;
+            }
             // binary search
             uint256 _low = 0;
             uint256 _high = _lastEpoch;
