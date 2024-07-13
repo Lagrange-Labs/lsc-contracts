@@ -7,16 +7,15 @@ import "./LagrangeDeployer.t.sol";
 
 contract RegisterOperatorTest is LagrangeDeployer {
     function testDepositAndWithdraw() public {
-        uint256 privateKey = 333;
+        uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
         vm.deal(operator, 1e19);
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0][0] = 1;
-        blsPubKeys[0][1] = 2;
+        blsPubKeys[0] = _readKnownBlsPubKey(1);
         uint256 amount = 1e15;
 
         // add operator to whitelist
-        vm.prank(vm.addr(1));
+        vm.prank(vm.addr(adminPrivateKey));
         address[] memory operators = new address[](1);
         operators[0] = operator;
         lagrangeService.addOperatorsToWhitelist(operators);
@@ -40,7 +39,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
         lagrangeService.subscribe(CHAIN_ID);
         lagrangeService.subscribe(CHAIN_ID + 1);
 
@@ -71,16 +70,15 @@ contract RegisterOperatorTest is LagrangeDeployer {
     }
 
     function testFreezePeriod() public {
-        uint256 privateKey = 555;
+        uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
         vm.deal(operator, 1e19);
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0][0] = 1;
-        blsPubKeys[0][1] = 2;
+        blsPubKeys[0] = _readKnownBlsPubKey(1);
         uint256 amount = 1e16;
 
         // add operator to whitelist
-        vm.prank(vm.addr(1));
+        vm.prank(vm.addr(adminPrivateKey));
         address[] memory operators = new address[](1);
         operators[0] = operator;
         lagrangeService.addOperatorsToWhitelist(operators);
@@ -103,7 +101,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
         stakeManager.deposit(IERC20(address(token)), amount);
 
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
-        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
 
         // it should fail because the committee is in freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
@@ -126,8 +124,13 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // re-register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD);
+        IBLSKeyChecker.BLSKeyWithProof memory keyWithProof = _calcProofForBLSKeys(operator, blsPubKeys);
+        vm.expectRevert("BLSKeyChecker.checkBLSKeyWithProof: salt already spent");
+        lagrangeService.register(operator, keyWithProof, operatorSignature);
+
+        keyWithProof = _calcProofForBLSKeys(operator, blsPubKeys, bytes32("salt2"));
         vm.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
-        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, keyWithProof, operatorSignature);
         // new operator signature
         {
             operatorSignature.expiry = block.timestamp + 60;
@@ -138,7 +141,9 @@ contract RegisterOperatorTest is LagrangeDeployer {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }
-        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+        lagrangeService.register(
+            operator, _calcProofForBLSKeys(operator, blsPubKeys, bytes32("salt2")), operatorSignature
+        );
         lagrangeService.subscribe(CHAIN_ID);
 
         // unsubscribe and subscribe operator
@@ -172,13 +177,13 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
     function testEjection_single() public {
         vm.chainId(17000); // holesky testnet
-        uint256 privateKey = 123;
+        uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
         address[] memory operators = new address[](1);
         operators[0] = operator;
         uint256 amount = 1e15;
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0] = [uint256(1), 2];
+        blsPubKeys[0] = _readKnownBlsPubKey(1);
 
         _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
 
@@ -199,9 +204,9 @@ contract RegisterOperatorTest is LagrangeDeployer {
         vm.chainId(17000); // holesky testnet
         uint256 count = 3;
         uint256[] memory privateKeys = new uint256[](3);
-        privateKeys[0] = 123;
-        privateKeys[1] = 456;
-        privateKeys[2] = 789;
+        privateKeys[0] = 111;
+        privateKeys[1] = 222;
+        privateKeys[2] = 333;
         address[] memory operators = new address[](3);
         for (uint256 i; i < count; i++) {
             operators[i] = vm.addr(privateKeys[i]);
@@ -209,10 +214,12 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         uint8[] memory subscribedChainCountOrg = new uint8[](3);
 
+        uint256 _blsKeyCounter = 1;
+
         for (uint256 i; i < count; i++) {
             uint256 amount = 1e15;
             uint256[2][] memory blsPubKeys = new uint256[2][](1);
-            blsPubKeys[0] = [uint256(1), 2];
+            blsPubKeys[0] = _readKnownBlsPubKey(_blsKeyCounter++);
 
             _registerOperator(operators[i], privateKeys[i], amount, blsPubKeys, CHAIN_ID);
 
@@ -235,13 +242,13 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
     function testEjection_resubscribe() public {
         vm.chainId(17000); // holesky testnet
-        uint256 privateKey = 123;
+        uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
         address[] memory operators = new address[](1);
         operators[0] = operator;
         uint256 amount = 1e15;
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0] = [uint256(1), 2];
+        blsPubKeys[0] = _readKnownBlsPubKey(1);
 
         _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
         vm.prank(operator);

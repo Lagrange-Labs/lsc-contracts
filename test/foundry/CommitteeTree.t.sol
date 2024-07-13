@@ -6,18 +6,17 @@ import "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./LagrangeDeployer.t.sol";
-// import {ILagrangeCommitte} from "../../contracts/interfaces/ILagrangeCommitte.sol";
 
 contract CommitteeTreeTest is LagrangeDeployer {
     function testSubscribeChain() public {
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0] = [uint256(1), 2];
-        uint256 privateKey = 101;
+        blsPubKeys[0] = _readKnownBlsPubKey(1);
+        uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
 
         vm.deal(operator, 1e19);
         // add operator to whitelist
-        vm.prank(vm.addr(1));
+        vm.prank(vm.addr(adminPrivateKey));
         address[] memory operators = new address[](1);
         operators[0] = operator;
         lagrangeService.addOperatorsToWhitelist(operators);
@@ -37,7 +36,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(operator, blsPubKeys, operatorSignature);
+        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
         // subscribe chain
         vm.expectRevert("Insufficient Vote Weight");
         lagrangeService.subscribe(CHAIN_ID);
@@ -71,11 +70,11 @@ contract CommitteeTreeTest is LagrangeDeployer {
         amounts[2] = 3e15;
 
         blsPubKeysArray[0] = new uint256[2][](1);
-        blsPubKeysArray[0][0] = [uint256(1), 2];
+        blsPubKeysArray[0][0] = _readKnownBlsPubKey(1);
         blsPubKeysArray[1] = new uint256[2][](1);
-        blsPubKeysArray[1][0] = [uint256(2), 3];
+        blsPubKeysArray[1][0] = _readKnownBlsPubKey(2);
         blsPubKeysArray[2] = new uint256[2][](1);
-        blsPubKeysArray[2][0] = [uint256(3), 4];
+        blsPubKeysArray[2][0] = _readKnownBlsPubKey(3);
 
         for (uint256 i; i < OPERATOR_COUNT; i++) {
             _registerOperator(operators[i], privateKeys[i], amounts[i], blsPubKeysArray[i], CHAIN_ID);
@@ -90,7 +89,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
             lagrangeCommittee.getCommittee(CHAIN_ID, START_EPOCH + EPOCH_PERIOD);
 
         assertEq(cur.leafCount, 3);
-        assertEq(cur.root, 0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3);
+        assertEq(cur.root, 0x2c2afeea04cd68138240e7a57513c5276ac52910e01210ad8dd83a1c8c3fc070);
 
         _deposit(operators[0], 1e15);
 
@@ -104,7 +103,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         cur = lagrangeCommittee.getCommittee(CHAIN_ID, updatingBlock2 + 1);
         assertEq(cur.leafCount, 3);
-        assertEq(cur.root, 0x02f507202eec14a32171bbca5d048778e4c67238b21037a90b90608c71b6276a);
+        assertEq(cur.root, 0x40f94114329d62f0875538d1d999c88d9369bb2ec18e085836e9142b2cbf31ee);
     }
 
     function testRevertEpoch() public {
@@ -126,11 +125,11 @@ contract CommitteeTreeTest is LagrangeDeployer {
         amounts[2] = 3e15;
 
         blsPubKeysArray[0] = new uint256[2][](1);
-        blsPubKeysArray[0][0] = [uint256(1), 2];
+        blsPubKeysArray[0][0] = _readKnownBlsPubKey(1);
         blsPubKeysArray[1] = new uint256[2][](1);
-        blsPubKeysArray[1][0] = [uint256(2), 3];
+        blsPubKeysArray[1][0] = _readKnownBlsPubKey(2);
         blsPubKeysArray[2] = new uint256[2][](1);
-        blsPubKeysArray[2][0] = [uint256(3), 4];
+        blsPubKeysArray[2][0] = _readKnownBlsPubKey(3);
 
         for (uint256 i; i < OPERATOR_COUNT; i++) {
             _registerOperator(operators[i], privateKeys[i], amounts[i], blsPubKeysArray[i], CHAIN_ID);
@@ -218,7 +217,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         uint256 _blsKeyCounter = 1;
         for (uint256 i; i < OPERATOR_COUNT2; i++) {
             for (uint256 j; j < blsPubKeysArray[i].length; j++) {
-                blsPubKeysArray[i][j] = [_blsKeyCounter++, _blsKeyCounter];
+                blsPubKeysArray[i][j] = _readKnownBlsPubKey(_blsKeyCounter++);
             }
         }
 
@@ -256,52 +255,53 @@ contract CommitteeTreeTest is LagrangeDeployer {
         }
 
         assertEq(cur.leafCount, expectedLeafCount);
-        // assertEq(cur.root, 0xb36023a1020f51f4b8ba6238d383002481e1dcce915043fecd5d2159513808e3);
         {
             uint256[2][] memory additionalBlsPubKeys;
             additionalBlsPubKeys = new uint256[2][](1);
-            additionalBlsPubKeys[0] = [_blsKeyCounter++, _blsKeyCounter];
+            additionalBlsPubKeys[0] = _readKnownBlsPubKey(_blsKeyCounter++);
             (uint256 startBlock,,, uint256 duration, uint256 freezeDuration,,,) =
                 lagrangeCommittee.committeeParams(CHAIN_ID);
 
-            _addBlsPubKeys(operators[0], additionalBlsPubKeys, CHAIN_ID);
+            vm.roll(startBlock + duration - freezeDuration - 1);
+
+            IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof =
+                _calcProofForBLSKeys(operators[0], additionalBlsPubKeys, "salt2");
+            vm.prank(operators[0]);
+            lagrangeService.addBlsPubKeys(blsKeyWithProof);
             vm.roll(startBlock + duration * 2 - freezeDuration + 1);
             lagrangeCommittee.update(CHAIN_ID, 2);
         }
     }
 
     function testOperatorUpdateBLSKeys() public {
-        uint256 privateKey = 101;
+        uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
         uint256 amount = 1e19;
         uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0][0] = 1;
-        blsPubKeys[0][1] = 2;
+        blsPubKeys[0] = _readKnownBlsPubKey(1);
 
         _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
 
         uint256[2][] memory additionalBlsPubKeys = new uint256[2][](2);
-        additionalBlsPubKeys[0][0] = 3;
-        additionalBlsPubKeys[0][1] = 4;
-        additionalBlsPubKeys[1][0] = 5;
-        additionalBlsPubKeys[1][1] = 6;
+        additionalBlsPubKeys[0] = _readKnownBlsPubKey(2);
+        additionalBlsPubKeys[1] = _readKnownBlsPubKey(3);
         vm.startPrank(address(lagrangeService));
-        lagrangeCommittee.addBlsPubKeys(operator, additionalBlsPubKeys);
+        lagrangeCommittee.addBlsPubKeys(
+            operator, _calcProofForBLSKeys(operator, additionalBlsPubKeys, bytes32("salt2"))
+        );
         uint256[2][] memory _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
         assertEq(_blsPubKeys.length, 3);
-        assertEq(_blsPubKeys[0][0], 1);
-        assertEq(_blsPubKeys[1][1], 4);
-        assertEq(_blsPubKeys[2][0], 5);
+        assertEq(_blsPubKeys[0][0], blsPubKeys[0][0]);
+        assertEq(_blsPubKeys[1][1], additionalBlsPubKeys[0][1]);
+        assertEq(_blsPubKeys[2][0], additionalBlsPubKeys[1][0]);
 
-        uint256[2] memory newBlsPubKey;
-        newBlsPubKey[0] = 7;
-        newBlsPubKey[1] = 8;
-        lagrangeCommittee.updateBlsPubKey(operator, 1, newBlsPubKey);
+        uint256[2] memory newBlsPubKey = _readKnownBlsPubKey(4);
+        lagrangeCommittee.updateBlsPubKey(operator, 1, _calcProofForBLSKey(operator, newBlsPubKey, bytes32("salt3")));
         _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
-        assertEq(_blsPubKeys[1][0], 7);
-        assertEq(_blsPubKeys[1][1], 8);
-        assertEq(_blsPubKeys[0][1], 2);
-        assertEq(_blsPubKeys[2][1], 6);
+        assertEq(_blsPubKeys[1][0], newBlsPubKey[0]);
+        assertEq(_blsPubKeys[1][1], newBlsPubKey[1]);
+        assertEq(_blsPubKeys[0][1], blsPubKeys[0][1]);
+        assertEq(_blsPubKeys[2][1], additionalBlsPubKeys[1][1]);
 
         uint32[] memory indices = new uint32[](2);
         indices[0] = 2;
@@ -309,8 +309,8 @@ contract CommitteeTreeTest is LagrangeDeployer {
         lagrangeCommittee.removeBlsPubKeys(operator, indices);
         _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
         assertEq(_blsPubKeys.length, 1);
-        assertEq(_blsPubKeys[0][0], 7);
-        assertEq(_blsPubKeys[0][1], 8);
+        assertEq(_blsPubKeys[0][0], _readKnownBlsPubKey(4)[0]);
+        assertEq(_blsPubKeys[0][1], _readKnownBlsPubKey(4)[1]);
 
         // removing all blsPubKeys should revert
         uint32[] memory indices2 = new uint32[](1);
@@ -318,35 +318,40 @@ contract CommitteeTreeTest is LagrangeDeployer {
         vm.expectRevert("Invalid indices length, BLS keys cannot be empty.");
         lagrangeCommittee.removeBlsPubKeys(operator, indices2);
 
-        // zero value should revert
-        uint256[2][] memory additionalBlsPubKeys1 = new uint256[2][](1);
-        additionalBlsPubKeys1[0][0] = 9;
-        additionalBlsPubKeys1[0][1] = 0;
-        vm.expectRevert("Invalid BLS Public Key.");
-        lagrangeCommittee.addBlsPubKeys(operator, additionalBlsPubKeys1);
+        {
+            // zero value should revert
+            uint256[2][] memory additionalBlsPubKeys1 = new uint256[2][](1);
+            additionalBlsPubKeys1[0] = _readKnownBlsPubKey(5);
 
-        additionalBlsPubKeys1[0][1] = 10;
-        lagrangeCommittee.addBlsPubKeys(operator, additionalBlsPubKeys1);
-        uint256[2][] memory _blsPubKeys1 = lagrangeCommittee.getBlsPubKeys(operator);
-        assertEq(_blsPubKeys1.length, 2);
-        assertEq(_blsPubKeys1[1][1], 10);
-        assertEq(_blsPubKeys1[1][0], 9);
+            lagrangeCommittee.addBlsPubKeys(
+                operator, _calcProofForBLSKeys(operator, additionalBlsPubKeys1, bytes32("salt4"))
+            );
+            uint256[2][] memory _blsPubKeys1 = lagrangeCommittee.getBlsPubKeys(operator);
+            assertEq(_blsPubKeys1.length, 2);
+            assertEq(_blsPubKeys1[1][0], _readKnownBlsPubKey(5)[0]);
+            assertEq(_blsPubKeys1[1][1], _readKnownBlsPubKey(5)[1]);
+        }
 
-        // removing non-existing blsPubKeys should revert
-        uint32[] memory indices3 = new uint32[](1);
-        indices3[0] = 2;
-        vm.expectRevert("Invalid index");
-        lagrangeCommittee.removeBlsPubKeys(operator, indices3);
+        {
+            // removing non-existing blsPubKeys should revert
+            uint32[] memory indices3 = new uint32[](1);
+            indices3[0] = 2;
+            vm.expectRevert("Invalid index");
+            lagrangeCommittee.removeBlsPubKeys(operator, indices3);
+        }
 
-        uint256[2] memory newBlsPubKey1;
-        newBlsPubKey1[0] = 1;
-        newBlsPubKey1[1] = 2;
-        lagrangeCommittee.updateBlsPubKey(operator, 0, newBlsPubKey1);
-        _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
-        assertEq(_blsPubKeys[1][0], 9);
-        assertEq(_blsPubKeys[1][1], 10);
-        assertEq(_blsPubKeys[0][1], 2);
-        assertEq(_blsPubKeys[0][0], 1);
+        {
+            uint256[2] memory newBlsPubKey1;
+            newBlsPubKey1 = _readKnownBlsPubKey(1);
+            lagrangeCommittee.updateBlsPubKey(
+                operator, 0, _calcProofForBLSKey(operator, newBlsPubKey1, bytes32("salt5"))
+            );
+            _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
+            assertEq(_blsPubKeys[1][0], _readKnownBlsPubKey(5)[0]);
+            assertEq(_blsPubKeys[1][1], _readKnownBlsPubKey(5)[1]);
+            assertEq(_blsPubKeys[0][0], _readKnownBlsPubKey(1)[0]);
+            assertEq(_blsPubKeys[0][1], _readKnownBlsPubKey(1)[1]);
+        }
 
         lagrangeCommittee.updateSignAddress(operator, vm.addr(102));
         (address signAddress,) = lagrangeCommittee.operatorsStatus(operator);
