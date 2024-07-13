@@ -20,8 +20,8 @@ abstract contract BLSKeyChecker is IBLSKeyChecker {
         mapping(address => mapping(bytes32 => bool)) operatorSalts;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("lagrange.storage")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant SaltStorageLocation = 0x50adca83aa63111972389d289609dbddabfef4bc33031ee9d0b004d34ffdac00;
+    // keccak256(abi.encode(uint256(keccak256("lagrange.blskeychecker.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant SaltStorageLocation = 0x51615ea63289f14fdd891b383e2929b2f73c675cf292e602b5fceb059f7a4700;
 
     function _getSaltStorage() private pure returns (SaltStorage storage $) {
         assembly {
