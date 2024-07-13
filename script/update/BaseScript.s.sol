@@ -39,4 +39,29 @@ abstract contract BaseScript is Script, Test {
         lagrangeCommittee = LagrangeCommittee(stdJson.readAddress(deployData, ".addresses.lagrangeCommittee"));
         voteWeigher = VoteWeigher(stdJson.readAddress(deployData, ".addresses.voteWeigher"));
     }
+
+    function _redeployService() internal {
+        vm.startBroadcast(lagrangeService.owner());
+
+        LagrangeService lagrangeServiceImp = new LagrangeService(
+            lagrangeCommittee,
+            lagrangeService.stakeManager(),
+            address(lagrangeService.avsDirectory()),
+            lagrangeService.voteWeigher()
+        );
+        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeService))), address(lagrangeServiceImp));
+
+        vm.stopBroadcast();
+    }
+
+    function _redeployCommittee() internal {
+        vm.startBroadcast(lagrangeCommittee.owner());
+
+        LagrangeCommittee lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
+        );
+
+        vm.stopBroadcast();
+    }
 }

@@ -39,7 +39,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(operator, _calcProofForBLSKeys(privateKey, blsPubKeys), operatorSignature);
+        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
         lagrangeService.subscribe(CHAIN_ID);
         lagrangeService.subscribe(CHAIN_ID + 1);
 
@@ -101,7 +101,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
         stakeManager.deposit(IERC20(address(token)), amount);
 
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
-        lagrangeService.register(operator, _calcProofForBLSKeys(privateKey, blsPubKeys), operatorSignature);
+        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
 
         // it should fail because the committee is in freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
@@ -124,11 +124,11 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // re-register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD);
-        IBLSKeyChecker.BLSKeyWithProof memory keyWithProof = _calcProofForBLSKeys(privateKey, blsPubKeys);
+        IBLSKeyChecker.BLSKeyWithProof memory keyWithProof = _calcProofForBLSKeys(operator, blsPubKeys);
         vm.expectRevert("BLSKeyChecker.checkBLSKeyWithProof: salt already spent");
         lagrangeService.register(operator, keyWithProof, operatorSignature);
 
-        keyWithProof = _calcProofForBLSKeys(privateKey, blsPubKeys, bytes32("salt2"));
+        keyWithProof = _calcProofForBLSKeys(operator, blsPubKeys, bytes32("salt2"));
         vm.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
         lagrangeService.register(operator, keyWithProof, operatorSignature);
         // new operator signature
@@ -142,7 +142,7 @@ contract RegisterOperatorTest is LagrangeDeployer {
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }
         lagrangeService.register(
-            operator, _calcProofForBLSKeys(privateKey, blsPubKeys, bytes32("salt2")), operatorSignature
+            operator, _calcProofForBLSKeys(operator, blsPubKeys, bytes32("salt2")), operatorSignature
         );
         lagrangeService.subscribe(CHAIN_ID);
 

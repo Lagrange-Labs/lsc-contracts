@@ -24,7 +24,6 @@ contract CommitteeTest is Script, CommitteeTreeTest {
         string tokenName;
     }
 
-
     function setUp() public override {
         string memory deployLGRData = vm.readFile(deployedLGRPath);
         string memory configData = vm.readFile(serviceDataPath);
@@ -149,7 +148,7 @@ contract CommitteeTest is Script, CommitteeTreeTest {
 
             vm.roll(startBlock + duration - freezeDuration - 1);
             
-            IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof = _calcProofForBLSKeys(0, additionalBlsPubKeys);
+            IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof = _calcProofForBLSKeys(privateKeys[0], additionalBlsPubKeys);
             vm.prank(operators[0]);
             lagrangeService.addBlsPubKeys(blsKeyWithProof);
             vm.roll(startBlock + duration * 2 - freezeDuration + 1);

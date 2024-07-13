@@ -36,7 +36,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(operator, _calcProofForBLSKeys(privateKey, blsPubKeys), operatorSignature);
+        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
         // subscribe chain
         vm.expectRevert("Insufficient Vote Weight");
         lagrangeService.subscribe(CHAIN_ID);
@@ -265,7 +265,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
             vm.roll(startBlock + duration - freezeDuration - 1);
 
             IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof =
-                _calcProofForBLSKeys(privateKeys[0], additionalBlsPubKeys, "salt2");
+                _calcProofForBLSKeys(operators[0], additionalBlsPubKeys, "salt2");
             vm.prank(operators[0]);
             lagrangeService.addBlsPubKeys(blsKeyWithProof);
             vm.roll(startBlock + duration * 2 - freezeDuration + 1);
@@ -287,7 +287,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         additionalBlsPubKeys[1] = _readKnownBlsPubKey(3);
         vm.startPrank(address(lagrangeService));
         lagrangeCommittee.addBlsPubKeys(
-            operator, _calcProofForBLSKeys(privateKey, additionalBlsPubKeys, bytes32("salt2"))
+            operator, _calcProofForBLSKeys(operator, additionalBlsPubKeys, bytes32("salt2"))
         );
         uint256[2][] memory _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
         assertEq(_blsPubKeys.length, 3);
@@ -296,7 +296,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
         assertEq(_blsPubKeys[2][0], additionalBlsPubKeys[1][0]);
 
         uint256[2] memory newBlsPubKey = _readKnownBlsPubKey(4);
-        lagrangeCommittee.updateBlsPubKey(operator, 1, _calcProofForBLSKey(privateKey, newBlsPubKey, bytes32("salt3")));
+        lagrangeCommittee.updateBlsPubKey(operator, 1, _calcProofForBLSKey(operator, newBlsPubKey, bytes32("salt3")));
         _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
         assertEq(_blsPubKeys[1][0], newBlsPubKey[0]);
         assertEq(_blsPubKeys[1][1], newBlsPubKey[1]);
@@ -324,7 +324,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
             additionalBlsPubKeys1[0] = _readKnownBlsPubKey(5);
 
             lagrangeCommittee.addBlsPubKeys(
-                operator, _calcProofForBLSKeys(privateKey, additionalBlsPubKeys1, bytes32("salt4"))
+                operator, _calcProofForBLSKeys(operator, additionalBlsPubKeys1, bytes32("salt4"))
             );
             uint256[2][] memory _blsPubKeys1 = lagrangeCommittee.getBlsPubKeys(operator);
             assertEq(_blsPubKeys1.length, 2);
@@ -344,7 +344,7 @@ contract CommitteeTreeTest is LagrangeDeployer {
             uint256[2] memory newBlsPubKey1;
             newBlsPubKey1 = _readKnownBlsPubKey(1);
             lagrangeCommittee.updateBlsPubKey(
-                operator, 0, _calcProofForBLSKey(privateKey, newBlsPubKey1, bytes32("salt5"))
+                operator, 0, _calcProofForBLSKey(operator, newBlsPubKey1, bytes32("salt5"))
             );
             _blsPubKeys = lagrangeCommittee.getBlsPubKeys(operator);
             assertEq(_blsPubKeys[1][0], _readKnownBlsPubKey(5)[0]);
