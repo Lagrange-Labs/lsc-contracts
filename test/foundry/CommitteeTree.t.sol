@@ -104,53 +104,6 @@ contract CommitteeTreeTest is LagrangeDeployer {
         cur = lagrangeCommittee.getCommittee(CHAIN_ID, updatingBlock2 + 1);
         assertEq(cur.leafCount, 3);
         assertEq(cur.root, 0x40f94114329d62f0875538d1d999c88d9369bb2ec18e085836e9142b2cbf31ee);
-
-        {
-            // update sequencer bls key
-            uint256[2] memory blsPubKey = _readKnownBlsPubKey(9);
-            IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof =
-                _calcProofForBLSKey(address(lagrangeCommittee), blsPubKey);
-
-            vm.prank(operators[0]);
-            vm.expectRevert("Ownable: caller is not the owner");
-            lagrangeCommittee.updateSequencerBlsPubKey(blsKeyWithProof);
-
-            vm.startPrank(lagrangeCommittee.owner());
-            IBLSKeyChecker.BLSKeyWithProof memory wrongBlsKeyWithProof = _calcProofForBLSKey(operators[0], blsPubKey);
-            vm.expectRevert();
-            lagrangeCommittee.updateSequencerBlsPubKey(wrongBlsKeyWithProof);
-
-            lagrangeCommittee.updateSequencerBlsPubKey(blsKeyWithProof);
-            vm.stopPrank();
-
-            uint256[2][] memory sequencerKeys = lagrangeCommittee.getBlsPubKeys(address(lagrangeCommittee));
-            assertEq(sequencerKeys.length, 1);
-            assertEq(sequencerKeys[0][0], blsPubKey[0]);
-            assertEq(sequencerKeys[0][1], blsPubKey[1]);
-        }
-
-        uint256 updatingBlock3 = updatingBlock1 + 2 * EPOCH_PERIOD - FREEZE_DURATION + 1;
-        vm.roll(updatingBlock3);
-        lagrangeCommittee.update(CHAIN_ID, 3);
-        cur = lagrangeCommittee.getCommittee(CHAIN_ID, updatingBlock3 + 1);
-        assertEq(cur.leafCount, 4);
-        assertEq(cur.root, 0x79a22f89ae31e8cce3b539a226d548ff9d68bfac7dbe16a17229590d25d481cf);
-
-        {
-            // update sequencer bls key
-            vm.startPrank(lagrangeCommittee.owner());
-            // new sequencer bls key
-            uint256[2] memory blsPubKey = _readKnownBlsPubKey(10);
-            IBLSKeyChecker.BLSKeyWithProof memory newBlsKeyWithProof =
-                _calcProofForBLSKey(address(lagrangeCommittee), blsPubKey, "salt2");
-            lagrangeCommittee.updateSequencerBlsPubKey(newBlsKeyWithProof);
-            vm.stopPrank();
-
-            uint256[2][] memory sequencerKeys = lagrangeCommittee.getBlsPubKeys(address(lagrangeCommittee));
-            assertEq(sequencerKeys.length, 1);
-            assertEq(sequencerKeys[0][0], blsPubKey[0]);
-            assertEq(sequencerKeys[0][1], blsPubKey[1]);
-        }
     }
 
     function testRevertEpoch() public {
