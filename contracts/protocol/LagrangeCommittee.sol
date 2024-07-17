@@ -60,18 +60,6 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         _transferOwnership(initialOwner);
     }
 
-    // Updates the sequencer key, create new one is not exists
-    function updateSequencerBlsPubKey(IBLSKeyChecker.BLSKeyWithProof calldata blsKeyWithProof) external onlyOwner {
-        require(blsKeyWithProof.blsG1PublicKeys.length == 1, "Only one key should be provided.");
-        _validateBLSKeyWithProof(address(this), blsKeyWithProof);
-        operatorsStatus[address(this)].blsPubKeys = blsKeyWithProof.blsG1PublicKeys;
-        if (operatorsStatus[address(this)].blsPubKeys.length == 0) {
-            emit BlsKeyUpdated(address(this), 0, 1, 0);
-        } else {
-            emit BlsKeyUpdated(address(this), 1, 1, 1);
-        }
-    }
-
     // Adds a new operator to the committee
     function addOperator(address operator, address signAddress, BLSKeyWithProof calldata blsKeyWithProof)
         external
@@ -112,11 +100,9 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         _validateBLSKeyWithProof(operator, blsKeyWithProof);
         require(blsKeyWithProof.blsG1PublicKeys.length == 1, "Length should be 1 for update");
         uint256[2][] storage _blsPubKeys = operatorsStatus[operator].blsPubKeys;
-        uint256 _orgLength = _blsPubKeys.length;
-        require(_orgLength > index, "Invalid index");
+        require(_blsPubKeys.length > index, "Invalid index");
         _checkBlsPubKeyDuplicate(_blsPubKeys, blsKeyWithProof.blsG1PublicKeys[0]);
         _blsPubKeys[index] = blsKeyWithProof.blsG1PublicKeys[0];
-        emit BlsKeyUpdated(operator, _orgLength, 1, 1);
     }
 
     // Removes BLS public keys from an operator for the given indices
@@ -142,7 +128,6 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
             _newBlsPubKeys[i] = _blsPubKeys[i];
         }
         operatorsStatus[operator].blsPubKeys = _newBlsPubKeys;
-        emit BlsKeyUpdated(operator, _length, 0, indices.length);
     }
 
     // Updates an operator's sign address
@@ -444,14 +429,12 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
 
         delete operatorsStatus[_operator];
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
-        uint256 _orgLength = _opStatus.blsPubKeys.length;
         _opStatus.signAddress = _signAddress;
         uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
         for (uint256 i; i < _length; i++) {
             _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
             _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
         }
-        emit BlsKeyUpdated(_operator, _orgLength, _length, 0);
     }
 
     function _addBlsPubKeys(address _operator, BLSKeyWithProof memory _blsKeyWithProof) internal {
@@ -459,13 +442,11 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
 
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
-        uint256 _orgLength = _opStatus.blsPubKeys.length;
         uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
         for (uint256 i; i < _length; i++) {
             _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
             _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
         }
-        emit BlsKeyUpdated(_operator, _orgLength, _length, 0);
     }
 
     function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
@@ -516,7 +497,7 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         address[] memory _operators = committeeAddrs[_chainID];
         uint256 _operatorCount = _operators.length;
 
-        uint256 _leafCounter = 1;
+        uint256 _leafCounter;
 
         // pre-calculate array size (can be bigger than actual size)
         for (uint256 i; i < _operatorCount;) {
@@ -529,13 +510,6 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         bytes32[] memory _committeeLeaves = new bytes32[](_leafCounter);
         {
             _leafCounter = 0;
-            if (operatorsStatus[address(this)].blsPubKeys.length != 0) {
-                _committeeLeaves[_leafCounter] =
-                    _leafHash(address(this), operatorsStatus[address(this)].blsPubKeys[0], 0);
-                unchecked {
-                    _leafCounter++;
-                }
-            }
             for (uint256 i; i < _operatorCount;) {
                 address _operator = _operators[i];
 

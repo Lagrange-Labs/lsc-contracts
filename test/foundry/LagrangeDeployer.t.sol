@@ -477,57 +477,6 @@ contract LagrangeDeployer is Test {
             keyWithProof.signature[1] = 280493063917217164368954138635461191777155944930732092323356548285123446725;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
-        {
-            IBLSKeyChecker.BLSKeyWithProof memory keyWithProof;
-
-            address operator = address(0xA00DaC36c34AAf7DC950d8E7156Be495191d4234);
-            uint256 expiry = 1001;
-            bytes32 salt = bytes32("salt");
-            bytes32 digestHash = lagrangeCommittee.calculateKeyWithProofHash(operator, salt, expiry);
-
-            keyWithProof.blsG1PublicKeys = new uint256[2][](1);
-            keyWithProof.salt = salt;
-            keyWithProof.expiry = expiry;
-            keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(9);
-            keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(9);
-            keyWithProof.signature[0] = 2276678920098080295068589088903944219814959727842730093475790154726422614061;
-            keyWithProof.signature[1] = 8995201132505520068782331803461571318208346808437345829021042209201344932608;
-            knownBlsGroups[digestHash].push(keyWithProof);
-        }
-        {
-            IBLSKeyChecker.BLSKeyWithProof memory keyWithProof;
-
-            address operator = address(0x052b91ad9732D1bcE0dDAe15a4545e5c65D02443);
-            uint256 expiry = 1001;
-            bytes32 salt = bytes32("salt");
-            bytes32 digestHash = lagrangeCommittee.calculateKeyWithProofHash(operator, salt, expiry);
-
-            keyWithProof.blsG1PublicKeys = new uint256[2][](1);
-            keyWithProof.salt = salt;
-            keyWithProof.expiry = expiry;
-            keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(9);
-            keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(9);
-            keyWithProof.signature[0] = 19508295020599638427100600663969775876870979462931170555434086705099263830129;
-            keyWithProof.signature[1] = 6951371751295157900703707928823400929597287868939849078154329268622763259158;
-            knownBlsGroups[digestHash].push(keyWithProof);
-        }
-        {
-            IBLSKeyChecker.BLSKeyWithProof memory keyWithProof;
-
-            address operator = address(0xA00DaC36c34AAf7DC950d8E7156Be495191d4234);
-            uint256 expiry = 1001;
-            bytes32 salt = bytes32("salt2");
-            bytes32 digestHash = lagrangeCommittee.calculateKeyWithProofHash(operator, salt, expiry);
-
-            keyWithProof.blsG1PublicKeys = new uint256[2][](1);
-            keyWithProof.salt = salt;
-            keyWithProof.expiry = expiry;
-            keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(10);
-            keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(10);
-            keyWithProof.signature[0] = 7946246266992163154158282254721787931529417396576328342380027526316953544216;
-            keyWithProof.signature[1] = 15312372502133639686079754063849653468329115035357668783766402382480746239792;
-            knownBlsGroups[digestHash].push(keyWithProof);
-        }
         uint256 chainidBackup = block.chainid;
         vm.chainId(17000); // holesky testnet
         {
