@@ -23,12 +23,6 @@ interface ILagrangeService {
 
     function updateSignAddress(address newSignAddress) external;
 
-    function updateBlsPubKey(uint32 index, uint256[2] memory blsPubKey) external;
-
-    function removeBlsPubKeys(uint32[] memory indices) external;
-
-    function updateSignAddress(address newSignAddress) external;
-
     function subscribe(uint32 chainID) external;
 
     function unsubscribe(uint32 chainID) external;

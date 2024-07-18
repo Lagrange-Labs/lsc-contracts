@@ -36,14 +36,15 @@ contract Deploy is Script, Test {
             TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
         );
 
-        uint32 CHAIN_ID_BASE = lagrangeCommittee.chainIDs(0);
-        uint32 CHAIN_ID_OP = lagrangeCommittee.chainIDs(1);
+        // dead code
+        // uint32 CHAIN_ID_BASE = lagrangeCommittee.chainIDs(0);
+        // uint32 CHAIN_ID_OP = lagrangeCommittee.chainIDs(1);
 
-        // set first epoch period for CHAIN_ID_BASE
-        lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_BASE);
+        // // set first epoch period for CHAIN_ID_BASE
+        // lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_BASE);
 
-        // set first epoch period for CHAIN_ID_OP
-        lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_OP);
+        // // set first epoch period for CHAIN_ID_OP
+        // lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_OP);
 
         vm.stopBroadcast();
     }

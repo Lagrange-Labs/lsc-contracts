@@ -48,21 +48,22 @@ contract Deploy is Script, Test {
             );
         }
 
-        uint32 CHAIN_ID_BASE = lagrangeCommittee.chainIDs(0); // 8453
-        uint32 CHAIN_ID_OP = lagrangeCommittee.chainIDs(1); // 10
-        uint32 CHAIN_ID_ARB = lagrangeCommittee.chainIDs(2); // 42161
+        // dead code, only keeping for trach purpose
+        // uint32 CHAIN_ID_BASE = lagrangeCommittee.chainIDs(0); // 8453
+        // uint32 CHAIN_ID_OP = lagrangeCommittee.chainIDs(1); // 10
+        // uint32 CHAIN_ID_ARB = lagrangeCommittee.chainIDs(2); // 42161
 
-        // set first epoch period
-        {
-            // set first epoch period for CHAIN_ID_BASE
-            lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_BASE);
+        // // set first epoch period
+        // {
+        //     // set first epoch period for CHAIN_ID_BASE
+        //     lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_BASE);
 
-            // set first epoch period for CHAIN_ID_OP
-            lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_OP);
+        //     // set first epoch period for CHAIN_ID_OP
+        //     lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_OP);
 
-            // set first epoch period for CHAIN_ID_ARB
-            lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_ARB);
-        }
+        //     // set first epoch period for CHAIN_ID_ARB
+        //     lagrangeCommittee.setFirstEpochPeriod(CHAIN_ID_ARB);
+        // }
 
         vm.stopBroadcast();
     }

@@ -140,47 +140,6 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         emit SignAddressUpdated(operator, newSignAddress);
     }
 
-    // Updates an operator's BLS public key for the given index
-    function updateBlsPubKey(address operator, uint32 index, uint256[2] calldata blsPubKey) external onlyService {
-        require(blsPubKey[0] != 0 && blsPubKey[1] != 0, "Invalid BLS Public Key.");
-        uint256[2][] storage _blsPubKeys = operatorsStatus[operator].blsPubKeys;
-        require(_blsPubKeys.length > index, "Invalid index");
-        _checkBlsPubKeyDuplicate(_blsPubKeys, blsPubKey);
-        _blsPubKeys[index] = blsPubKey;
-    }
-
-    // Removes BLS public keys from an operator for the given indices
-    function removeBlsPubKeys(address operator, uint32[] calldata indices) external onlyService {
-        uint256[2][] memory _blsPubKeys = operatorsStatus[operator].blsPubKeys;
-        uint256 _length = _blsPubKeys.length;
-        // it ensures that keep at least one BLS public key
-        require(_length > indices.length, "Invalid indices length, BLS keys cannot be empty.");
-        for (uint256 i; i < indices.length; i++) {
-            require(_length > indices[i], "Invalid index");
-            _blsPubKeys[indices[i]][0] = 0;
-            _blsPubKeys[indices[i]][1] = 0;
-        }
-        uint32 count;
-        for (uint256 i; i < _length; i++) {
-            if (_blsPubKeys[i][0] != 0 || _blsPubKeys[i][1] != 0) {
-                _blsPubKeys[count] = _blsPubKeys[i];
-                count++;
-            }
-        }
-        uint256[2][] memory _newBlsPubKeys = new uint256[2][](count);
-        for (uint256 i; i < count; i++) {
-            _newBlsPubKeys[i] = _blsPubKeys[i];
-        }
-        operatorsStatus[operator].blsPubKeys = _newBlsPubKeys;
-    }
-
-    // Updates an operator's sign address
-    function updateSignAddress(address operator, address newSignAddress) external onlyService {
-        require(operatorsStatus[operator].blsPubKeys.length != 0, "Operator is not registered.");
-        operatorsStatus[operator].signAddress = newSignAddress;
-        emit SignAddressUpdated(operator, newSignAddress);
-    }
-
     function subscribeChain(address operator, uint32 chainID) external onlyService {
         // Check if the chainID is already registered
         require(committeeParams[chainID].startBlock > 0, "The dedicated chain is not registered.");
@@ -313,12 +272,6 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         updatedEpoch[chainID] = epochNumber - 1;
     }
 
-    function revertEpoch(uint32 chainID, uint256 epochNumber) public onlyOwner {
-        require(updatedEpoch[chainID] == epochNumber, "The epochNumber is not the latest.");
-        delete committees[chainID][epochNumber];
-        updatedEpoch[chainID] = epochNumber - 1;
-    }
-
     // Computes epoch number for a chain's committee at a given block
     function getEpochNumber(uint32 chainID, uint256 blockNumber) public view virtual returns (uint256 epochNumber) {
         epochNumber = _getEpochNumber(chainID, blockNumber);
@@ -381,8 +334,6 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
 
         chainIDs.push(_chainID);
 
-        setFirstEpochPeriod(_chainID);
-
         emit InitCommittee(_chainID, _quorumNumber, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight);
     }
 
@@ -398,12 +349,6 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         uint96 _minWeight,
         uint96 _maxWeight
     ) internal {
-        if (committeeParams[_chainID].duration != _duration) {
-            uint256 _flagEpoch = _getEpochNumber(_chainID, block.number - 1) + 1;
-            (,, uint256 _endBlockPrv) = getEpochInterval(_chainID, _flagEpoch - 1);
-            _writeEpochPeriod(_chainID, _endBlockPrv, _flagEpoch, _duration);
-        }
-
         committeeParams[_chainID] = CommitteeDef(
             _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
         );
