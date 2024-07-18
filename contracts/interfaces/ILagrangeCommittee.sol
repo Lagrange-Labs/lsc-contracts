@@ -115,6 +115,9 @@ interface ILagrangeCommittee is IBLSKeyChecker {
         uint96 minWeight,
         uint96 maxWeight
     );
+    
+    // Fired on BlsKeys are added/removed/updated
+    event BlsKeyUpdated(address indexed operator, uint256 orgLength, uint256 added, uint256 removed);
 
     // Fired on successful rotation of committee
     event UpdateCommittee(uint256 indexed chainID, uint256 indexed epochNumber, bytes32 current);

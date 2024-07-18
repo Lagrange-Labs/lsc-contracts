@@ -100,9 +100,11 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
         _validateBLSKeyWithProof(operator, blsKeyWithProof);
         require(blsKeyWithProof.blsG1PublicKeys.length == 1, "Length should be 1 for update");
         uint256[2][] storage _blsPubKeys = operatorsStatus[operator].blsPubKeys;
-        require(_blsPubKeys.length > index, "Invalid index");
+        uint256 _orgLength = _blsPubKeys.length;
+        require(_orgLength > index, "Invalid index");
         _checkBlsPubKeyDuplicate(_blsPubKeys, blsKeyWithProof.blsG1PublicKeys[0]);
         _blsPubKeys[index] = blsKeyWithProof.blsG1PublicKeys[0];
+        emit BlsKeyUpdated(operator, _orgLength, 1, 1);
     }
 
     // Removes BLS public keys from an operator for the given indices
@@ -128,6 +130,7 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
             _newBlsPubKeys[i] = _blsPubKeys[i];
         }
         operatorsStatus[operator].blsPubKeys = _newBlsPubKeys;
+        emit BlsKeyUpdated(operator, _length, 0, indices.length);
     }
 
     // Updates an operator's sign address
@@ -429,12 +432,14 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
 
         delete operatorsStatus[_operator];
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
+        uint256 _orgLength = _opStatus.blsPubKeys.length;
         _opStatus.signAddress = _signAddress;
         uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
         for (uint256 i; i < _length; i++) {
             _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
             _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
         }
+        emit BlsKeyUpdated(_operator, _orgLength, _length, 0);
     }
 
     function _addBlsPubKeys(address _operator, BLSKeyWithProof memory _blsKeyWithProof) internal {
@@ -442,11 +447,13 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
 
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
         require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
+        uint256 _orgLength = _opStatus.blsPubKeys.length;
         uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
         for (uint256 i; i < _length; i++) {
             _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
             _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
         }
+        emit BlsKeyUpdated(_operator, _orgLength, _length, 0);
     }
 
     function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
