@@ -96,6 +96,8 @@ deploy-lagrange-testnet: deploy-lagrange add-quorum init-committee
 
 depoloy-eigen-private-testnet: init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum deploy-register
 
+deploy-lagrange-mainnet: deploy-lagrange add-quorum init-committee
+
 .PHONY: deploy-eigen-localnet deploy-mock-localnet deploy-native-localnet
 
 # Formatter

@@ -14,6 +14,7 @@ const m1DeployedAddresses = require('../script/output/M1_deployment_data.json');
 const operators = require('../config/operators.json');
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+const REGISTERED_OPERATOR_COUNT = 10;
 
 const NUM_ACCOUNTS = parseInt(process.env.NUM_ACCOUNTS || '15');
 const REGISTERED_OPERATOR_COUNT = NUM_ACCOUNTS - 5;

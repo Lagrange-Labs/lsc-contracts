@@ -75,6 +75,12 @@ interface ILagrangeCommittee is IBLSKeyChecker {
 
     function updateSignAddress(address operator, address newSignAddress) external;
 
+    function updateBlsPubKey(address operator, uint32 index, uint256[2] memory blsPubKey) external;
+
+    function removeBlsPubKeys(address operator, uint32[] memory indices) external;
+
+    function updateSignAddress(address operator, address newSignAddress) external;
+
     function isLocked(uint32 chainID) external view returns (bool, uint256);
 
     function subscribeChain(address operator, uint32 chainID) external;
