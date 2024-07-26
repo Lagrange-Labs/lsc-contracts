@@ -4,6 +4,8 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
 import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
+import {LagrangeCommitteeTestnet} from "../../contracts/protocol/testnet/LagrangeCommitteeTestnet.sol";
+import {LagrangeServiceTestnet} from "../../contracts/protocol/testnet/LagrangeServiceTestnet.sol";
 import {VoteWeigher} from "../../contracts/protocol/VoteWeigher.sol";
 
 import "forge-std/Script.sol";
@@ -43,13 +45,25 @@ abstract contract BaseScript is Script, Test {
     function _redeployService() internal {
         vm.startBroadcast(lagrangeService.owner());
 
-        LagrangeService lagrangeServiceImp = new LagrangeService(
-            lagrangeCommittee,
-            lagrangeService.stakeManager(),
-            address(lagrangeService.avsDirectory()),
-            lagrangeService.voteWeigher()
-        );
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeService))), address(lagrangeServiceImp));
+        address _lagrangeServiceImp;
+        if (block.chainid == 17000 || block.chainid == 11155111) {
+            LagrangeServiceTestnet lagrangeServiceImp = new LagrangeServiceTestnet(
+                lagrangeCommittee,
+                lagrangeService.stakeManager(),
+                address(lagrangeService.avsDirectory()),
+                lagrangeService.voteWeigher()
+            );
+            _lagrangeServiceImp = address(lagrangeServiceImp);
+        } else {
+            LagrangeService lagrangeServiceImp = new LagrangeService(
+                lagrangeCommittee,
+                lagrangeService.stakeManager(),
+                address(lagrangeService.avsDirectory()),
+                lagrangeService.voteWeigher()
+            );
+            _lagrangeServiceImp = address(lagrangeServiceImp);
+        }
+        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeService))), _lagrangeServiceImp);
 
         vm.stopBroadcast();
     }
@@ -57,10 +71,17 @@ abstract contract BaseScript is Script, Test {
     function _redeployCommittee() internal {
         vm.startBroadcast(lagrangeCommittee.owner());
 
-        LagrangeCommittee lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), address(lagrangeCommitteeImp)
-        );
+        address _lagrangeCommitteeImp;
+        if (block.chainid == 17000) {
+            LagrangeCommitteeTestnet lagrangeCommitteeImp =
+                new LagrangeCommitteeTestnet(lagrangeService, lagrangeCommittee.voteWeigher());
+            _lagrangeCommitteeImp = address(lagrangeCommitteeImp);
+        } else {
+            LagrangeCommittee lagrangeCommitteeImp =
+                new LagrangeCommittee(lagrangeService, lagrangeCommittee.voteWeigher());
+            _lagrangeCommitteeImp = address(lagrangeCommitteeImp);
+        }
+        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(lagrangeCommittee))), _lagrangeCommitteeImp);
 
         vm.stopBroadcast();
     }
