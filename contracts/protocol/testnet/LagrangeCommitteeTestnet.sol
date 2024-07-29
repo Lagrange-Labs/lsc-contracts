@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "../LagrangeCommittee.sol";
 
@@ -29,7 +29,7 @@ contract LagrangeCommitteeTestnet is LagrangeCommittee {
 
     function _getUpdatedL1Block(uint32 _chainID, uint256 _epochNumber) internal view returns (uint256) {
         uint256 _stored = committees[_chainID][_epochNumber].updatedBlock;
-        return (_stored >> 112) != 0 ? (_stored >> 112) : uint256(int256(_stored) + committeeParams[_chainID].l1Bias);
+        return (_stored >> 112) != 0 ? (_stored >> 112) : uint256(int256(_stored) - committeeParams[_chainID].l1Bias);
     }
 
     function _setUpdatedBlock(uint32 _chainID, uint256 _epochNumber, uint256 _l1BlockNumber) internal override {

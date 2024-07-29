@@ -1,4 +1,4 @@
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -46,7 +46,7 @@ contract DeployMock is Script {
 
             for (uint256 i = 0; i < arbOperators.length; i++) {
                 IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                    earningsReceiver: arbOperators[i],
+                    __deprecated_earningsReceiver: arbOperators[i],
                     delegationApprover: address(0),
                     stakerOptOutWindowBlocks: 0
                 });
@@ -58,7 +58,7 @@ contract DeployMock is Script {
 
             for (uint256 i = 0; i < optOperators.length; i++) {
                 IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                    earningsReceiver: optOperators[i],
+                    __deprecated_earningsReceiver: optOperators[i],
                     delegationApprover: address(0),
                     stakerOptOutWindowBlocks: 0
                 });

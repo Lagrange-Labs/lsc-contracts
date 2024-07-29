@@ -3,7 +3,7 @@
 /* eslint-disable */
 // forgefmt: disable-start
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -78,13 +78,7 @@ contract StrategyManager is IStrategyManager {
         return address(0);
     }
 
-    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal calldata /*queuedWithdrawal*/) external pure returns (bool, bytes32) {
-        return (false, bytes32(0));
-    }
-
-    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal calldata /*queuedWithdrawal*/) external pure returns (bytes32) {
-        return bytes32(0);
-    }
+    function strategyIsWhitelistedForDeposit(IStrategy strategy) external view returns (bool) {}
 
     function addShares(address /*staker*/, IERC20 /*token*/, IStrategy /*strategy*/, uint256 /*shares*/) external {}
 
@@ -93,5 +87,5 @@ contract StrategyManager is IStrategyManager {
         bool[] calldata /*thirdPartyTransfersForbiddenValues*/
     ) external {}
 
-    function thirdPartyTransfersForbidden(IStrategy /*strategy*/) external view returns (bool){}
+    function thirdPartyTransfersForbidden(IStrategy /*strategy*/) external view returns (bool) {}
 }
