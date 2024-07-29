@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import {BN254} from "eigenlayer-middleware/libraries/BN254.sol";
 
@@ -16,6 +16,7 @@ abstract contract BLSKeyChecker is IBLSKeyChecker {
     bytes32 public constant BLS_KEY_WITH_PROOF_TYPEHASH =
         keccak256("BLSKeyWithProof(address operator,bytes32 salt,uint256 expiry)");
 
+    /// @custom:storage-location erc7201:lagrange.blskeychecker.storage
     struct SaltStorage {
         mapping(address => mapping(bytes32 => bool)) operatorSalts;
     }
