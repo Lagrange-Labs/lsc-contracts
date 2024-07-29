@@ -11,7 +11,7 @@ abstract contract BLSKeyChecker is IBLSKeyChecker {
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
     bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     bytes32 public constant BLS_KEY_WITH_PROOF_TYPEHASH =
         keccak256("BLSKeyWithProof(address operator,bytes32 salt,uint256 expiry)");
@@ -75,7 +75,8 @@ abstract contract BLSKeyChecker is IBLSKeyChecker {
     }
 
     function domainSeparator() public view returns (bytes32) {
-        return
-            keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Lagrange State Committee"), block.chainid, address(this)));
+        return keccak256(
+            abi.encode(DOMAIN_TYPEHASH, keccak256("Lagrange State Committee"), "1", block.chainid, address(this))
+        );
     }
 }

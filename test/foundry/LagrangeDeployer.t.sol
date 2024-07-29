@@ -217,8 +217,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(1);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(1);
-            keyWithProof.signature[0] = 15921140252975377423994196099001272773284939434965566079471588880280786420677;
-            keyWithProof.signature[1] = 7332784689683052555864284122213275566890163145140074068086313511863203727694;
+            keyWithProof.signature[0] = 17199323088193543277570612595864217798951261672450339001232167639422567643196;
+            keyWithProof.signature[1] = 751021425588827292293422272884311683549297802474520465645717732738184046597;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -234,8 +234,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(2);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(2);
-            keyWithProof.signature[0] = 19795328608502458562515598110459675652016548373721017447668129866961817110318;
-            keyWithProof.signature[1] = 10256498968130419831503675412302049575196783250451056335358876552078425160998;
+            keyWithProof.signature[0] = 4759468427417331338096225590380196861678766840686044783598908858507611445709;
+            keyWithProof.signature[1] = 13931293079705789625040656990745107362878261090324869611419352282504788250056;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -251,8 +251,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(2);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(2);
-            keyWithProof.signature[0] = 15575751001865467640019584774310153796650213096552608892735562486644842181725;
-            keyWithProof.signature[1] = 6044316828442607059249448078621067025573636648109861092894886010418287166198;
+            keyWithProof.signature[0] = 34756791824567266224631101671618994159070928354445946482456048048663464705;
+            keyWithProof.signature[1] = 1601580614586775708524683893294250696718035210409284992523863733431967325648;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -276,8 +276,8 @@ contract LagrangeDeployer is Test {
                 5114341255269544452401726150392607561398256980868448135390245953108770572183;
             keyWithProof.aggG2PublicKey[1][0] =
                 18171377127265906515233897598526544722054598806864022415405699900398453279838;
-            keyWithProof.signature[0] = 6170367078810497485999830899778843210644556456614930176262867102271115625756;
-            keyWithProof.signature[1] = 13466672684255091281925999915998956781018002884888917231327288088687425188766;
+            keyWithProof.signature[0] = 17471920020921840372105598221319870168547950373398063923459571760436410230798;
+            keyWithProof.signature[1] = 19939600192967785038303848210689779685435727604062122663968539782023194319470;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -293,8 +293,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(3);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(3);
-            keyWithProof.signature[0] = 9638620410705059766600007244635247155503475228465321585770248681660498694789;
-            keyWithProof.signature[1] = 11043471024492783409224449533192995294553640308083488815324717239561400693369;
+            keyWithProof.signature[0] = 2291005243417438893967732986249445863411105391310016687360657486426096419113;
+            keyWithProof.signature[1] = 18952248983847686580077537003629398190955694737122412471680561329538688076671;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -319,8 +319,8 @@ contract LagrangeDeployer is Test {
                 10498025079967091468307570108978201557199116610816331093720310741816111715287;
             keyWithProof.aggG2PublicKey[1][0] =
                 21390814521535213786481949944100584184214797449493352815966669025419414797309;
-            keyWithProof.signature[0] = 408108792277085165492799598455267538822176867543195473463955563047270669758;
-            keyWithProof.signature[1] = 13158963018952089623410459356532485505923012670797089597669035203655512456266;
+            keyWithProof.signature[0] = 2232337070325038939571091215503373503547576046854023576969710416490694218898;
+            keyWithProof.signature[1] = 2470870487762863266204504008493981661690003053148728946480380112989365089729;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -346,8 +346,8 @@ contract LagrangeDeployer is Test {
                 3266387748569560375102829718109257620384034916503067447479562991241789932484;
             keyWithProof.aggG2PublicKey[1][0] =
                 20590321380350934733756372600333434645461469888436858902424026979565468990377;
-            keyWithProof.signature[0] = 18705490630560712939412903454952715701964277146886414667889363282056902966691;
-            keyWithProof.signature[1] = 14280133365446777403501268114433161798314533971755502359054273841634742349195;
+            keyWithProof.signature[0] = 15003521860711327604903817927542065291928952056143293566020166592774104999095;
+            keyWithProof.signature[1] = 17230799891150258922114407084138307132012056704572378936341016601953585933296;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -363,8 +363,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(9);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(9);
-            keyWithProof.signature[0] = 8104028208194733071334647004111998550876885377720109175958316017645038879152;
-            keyWithProof.signature[1] = 7278749530659924555957809914959057961307047000429758584992752589691267913933;
+            keyWithProof.signature[0] = 11999720334652961929599239580926165326277199102912324903875403322407774464045;
+            keyWithProof.signature[1] = 21243335116071870591184494667727965687217795729651470837412773640658259999522;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -380,8 +380,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(1);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(1);
-            keyWithProof.signature[0] = 18485284664738509299123082502625855940992586986027894540210244624797546397798;
-            keyWithProof.signature[1] = 7616645516452768803488436668555585042895469399650805331623421410227064934303;
+            keyWithProof.signature[0] = 6546048281658092535472524194690529189929273073109838951297622257276250699174;
+            keyWithProof.signature[1] = 2589516717571906356768328595933269365221677842550872443687481171703894873071;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -405,8 +405,8 @@ contract LagrangeDeployer is Test {
                 5114341255269544452401726150392607561398256980868448135390245953108770572183;
             keyWithProof.aggG2PublicKey[1][0] =
                 18171377127265906515233897598526544722054598806864022415405699900398453279838;
-            keyWithProof.signature[0] = 7859718125025868566092966453887393331758574058339056018235230601468015099448;
-            keyWithProof.signature[1] = 18272770206386315484619361082555265676642516846213057593643502273569335928678;
+            keyWithProof.signature[0] = 18771223214263168200874805772456659662326057533111504007635880454664774619022;
+            keyWithProof.signature[1] = 420128961880144106570903807741887686602725222096870825736032548115169453829;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -422,8 +422,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(4);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(4);
-            keyWithProof.signature[0] = 4474789933137347268577559361321453855149317435072158471711883976671292242869;
-            keyWithProof.signature[1] = 13007964118424605626004265987006332577892056100634924406299375779760416910532;
+            keyWithProof.signature[0] = 12070371711782210845261182502617632511341360494663936531646455265481202582185;
+            keyWithProof.signature[1] = 18608981529213253945356874854141442507552751495512868060579362350651863452517;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -439,8 +439,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(5);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(5);
-            keyWithProof.signature[0] = 3863966552807087244124686721137633044623638001986388009598743523342101143647;
-            keyWithProof.signature[1] = 6754575140317751452126855663965030148719601334922429367034455206963720892638;
+            keyWithProof.signature[0] = 13190061694265114853477081052211974977471493407405560124492494892525459969236;
+            keyWithProof.signature[1] = 1817612747541536182800916734059401348384289141737080575794412881457814353738;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -456,8 +456,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(1);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(1);
-            keyWithProof.signature[0] = 13758505917978100488948519312597996356767498113711898940538249488718994070156;
-            keyWithProof.signature[1] = 10405382952539000309278262410280670994052372040902676863038413277430025689798;
+            keyWithProof.signature[0] = 18088757116333031743561228955923820105792433215185834009546977764941668292111;
+            keyWithProof.signature[1] = 10247285105154724741403702230575029756978976024516135828556117835183535554783;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -473,8 +473,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(10);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(10);
-            keyWithProof.signature[0] = 10862883858769163293865832400633302416625503890029252720695098721183181537880;
-            keyWithProof.signature[1] = 280493063917217164368954138635461191777155944930732092323356548285123446725;
+            keyWithProof.signature[0] = 6528237737576124853407923681252091992608895325718817781423711636456836633482;
+            keyWithProof.signature[1] = 11067448007236948072589757344660150293341509091837476264529661198148745626589;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         uint256 chainidBackup = block.chainid;
@@ -492,8 +492,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(1);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(1);
-            keyWithProof.signature[0] = 15201994907539692674107666331634333008756164361909920971773367020525528340479;
-            keyWithProof.signature[1] = 13688585501184562715730707034037980037139184727262010866108196080050015430207;
+            keyWithProof.signature[0] = 13384982300195833786393862711791993643893041917398535780019509163977157041805;
+            keyWithProof.signature[1] = 4485415040370633274895162286481060683649470976343674095840042787838459601582;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -509,8 +509,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(2);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(2);
-            keyWithProof.signature[0] = 19628052726218325638218496100093743262125390907473748470116309891767230712226;
-            keyWithProof.signature[1] = 14127978985937000612006817629873663031355929020166982594326235545781546136578;
+            keyWithProof.signature[0] = 7905117338368741607975776461314350521925295659936656125027854581539393103153;
+            keyWithProof.signature[1] = 15172225709461105373688028418238185171647195204499791842615380032364123249125;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         {
@@ -526,8 +526,8 @@ contract LagrangeDeployer is Test {
             keyWithProof.expiry = expiry;
             keyWithProof.blsG1PublicKeys[0] = _readKnownBlsPubKey(3);
             keyWithProof.aggG2PublicKey = _readKnownBlsSingleAggr(3);
-            keyWithProof.signature[0] = 11621517380234521252543958464039728344030821240651194216053650240488502362391;
-            keyWithProof.signature[1] = 2338750728089039691549341717254094992964740576676546845715148029430819222337;
+            keyWithProof.signature[0] = 18098217780758214072779954553262241757478883700246442430770270226922435199767;
+            keyWithProof.signature[1] = 5037419497513441000228611829098584761568360394951628035925414013924693583676;
             knownBlsGroups[digestHash].push(keyWithProof);
         }
         vm.chainId(chainidBackup);
