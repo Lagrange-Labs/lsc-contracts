@@ -25,7 +25,10 @@ const abi = [
 const operators = ['0xadFDa3A18402D54534A4C8Ef8648C4732CEeAB53'];
 const deployedAddresses = require('../script/output/deployed_lgr.json');
 
-const contract = new web3.eth.Contract(abi, deployedAddresses.addresses.lagrangeService);
+const contract = new web3.eth.Contract(
+  abi,
+  deployedAddresses.addresses.lagrangeService,
+);
 
 (async () => {
   try {

@@ -1,7 +1,7 @@
 version: '3.3'
 services:
   geth:
-    image: ethereum/client-go
+    image: ethereum/client-go:v1.12.0
     environment:
       - DEV_PERIOD
     ports:
@@ -17,5 +17,7 @@ services:
       - --dev
       - --dev.period
       - $DEV_PERIOD
+      - --gcmode
+      - archive
       - --datadir
       - /geth_db

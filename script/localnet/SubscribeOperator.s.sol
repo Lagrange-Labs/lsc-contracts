@@ -1,4 +1,4 @@
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -38,8 +38,8 @@ contract SubscribeOperator is Script, Test {
             LagrangeService(stdJson.readAddress(deployLGRData, ".addresses.lagrangeService"));
         uint256[2][] memory _blsPublicPoints = new uint256[2][](1);
         _blsPublicPoints[0] = operator.blsPublicPoint;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
-        lagrangeService.register(operator.operatorAddress, _blsPublicPoints, operatorSignature);
+        // ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature; // TODO: need to generate signature
+        // lagrangeService.register(operator.operatorAddress, _blsPublicPoints, operatorSignature);
         lagrangeService.subscribe(operator.chainId);
 
         vm.stopBroadcast();

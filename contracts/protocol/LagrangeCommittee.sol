@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../interfaces/ILagrangeCommittee.sol";
 import "../interfaces/ILagrangeService.sol";
 import "../interfaces/IVoteWeigher.sol";
+import "../library/BLSKeyChecker.sol";
 
-contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommittee {
+contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, ILagrangeCommittee {
     ILagrangeService public immutable service;
     IVoteWeigher public immutable voteWeigher;
 
@@ -23,21 +24,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     // ChainID => Committee
     mapping(uint32 => CommitteeDef) public committeeParams;
 
-    // committees is also used for external storage for epoch period modification
-    //   committees[chainID][uint256.max].leafCount = current index of epoch period
-    //   committees[chainID][uint256.max - 1] : 1-index
-    //          updatedBlock:  (flagBlock << 112) | flagEpoch
-    //          leafCount:  epochPeriod
-    //   committees[chainID][uint256.max - 2] : 2-index
-    //   committees[chainID][uint256.max - 3] : 3-index
-    //      ...   ...   ...
     // ChainID => Epoch => CommitteeData
     mapping(uint32 => mapping(uint256 => CommitteeData)) public committees;
 
     // ChainID => Operator address[]
     mapping(uint32 => address[]) public committeeAddrs;
     // Tree Depth => Node Value
-    mapping(uint8 => bytes32) zeroHashes;
+    mapping(uint8 => bytes32) private zeroHashes;
 
     mapping(address => OperatorStatus) public operatorsStatus;
 
@@ -67,23 +60,13 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         _transferOwnership(initialOwner);
     }
 
-    // Initializes epoch period
-    // @dev This function can be called for the chainID registered in the previous version
-    function setFirstEpochPeriod(uint32 chainID) public onlyOwner {
-        uint32 _count = getEpochPeriodCount(chainID);
-        if (_count != 0) return; // already initialized
-        CommitteeDef memory _committeeParam = committeeParams[chainID];
-
-        _writeEpochPeriod(chainID, _committeeParam.startBlock, 0, _committeeParam.duration);
-    }
-
     // Adds a new operator to the committee
-    function addOperator(address operator, address signAddress, uint256[2][] calldata blsPubKeys)
+    function addOperator(address operator, address signAddress, BLSKeyWithProof calldata blsKeyWithProof)
         external
         onlyService
     {
-        _validateBlsPubKeys(blsPubKeys);
-        _registerOperator(operator, signAddress, blsPubKeys);
+        _validateBlsPubKeys(blsKeyWithProof.blsG1PublicKeys);
+        _registerOperator(operator, signAddress, blsKeyWithProof);
     }
 
     // Removes an operator from the committee
@@ -91,19 +74,37 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         delete operatorsStatus[operator];
     }
 
+    // Unsubscribe chain by admin
+    function unsubscribeByAdmin(address[] calldata operators, uint32 chainID) external onlyService {
+        uint256 _length = operators.length;
+        for (uint256 i; i < _length; i++) {
+            address _operator = operators[i];
+            require(subscribedChains[chainID][_operator], "The dedicated chain is not subscribed");
+            delete subscribedChains[chainID][_operator];
+            _removeOperatorFromCommitteeAddrs(chainID, _operator);
+            operatorsStatus[_operator].subscribedChainCount--;
+        }
+    }
+
     // Adds additional BLS public keys to an operator
-    function addBlsPubKeys(address operator, uint256[2][] calldata additionalBlsPubKeys) external onlyService {
-        _validateBlsPubKeys(additionalBlsPubKeys);
-        _addBlsPubKeys(operator, additionalBlsPubKeys);
+    function addBlsPubKeys(address operator, BLSKeyWithProof calldata blsKeyWithProof) external onlyService {
+        _validateBlsPubKeys(blsKeyWithProof.blsG1PublicKeys);
+        _addBlsPubKeys(operator, blsKeyWithProof);
     }
 
     // Updates an operator's BLS public key for the given index
-    function updateBlsPubKey(address operator, uint32 index, uint256[2] calldata blsPubKey) external onlyService {
-        require(blsPubKey[0] != 0 && blsPubKey[1] != 0, "Invalid BLS Public Key.");
+    function updateBlsPubKey(address operator, uint32 index, BLSKeyWithProof calldata blsKeyWithProof)
+        external
+        onlyService
+    {
+        _validateBLSKeyWithProof(operator, blsKeyWithProof);
+        require(blsKeyWithProof.blsG1PublicKeys.length == 1, "Length should be 1 for update");
         uint256[2][] storage _blsPubKeys = operatorsStatus[operator].blsPubKeys;
-        require(_blsPubKeys.length > index, "Invalid index");
-        _checkBlsPubKeyDuplicate(_blsPubKeys, blsPubKey);
-        _blsPubKeys[index] = blsPubKey;
+        uint256 _orgLength = _blsPubKeys.length;
+        require(_orgLength > index, "Invalid index");
+        _checkBlsPubKeyDuplicate(_blsPubKeys, blsKeyWithProof.blsG1PublicKeys[0]);
+        _blsPubKeys[index] = blsKeyWithProof.blsG1PublicKeys[0];
+        emit BlsKeyUpdated(operator, _orgLength, 1, 1);
     }
 
     // Removes BLS public keys from an operator for the given indices
@@ -129,6 +130,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             _newBlsPubKeys[i] = _blsPubKeys[i];
         }
         operatorsStatus[operator].blsPubKeys = _newBlsPubKeys;
+        emit BlsKeyUpdated(operator, _length, 0, indices.length);
     }
 
     // Updates an operator's sign address
@@ -183,7 +185,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint8 quorumNumber,
         uint96 minWeight,
         uint96 maxWeight
-    ) public onlyOwner {
+    ) external onlyOwner {
         require(committeeParams[chainID].startBlock == 0, "Committee has already been initialized.");
         _validateVotingPowerRange(minWeight, maxWeight);
         _validateFreezeDuration(epochPeriod, freezeDuration);
@@ -200,7 +202,7 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
         uint8 quorumNumber,
         uint96 minWeight,
         uint96 maxWeight
-    ) public onlyOwner {
+    ) external onlyOwner {
         uint256 _startBlock = committeeParams[chainID].startBlock;
         require(_startBlock != 0, "Chain not initialized");
 
@@ -260,17 +262,246 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
     }
 
     // If applicable, updates committee based on staking, unstaking, and slashing.
-    function update(uint32 chainID, uint256 epochNumber) public {
-        require(isUpdatable(chainID, epochNumber), "Block number is prior to committee freeze window.");
+    function update(uint32 chainID, uint256 epochNumber) external virtual {
+        _updateCommittee(chainID, epochNumber, block.number);
+    }
 
-        require(updatedEpoch[chainID] + 1 == epochNumber, "The epochNumber is not sequential.");
+    function revertEpoch(uint32 chainID, uint256 epochNumber) public onlyOwner {
+        require(updatedEpoch[chainID] == epochNumber, "The epochNumber is not the latest.");
+        delete committees[chainID][epochNumber];
+        updatedEpoch[chainID] = epochNumber - 1;
+    }
 
+    // Computes epoch number for a chain's committee at a given block
+    function getEpochNumber(uint32 chainID, uint256 blockNumber) public view virtual returns (uint256 epochNumber) {
+        epochNumber = _getEpochNumber(chainID, blockNumber);
+        // All the prior blocks belong to epoch 1
+        if (epochNumber == 0 && blockNumber >= committeeParams[chainID].genesisBlock) epochNumber = 1;
+    }
+
+    // Get the operator's voting power for the given chainID
+    function getOperatorVotingPower(address opAddr, uint32 chainID) public view returns (uint96) {
         CommitteeDef memory _committeeParam = committeeParams[chainID];
+        uint96 _weight = voteWeigher.weightOfOperator(_committeeParam.quorumNumber, opAddr);
+        return _checkVotingPower(
+            uint32(operatorsStatus[opAddr].blsPubKeys.length),
+            _weight,
+            _committeeParam.minWeight,
+            _committeeParam.maxWeight
+        );
+    }
+
+    // Get array of voting powers of individual BlsPubKeys
+    function getBlsPubKeyVotingPowers(address opAddr, uint32 chainID)
+        public
+        view
+        returns (uint96[] memory individualVotingPowers)
+    {
+        uint96 _votingPower = getOperatorVotingPower(opAddr, chainID);
+        uint96 _minWeight = committeeParams[chainID].minWeight;
+        uint96 _maxWeight = committeeParams[chainID].maxWeight;
+        return _divideVotingPower(_votingPower, _minWeight, _maxWeight);
+    }
+
+    function getTokenListForOperator(address operator) external view returns (address[] memory) {
+        uint256 _length = chainIDs.length;
+        uint8[] memory _quorumNumbers = new uint8[](operatorsStatus[operator].subscribedChainCount);
+        uint256 _count;
+        for (uint256 i; i < _length; i++) {
+            uint32 _chainID = chainIDs[i];
+            if (subscribedChains[_chainID][operator]) {
+                _quorumNumbers[_count++] = committeeParams[_chainID].quorumNumber;
+            }
+        }
+
+        return voteWeigher.getTokenListForQuorumNumbers(_quorumNumbers);
+    }
+
+    // Initialize new committee.
+    function _initCommittee(
+        uint32 _chainID,
+        uint256 _genesisBlock,
+        uint256 _duration,
+        uint256 _freezeDuration,
+        uint8 _quorumNumber,
+        uint96 _minWeight,
+        uint96 _maxWeight
+    ) internal {
+        committeeParams[_chainID] = CommitteeDef(
+            block.number, 0, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
+        );
+        committees[_chainID][0] = CommitteeData(0, 0, 0);
+
+        chainIDs.push(_chainID);
+
+        emit InitCommittee(_chainID, _quorumNumber, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight);
+    }
+
+    // Update committee.
+    function _updateCommitteeParams(
+        uint32 _chainID,
+        int256 _l1Bias,
+        uint256 _startBlock,
+        uint256 _genesisBlock,
+        uint256 _duration,
+        uint256 _freezeDuration,
+        uint8 _quorumNumber,
+        uint96 _minWeight,
+        uint96 _maxWeight
+    ) internal {
+        committeeParams[_chainID] = CommitteeDef(
+            _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
+        );
+
+        emit UpdateCommitteeParams(
+            _chainID, _quorumNumber, _l1Bias, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight
+        );
+    }
+
+    // Get epoch interval for a given chain
+    function getEpochInterval(uint32 chainID, uint256 epochNumber)
+        public
+        view
+        returns (uint256 startBlock, uint256 freezeBlock, uint256 endBlock)
+    {
+        CommitteeDef memory committeeParam = committeeParams[chainID];
+        uint256 _lastEpoch = updatedEpoch[chainID];
+
+        if (epochNumber == 0) {
+            startBlock = committeeParam.startBlock;
+            endBlock =
+                _lastEpoch == 0 ? committeeParam.startBlock + committeeParam.duration : _getUpdatedBlock(chainID, 1);
+            freezeBlock = endBlock - committeeParam.freezeDuration;
+            return (startBlock, freezeBlock, endBlock);
+        }
+
+        if (epochNumber <= _lastEpoch) {
+            startBlock = _getUpdatedBlock(chainID, epochNumber);
+            endBlock = _lastEpoch == epochNumber
+                ? startBlock + committeeParam.duration
+                : _getUpdatedBlock(chainID, epochNumber + 1);
+            freezeBlock = endBlock - committeeParam.freezeDuration;
+        } else {
+            uint256 _lastEpochBlock = _lastEpoch > 0 ? _getUpdatedBlock(chainID, _lastEpoch) : committeeParam.startBlock;
+            startBlock = _lastEpochBlock + (epochNumber - _lastEpoch) * committeeParam.duration;
+            endBlock = startBlock + committeeParam.duration;
+            freezeBlock = endBlock - committeeParam.freezeDuration;
+        }
+    }
+
+    function _getEpochNumber(uint32 _chainID, uint256 _blockNumber) internal view returns (uint256 _epochNumber) {
+        CommitteeDef memory committeeParam = committeeParams[_chainID];
+        if (_blockNumber < committeeParam.startBlock) {
+            return 0;
+        }
+
+        uint256 _lastEpoch = updatedEpoch[_chainID];
+        uint256 _lastEpochBlock = _lastEpoch > 0 ? _getUpdatedBlock(_chainID, _lastEpoch) : committeeParam.startBlock;
+
+        if (_blockNumber >= _lastEpochBlock) {
+            _epochNumber = _lastEpoch + (_blockNumber - _lastEpochBlock) / committeeParam.duration;
+        } else if (_lastEpoch == 0) {
+            return 0;
+        } else {
+            if (_blockNumber >= _lastEpochBlock - committeeParam.duration) {
+                _epochNumber = _lastEpoch;
+                while (_blockNumber < _getUpdatedBlock(_chainID, _epochNumber)) {
+                    _epochNumber--;
+                }
+                return _epochNumber;
+            }
+            // binary search
+            uint256 _low = 0;
+            uint256 _high = _lastEpoch;
+            while (_low < _high - 1) {
+                uint256 _mid = (_low + _high + 1) >> 1;
+                if (_blockNumber < _getUpdatedBlock(_chainID, _mid)) {
+                    _high = _mid;
+                } else {
+                    _low = _mid + 1;
+                }
+            }
+            _epochNumber = _high - 1;
+        }
+    }
+
+    function _registerOperator(address _operator, address _signAddress, BLSKeyWithProof memory _blsKeyWithProof)
+        internal
+    {
+        _validateBLSKeyWithProof(_operator, _blsKeyWithProof);
+
+        uint256 _orgLength = operatorsStatus[_operator].blsPubKeys.length;
+        delete operatorsStatus[_operator];
+        OperatorStatus storage _opStatus = operatorsStatus[_operator];
+        _opStatus.signAddress = _signAddress;
+        uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
+        for (uint256 i; i < _length; i++) {
+            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
+            _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
+        }
+        emit BlsKeyUpdated(_operator, _orgLength, _length, 0);
+    }
+
+    function _addBlsPubKeys(address _operator, BLSKeyWithProof memory _blsKeyWithProof) internal {
+        _validateBLSKeyWithProof(_operator, _blsKeyWithProof);
+
+        OperatorStatus storage _opStatus = operatorsStatus[_operator];
+        require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
+        uint256 _orgLength = _opStatus.blsPubKeys.length;
+        uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
+        for (uint256 i; i < _length; i++) {
+            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsKeyWithProof.blsG1PublicKeys[i]);
+            _opStatus.blsPubKeys.push(_blsKeyWithProof.blsG1PublicKeys[i]);
+        }
+        emit BlsKeyUpdated(_operator, _orgLength, _length, 0);
+    }
+
+    function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
+        uint256 _length = _blsPubKeys.length;
+        for (uint256 i; i < _length; i++) {
+            require(_blsPubKeys[i][0] != _blsPubKey[0] || _blsPubKeys[i][1] != _blsPubKey[1], "Duplicated BlsPubKey");
+        }
+    }
+
+    function _subscribeChain(address _operator, uint32 _chainID) internal {
+        subscribedChains[_chainID][_operator] = true;
+        operatorsStatus[_operator].subscribedChainCount++;
+
+        committeeAddrs[_chainID].push(_operator);
+    }
+
+    function _unsubscribeChain(address _operator, uint32 _chainID, uint256 _blockNumber) internal {
+        delete subscribedChains[_chainID][_operator];
+        OperatorStatus storage _opStatus = operatorsStatus[_operator];
+        _opStatus.unsubscribedParams.push(UnsubscribedParam(_chainID, _blockNumber));
+        _opStatus.subscribedChainCount--;
+
+        _removeOperatorFromCommitteeAddrs(_chainID, _operator);
+    }
+
+    function _removeOperatorFromCommitteeAddrs(uint32 _chainID, address _operator) internal {
+        uint256 _length = committeeAddrs[_chainID].length;
+        for (uint256 i; i < _length; i++) {
+            if (committeeAddrs[_chainID][i] == _operator) {
+                committeeAddrs[_chainID][i] = committeeAddrs[_chainID][_length - 1];
+                committeeAddrs[_chainID].pop();
+                break;
+            }
+        }
+        require(_length == committeeAddrs[_chainID].length + 1, "Operator doesn't exist in committeeAddrs.");
+    }
+
+    function _updateCommittee(uint32 _chainID, uint256 _epochNumber, uint256 _l1BlockNumber) internal {
+        require(isUpdatable(_chainID, _epochNumber), "Block number is prior to committee freeze window.");
+
+        require(updatedEpoch[_chainID] + 1 == _epochNumber, "The epochNumber is not sequential.");
+
+        CommitteeDef memory _committeeParam = committeeParams[_chainID];
         uint8 _quorumNumber = _committeeParam.quorumNumber;
         uint96 _minWeight = _committeeParam.minWeight;
         uint96 _maxWeight = _committeeParam.maxWeight;
 
-        address[] memory _operators = committeeAddrs[chainID];
+        address[] memory _operators = committeeAddrs[_chainID];
         uint256 _operatorCount = _operators.length;
 
         uint256 _leafCounter;
@@ -338,243 +569,24 @@ contract LagrangeCommittee is Initializable, OwnableUpgradeable, ILagrangeCommit
             if (_leafCounter > 0) _root = _committeeLeaves[0];
         }
 
-        _updateCommittee(chainID, epochNumber, _root, uint32(_leafCounter));
-    }
-
-    function revertEpoch(uint32 chainID, uint256 epochNumber) public onlyOwner {
-        require(updatedEpoch[chainID] == epochNumber, "The epochNumber is not the latest.");
-        delete committees[chainID][epochNumber];
-        updatedEpoch[chainID] = epochNumber - 1;
-    }
-
-    // Computes epoch number for a chain's committee at a given block
-    function getEpochNumber(uint32 chainID, uint256 blockNumber) public view returns (uint256 epochNumber) {
-        // we don't need to care about safeCast here, only getting API
-        blockNumber = uint256(int256(blockNumber) + committeeParams[chainID].l1Bias);
-
-        epochNumber = _getEpochNumber(chainID, blockNumber);
-        // All the prior blocks belong to epoch 1
-        if (epochNumber == 0) epochNumber = 1;
-    }
-
-    // Get the operator's voting power for the given chainID
-    function getOperatorVotingPower(address opAddr, uint32 chainID) public view returns (uint96) {
-        CommitteeDef memory _committeeParam = committeeParams[chainID];
-        uint96 _weight = voteWeigher.weightOfOperator(_committeeParam.quorumNumber, opAddr);
-        return _checkVotingPower(
-            uint32(operatorsStatus[opAddr].blsPubKeys.length),
-            _weight,
-            _committeeParam.minWeight,
-            _committeeParam.maxWeight
-        );
-    }
-
-    // Get array of voting powers of individual BlsPubKeys
-    function getBlsPubKeyVotingPowers(address opAddr, uint32 chainID)
-        public
-        view
-        returns (uint96[] memory individualVotingPowers)
-    {
-        uint96 _votingPower = getOperatorVotingPower(opAddr, chainID);
-        uint96 _minWeight = committeeParams[chainID].minWeight;
-        uint96 _maxWeight = committeeParams[chainID].maxWeight;
-        return _divideVotingPower(_votingPower, _minWeight, _maxWeight);
-    }
-
-    function getTokenListForOperator(address operator) external view returns (address[] memory) {
-        uint256 _length = chainIDs.length;
-        uint8[] memory _quorumNumbers = new uint8[](operatorsStatus[operator].subscribedChainCount);
-        uint256 _count;
-        for (uint256 i; i < _length; i++) {
-            uint32 _chainID = chainIDs[i];
-            if (subscribedChains[_chainID][operator]) {
-                _quorumNumbers[_count++] = committeeParams[_chainID].quorumNumber;
-            }
-        }
-
-        return voteWeigher.getTokenListForQuorumNumbers(_quorumNumbers);
-    }
-
-    // Initialize new committee.
-    function _initCommittee(
-        uint32 _chainID,
-        uint256 _genesisBlock,
-        uint256 _duration,
-        uint256 _freezeDuration,
-        uint8 _quorumNumber,
-        uint96 _minWeight,
-        uint96 _maxWeight
-    ) internal {
-        committeeParams[_chainID] = CommitteeDef(
-            block.number, 0, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
-        );
-        committees[_chainID][0] = CommitteeData(0, 0, 0);
-
-        chainIDs.push(_chainID);
-
-        setFirstEpochPeriod(_chainID);
-
-        emit InitCommittee(_chainID, _quorumNumber, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight);
-    }
-
-    // Update committee.
-    function _updateCommitteeParams(
-        uint32 _chainID,
-        int256 _l1Bias,
-        uint256 _startBlock,
-        uint256 _genesisBlock,
-        uint256 _duration,
-        uint256 _freezeDuration,
-        uint8 _quorumNumber,
-        uint96 _minWeight,
-        uint96 _maxWeight
-    ) internal {
-        if (committeeParams[_chainID].duration != _duration) {
-            uint256 _flagEpoch = _getEpochNumber(_chainID, block.number - 1) + 1;
-            (,, uint256 _endBlockPrv) = getEpochInterval(_chainID, _flagEpoch - 1);
-            _writeEpochPeriod(_chainID, _endBlockPrv, _flagEpoch, _duration);
-        }
-
-        committeeParams[_chainID] = CommitteeDef(
-            _startBlock, _l1Bias, _genesisBlock, _duration, _freezeDuration, _quorumNumber, _minWeight, _maxWeight
-        );
-
-        emit UpdateCommitteeParams(
-            _chainID, _quorumNumber, _l1Bias, _genesisBlock, _duration, _freezeDuration, _minWeight, _maxWeight
-        );
-    }
-
-    // ----------------- Functions for Epoch Number ----------------- //
-    function getEpochPeriodCount(uint32 chainID) public view returns (uint32) {
-        return committees[chainID][type(uint256).max].leafCount;
-    }
-
-    function getEpochPeriodByIndex(uint32 chainID, uint32 index)
-        public
-        view
-        returns (uint256 flagBlock, uint256 flagEpoch, uint256 duration)
-    {
-        CommitteeData memory _epochPeriodContext = committees[chainID][type(uint256).max - index];
-        return (
-            _epochPeriodContext.updatedBlock >> 112,
-            (_epochPeriodContext.updatedBlock << 112) >> 112,
-            _epochPeriodContext.leafCount
-        );
-    }
-
-    function getEpochInterval(uint32 _chainID, uint256 _epochNumber)
-        public
-        view
-        returns (uint256 _startBlock, uint256 _freezeBlock, uint256 _endBlock)
-    {
-        // epoch period would be updated rarely
-        uint32 _index = getEpochPeriodCount(_chainID);
-        while (_index > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriodByIndex(_chainID, _index);
-            if (_epochNumber >= _flagEpoch) {
-                _startBlock = (_epochNumber - _flagEpoch) * _duration + _flagBlock;
-                _endBlock = _startBlock + _duration;
-                _freezeBlock = _endBlock - committeeParams[_chainID].freezeDuration;
-                break;
-            }
-            unchecked {
-                _index--;
-            }
-        }
-    }
-
-    function _writeEpochPeriod(uint32 _chainID, uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) internal {
-        uint32 _index = committees[_chainID][type(uint256).max].leafCount + 1;
-        committees[_chainID][type(uint256).max - _index] = CommitteeData(
-            0,
-            (uint224(SafeCast.toUint112(_flagBlock)) << 112) + uint224(SafeCast.toUint112(_flagEpoch)),
-            SafeCast.toUint32(_duration)
-        );
-        committees[_chainID][type(uint256).max].leafCount = _index;
-        emit EpochPeriodUpdated(_chainID, _index, _flagBlock, _flagEpoch, _duration);
-    }
-
-    function _getEpochNumber(uint32 _chainID, uint256 _blockNumber) internal view returns (uint256 _epochNumber) {
-        if (_blockNumber < committeeParams[_chainID].genesisBlock) {
-            return 0;
-        }
-        // epoch period would be updated rarely
-        uint32 _index = getEpochPeriodCount(_chainID);
-        while (_index > 0) {
-            (uint256 _flagBlock, uint256 _flagEpoch, uint256 _duration) = getEpochPeriodByIndex(_chainID, _index);
-            if (_blockNumber >= _flagBlock) {
-                _epochNumber = _flagEpoch + (_blockNumber - _flagBlock) / _duration;
-                break;
-            }
-            unchecked {
-                _index--;
-            }
-        }
-    }
-    // ------------------------------------------------------------- //
-
-    function _registerOperator(address _operator, address _signAddress, uint256[2][] memory _blsPubKeys) internal {
-        delete operatorsStatus[_operator];
-        OperatorStatus storage _opStatus = operatorsStatus[_operator];
-        _opStatus.signAddress = _signAddress;
-        uint256 _length = _blsPubKeys.length;
-        for (uint256 i; i < _length; i++) {
-            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _blsPubKeys[i]);
-            _opStatus.blsPubKeys.push(_blsPubKeys[i]);
-        }
-    }
-
-    function _addBlsPubKeys(address _operator, uint256[2][] memory _additionalBlsPubKeys) internal {
-        OperatorStatus storage _opStatus = operatorsStatus[_operator];
-        require(_opStatus.blsPubKeys.length != 0, "Operator is not registered.");
-        uint256 _length = _additionalBlsPubKeys.length;
-        for (uint256 i; i < _length; i++) {
-            _checkBlsPubKeyDuplicate(_opStatus.blsPubKeys, _additionalBlsPubKeys[i]);
-            _opStatus.blsPubKeys.push(_additionalBlsPubKeys[i]);
-        }
-    }
-
-    function _checkBlsPubKeyDuplicate(uint256[2][] memory _blsPubKeys, uint256[2] memory _blsPubKey) internal pure {
-        uint256 _length = _blsPubKeys.length;
-        for (uint256 i; i < _length; i++) {
-            require(_blsPubKeys[i][0] != _blsPubKey[0] || _blsPubKeys[i][1] != _blsPubKey[1], "Duplicated BlsPubKey");
-        }
-    }
-
-    function _subscribeChain(address _operator, uint32 _chainID) internal {
-        subscribedChains[_chainID][_operator] = true;
-        operatorsStatus[_operator].subscribedChainCount++;
-
-        committeeAddrs[_chainID].push(_operator);
-    }
-
-    function _unsubscribeChain(address _operator, uint32 _chainID, uint256 _blockNumber) internal {
-        delete subscribedChains[_chainID][_operator];
-        OperatorStatus storage _opStatus = operatorsStatus[_operator];
-        _opStatus.unsubscribedParams.push(UnsubscribedParam(_chainID, _blockNumber));
-        _opStatus.subscribedChainCount--;
-
-        uint256 _length = committeeAddrs[_chainID].length;
-        for (uint256 i; i < _length; i++) {
-            if (committeeAddrs[_chainID][i] == _operator) {
-                committeeAddrs[_chainID][i] = committeeAddrs[_chainID][_length - 1];
-            }
-        }
-        committeeAddrs[_chainID].pop();
-    }
-
-    function _updateCommittee(uint32 _chainID, uint256 _epochNumber, bytes32 _root, uint32 _leafCount) internal {
         // Update roots
-        committees[_chainID][_epochNumber].leafCount = _leafCount;
+        committees[_chainID][_epochNumber].leafCount = uint32(_leafCounter);
         committees[_chainID][_epochNumber].root = _root;
-        committees[_chainID][_epochNumber].updatedBlock = uint224(block.number);
+        _setUpdatedBlock(_chainID, _epochNumber, _l1BlockNumber);
         updatedEpoch[_chainID] = _epochNumber;
         emit UpdateCommittee(_chainID, _epochNumber, _root);
     }
 
+    function _getUpdatedBlock(uint32 _chainID, uint256 _epochNumber) internal view virtual returns (uint256) {
+        return committees[_chainID][_epochNumber].updatedBlock;
+    }
+
+    function _setUpdatedBlock(uint32 _chainID, uint256 _epochNumber, uint256 _l1BlockNumber) internal virtual {
+        committees[_chainID][_epochNumber].updatedBlock = SafeCast.toUint224(_l1BlockNumber);
+    }
+
     function _validateBlsPubKeys(uint256[2][] memory _blsPubKeys) internal pure {
         require(_blsPubKeys.length != 0, "Empty BLS Public Keys.");
-        // TODO: need to add validation for blsPubKeys with signatures
         uint256 _length = _blsPubKeys.length;
         for (uint256 i; i < _length; i++) {
             require(_blsPubKeys[i][0] != 0 && _blsPubKeys[i][1] != 0, "Invalid BLS Public Key.");

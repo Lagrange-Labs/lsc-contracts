@@ -6,33 +6,52 @@ require('dotenv').config();
 
 const DEFAULT_MNEMONIC =
   'exchange holiday girl alone head gift unfair resist void voice people tobacco';
-const DEFAULT_NUM_ACCOUNTS = 15;
+
+const TESTNET_MODE = process.env.TESTNET_MODE;
+const RPC_URL = process.env.RPC_URL;
+let MNEMONIC = process.env.MNEMONIC;
+const NUM_ACCOUNTS = parseInt(process.env.NUM_ACCOUNTS || '15');
+
+if (!MNEMONIC) {
+  MNEMONIC = DEFAULT_MNEMONIC;
+}
 
 async function main() {
-  const currentProvider = new ethers.providers.JsonRpcProvider(
-    process.env.RPC_URL,
-  );
+  const currentProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
   const signerNode = await currentProvider.getSigner();
 
   const accounts = {};
 
-  for (let i = 0; i < DEFAULT_NUM_ACCOUNTS; i++) {
+  for (let i = 0; i < NUM_ACCOUNTS; i++) {
     const pathWallet = `m/44'/60'/0'/0/${i}`;
-    const accountWallet = ethers.Wallet.fromMnemonic(
-      DEFAULT_MNEMONIC,
-      pathWallet,
-    );
+    const accountWallet = ethers.Wallet.fromMnemonic(MNEMONIC, pathWallet);
     accounts[accountWallet.address] = accountWallet.privateKey;
-    const params = [
-      {
-        from: await signerNode.getAddress(),
+    if (!TESTNET_MODE) {
+      const params = [
+        {
+          from: await signerNode.getAddress(),
+          to: accountWallet.address,
+          value: '0x3635C9ADC5DEA00000',
+        },
+      ];
+      const tx = await currentProvider.send('eth_sendTransaction', params);
+      if (i === NUM_ACCOUNTS - 1) {
+        await currentProvider.waitForTransaction(tx);
+      }
+    } else {
+      const wallet = new ethers.Wallet(
+        process.env.PRIVATE_KEY,
+        currentProvider,
+      );
+      const rawTx = {
         to: accountWallet.address,
-        value: '0x3635C9ADC5DEA00000',
-      },
-    ];
-    const tx = await currentProvider.send('eth_sendTransaction', params);
-    if (i === DEFAULT_NUM_ACCOUNTS - 1) {
-      await currentProvider.waitForTransaction(tx);
+        value: '40000000000000000',
+      };
+
+      const tx = await wallet.sendTransaction(rawTx);
+      if (i === NUM_ACCOUNTS - 1) {
+        const receipt = await tx.wait();
+      }
     }
   }
 

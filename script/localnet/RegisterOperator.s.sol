@@ -1,4 +1,4 @@
-pragma solidity =0.8.12;
+pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -45,7 +45,7 @@ contract RegisterOperator is Script, Test {
 
         DelegationManager delegation = DelegationManager(stdJson.readAddress(deployData, ".addresses.delegation"));
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: msg.sender,
+            __deprecated_earningsReceiver: msg.sender,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });

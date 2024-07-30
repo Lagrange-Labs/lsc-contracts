@@ -1,4 +1,4 @@
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -9,8 +9,10 @@ import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.s
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
+import {LagrangeServiceTestnet} from "../contracts/protocol/testnet/LagrangeServiceTestnet.sol"; // for sepolia
 import {VoteWeigher} from "../contracts/protocol/VoteWeigher.sol";
 import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
+import {LagrangeCommitteeTestnet} from "../contracts/protocol/testnet/LagrangeCommitteeTestnet.sol"; // for holesky
 import {EvidenceVerifier} from "../contracts/protocol/EvidenceVerifier.sol";
 
 import {IStakeManager} from "../contracts/interfaces/IStakeManager.sol";
@@ -63,7 +65,7 @@ contract Deploy is Script, Test {
 
         console.log("ChainID: ", block.chainid);
 
-        if (block.chainid == 1337) {
+        if (block.chainid == 1337 || block.chainid == 11155111) {
             // local
             if (isMock) {
                 string memory deployData = vm.readFile(deployMockDataPath);
@@ -77,6 +79,8 @@ contract Deploy is Script, Test {
                 avsDirectoryAddress = stdJson.readAddress(deployData, ".addresses.avsDirectory");
             }
             console.log(delegationManagerAddress, avsDirectoryAddress);
+
+            ownerMultisig = msg.sender;
         } else if (block.chainid == 1) {
             // mainnet
             if (!isNative) {
@@ -116,19 +120,50 @@ contract Deploy is Script, Test {
                 EigenAdapter(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
         }
         // deploy implementation contracts
-        lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
+        if (block.chainid == 17000) {
+            lagrangeCommitteeImp =
+                LagrangeCommittee(address(new LagrangeCommitteeTestnet(lagrangeService, IVoteWeigher(voteWeigher))));
+        } else {
+            lagrangeCommitteeImp = new LagrangeCommittee(lagrangeService, IVoteWeigher(voteWeigher));
+        }
         if (isNative) {
             voteWeigherImp = new VoteWeigher(IStakeManager(stakeManager));
-            lagrangeServiceImp = new LagrangeService(
-                lagrangeCommittee, IStakeManager(stakeManager), avsDirectoryAddress, IVoteWeigher(voteWeigher)
-            );
+            if (block.chainid == 11155111) {
+                lagrangeServiceImp = LagrangeService(
+                    address(
+                        new LagrangeServiceTestnet(
+                            lagrangeCommittee,
+                            IStakeManager(stakeManager),
+                            avsDirectoryAddress,
+                            IVoteWeigher(voteWeigher)
+                        )
+                    )
+                );
+            } else {
+                lagrangeServiceImp = new LagrangeService(
+                    lagrangeCommittee, IStakeManager(stakeManager), avsDirectoryAddress, IVoteWeigher(voteWeigher)
+                );
+            }
             stakeManagerImp = new StakeManager(address(lagrangeService));
             evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(stakeManager));
         } else {
             voteWeigherImp = new VoteWeigher(IStakeManager(eigenAdapter));
-            lagrangeServiceImp = new LagrangeService(
-                lagrangeCommittee, IStakeManager(eigenAdapter), avsDirectoryAddress, IVoteWeigher(voteWeigher)
-            );
+            if (block.chainid == 11155111) {
+                lagrangeServiceImp = LagrangeService(
+                    address(
+                        new LagrangeServiceTestnet(
+                            lagrangeCommittee,
+                            IStakeManager(eigenAdapter),
+                            avsDirectoryAddress,
+                            IVoteWeigher(voteWeigher)
+                        )
+                    )
+                );
+            } else {
+                lagrangeServiceImp = new LagrangeService(
+                    lagrangeCommittee, IStakeManager(eigenAdapter), avsDirectoryAddress, IVoteWeigher(voteWeigher)
+                );
+            }
             eigenAdapterImp = new EigenAdapter(address(lagrangeService), IDelegationManager(delegationManagerAddress));
             evidenceVerifierImp = new EvidenceVerifier(lagrangeCommittee, IStakeManager(eigenAdapter));
         }

@@ -14,7 +14,6 @@ contract Deploy is Script, Test {
 
     // Lagrange Contracts
     LagrangeCommittee public lagrangeCommittee;
-  
 
     function run() public {
         string memory deployData = vm.readFile(deployDataPath);
@@ -31,11 +30,11 @@ contract Deploy is Script, Test {
         // update the epoch period for each chain
         {
             // set first epoch period for CHAIN_ID_BASE
-            lagrangeCommittee.updateChain(CHAIN_ID_OP, 0, 19620610, 50000, 7000,  0, 1000000000, 10000000000000);
+            lagrangeCommittee.updateChain(CHAIN_ID_OP, 0, 19620610, 50000, 7000, 0, 1000000000, 10000000000000);
             // set first epoch period for CHAIN_ID_OP
-            lagrangeCommittee.updateChain(CHAIN_ID_BASE, 0, 19620619, 50000, 7000,  0, 1000000000, 10000000000000);
+            lagrangeCommittee.updateChain(CHAIN_ID_BASE, 0, 19620619, 50000, 7000, 0, 1000000000, 10000000000000);
             // set first epoch period for CHAIN_ID_ARB
-            lagrangeCommittee.updateChain(CHAIN_ID_ARB, 0, 19920587, 50000, 7000,  0, 1000000000, 10000000000000);
+            lagrangeCommittee.updateChain(CHAIN_ID_ARB, 0, 19920587, 50000, 7000, 0, 1000000000, 10000000000000);
         }
 
         vm.stopBroadcast();

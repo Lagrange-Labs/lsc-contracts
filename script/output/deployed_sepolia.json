@@ -1,0 +1,51 @@
+{
+  "eigen": {
+    "addresses": {
+      "avsDirectory": "0xE5F13E61654363719407247BB7E06f539d3a9d32",
+      "avsDirectoryImplementation": "0x7B984082cF79de24Ca0974e869BBfb8c3Bd6095D",
+      "baseStrategyImplementation": "0xC9A39D4778d7D4b4D79D0a8673eAbAE3c6484954",
+      "delayedWithdrawalRouter": "0x4352d78BCc14Eb80D537bd5e22F2FA55B215BB8c",
+      "delayedWithdrawalRouterImplementation": "0x777922f5383BAe992554804401e7Cd53B4E4533E",
+      "delegation": "0xEBEFFF0043aa79ddEBD36685F858E44F0268b38a",
+      "delegationImplementation": "0xF056F445371E0C02d72174c96FabC8AA0eA7b112",
+      "eigenLayerPauserReg": "0x895c66b226688EDD9186b622dd9dB822a3751877",
+      "eigenLayerProxyAdmin": "0xdF5479e8D8ffb173143A6E841DE9451a4d3a2954",
+      "eigenPodBeacon": "0xd9b92213f8F624f55F4Dd76aaF94F55f1f45fC0f",
+      "eigenPodImplementation": "0x156631B991D37971AbE7029F8e553faE628fC080",
+      "eigenPodManager": "0x995DA63D618e3aE818AD76292cA3987396fddDe7",
+      "eigenPodManagerImplementation": "0xbA2C07793d4335D516beAB7bc364eC660122a159",
+      "emptyContract": "0x3549C1DD7929727b155e5a9f6276c8b24EC6E221",
+      "slasher": "0x89a08E0D017073077309cc89eB272Aa5984F81ae",
+      "slasherImplementation": "0xaFa5201Da0b6a603d5d9cb7df0B0CB5f85c7030A",
+      "strategies": {
+        "Coinbase Wrapped Staked ETH": "0xF471AE6852ECa6899995E060C5c5d3E1B00609Ae",
+        "Liquid staked Ether 2.0": "0x842392dC6c5951516075404CE46455206889A211",
+        "Rocket Pool ETH": "0x74F1d96C5c1f9dBBE507fcf9A5E55187d809E55e",
+        "Wrapped Ether": "0xB630B902D534C736975Ef50651045E8a55bE5E2f"
+      },
+      "strategyManager": "0x83685ac9D903b61568BaF9032105CE9Ac3170eC7",
+      "strategyManagerImplementation": "0xDC979b219E68F82B08E8105aaaF3878F240cd106"
+    },
+    "chainInfo": {
+      "chainId": 11155111,
+      "deploymentBlock": 5927824
+    },
+    "parameters": {
+      "executorMultisig": "0x7AD2A77bA6b6D4862cb1750589aB99E47e8e0530",
+      "operationsMultisig": "0x7AD2A77bA6b6D4862cb1750589aB99E47e8e0530"
+    }
+  },
+  "addresses": {
+    "evidenceVerifier": "0x826DEc9Bc16E65b76597F68863f0C3f444372900",
+    "evidenceVerifierImp": "0xdBc11bc57cAd02be784bb251e87531a647bD8789",
+    "lagrangeCommittee": "0x298baE5B68bA10e0dF7d98C5b19Aba7784d74F71",
+    "lagrangeCommitteeImp": "0x0f6c8090D519F3BB44244f4B2cF000843beB041F",
+    "lagrangeService": "0x34d8f7384Ddd4e8Ab447a150F9955f284882A43F",
+    "lagrangeServiceImp": "0xAAB3F64d7666dA5abeaB3F3761e6eBe962B95ECF",
+    "proxyAdmin": "0xDfaCc9C3d0F6080176861293E1AAb25a4b23258A",
+    "stakeManager": "0x938b05407D920E4eD4863f30bB075741DfDEa3Cd",
+    "stakeManagerImp": "0x1b757B98BE0642FBaf1A37a3c2b47ebfcba4335A",
+    "voteWeigher": "0x747dc3F9FE7df7A18DD79F6f40B3A1ed85aa75E8",
+    "voteWeigherImp": "0xE02A946EA932691f6049d76B932b4213eE27C043"
+  }
+}

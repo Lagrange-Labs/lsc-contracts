@@ -3,7 +3,7 @@
 /* eslint-disable */
 // forgefmt: disable-start
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -19,7 +19,7 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
 
     IStakeManager public immutable stakeManager;
 
-    uint8[] quorumNumbers; // list of all quorum numbers
+    uint8[] public quorumNumbers; // list of all quorum numbers
 
     event QuorumAdded(uint8 indexed quorumNumber, TokenMultiplier[] multipliers);
     event QuorumRemoved(uint8 indexed quorumNumber);
@@ -67,7 +67,7 @@ contract VoteWeigher is Initializable, OwnableUpgradeable, IVoteWeigher {
             quorumMultipliers[quorumNumber].push(multiplier);
         } else {
             uint256 _length = quorumMultipliers[quorumNumber].length;
-            for (uint i; i < _length; i++) {
+            for (uint256 i; i < _length; i++) {
                 if (i != index) {
                     require(quorumMultipliers[quorumNumber][i].token != multiplier.token, "Multiplier already exists");
                 }

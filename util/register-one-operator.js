@@ -24,11 +24,11 @@ function executeCommand(command) {
   console.log(
     `Starting to deposit stake for address: ${operator.operator_address}`,
   );
-  const register_command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url ${rpcURL} --private-key ${operator.ecdsa_private_key} --broadcast -vvvvv`;
+  const register_command = `forge script script/localnet/RegisterOperator.s.sol:RegisterOperator --rpc-url ${rpcURL} --private-key ${operator.ecdsa_private_key} --broadcast -vvvvv --slow`;
 
   await executeCommand(register_command);
 
-  const subscribe_command = `forge script script/localnet/SubscribeOperator.s.sol:SubscribeOperator --rpc-url ${rpcURL} --private-key ${operator.ecdsa_private_key} --broadcast -vvvvv`;
+  const subscribe_command = `forge script script/localnet/SubscribeOperator.s.sol:SubscribeOperator --rpc-url ${rpcURL} --private-key ${operator.ecdsa_private_key} --broadcast -vvvvv --slow`;
 
   await executeCommand(subscribe_command);
 })()
