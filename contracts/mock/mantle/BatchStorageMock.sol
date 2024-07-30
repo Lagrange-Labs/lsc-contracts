@@ -3,7 +3,7 @@
 /* eslint-disable */
 // forgefmt: disable-start
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 contract BatchStorageMock {
     function getL2StoredBlockNumber() public view returns (uint256) {

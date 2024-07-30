@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -430,9 +430,9 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
     {
         _validateBLSKeyWithProof(_operator, _blsKeyWithProof);
 
+        uint256 _orgLength = operatorsStatus[_operator].blsPubKeys.length;
         delete operatorsStatus[_operator];
         OperatorStatus storage _opStatus = operatorsStatus[_operator];
-        uint256 _orgLength = _opStatus.blsPubKeys.length;
         _opStatus.signAddress = _signAddress;
         uint256 _length = _blsKeyWithProof.blsG1PublicKeys.length;
         for (uint256 i; i < _length; i++) {

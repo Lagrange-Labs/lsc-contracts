@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.0;
 
 // Evidence is the data structure to store the slashing evidence.
 struct Evidence {

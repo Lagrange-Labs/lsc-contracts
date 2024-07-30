@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 
@@ -22,7 +22,7 @@ contract BLSKeyCheckerTest is Test {
         bytes32 salt = bytes32("salt");
 
         bytes32 digestHash = blsKeyChecker.calculateKeyWithProofHash(operator, salt, expiry);
-        assertEq(digestHash, bytes32(0xe7419ae945e234b771ebf93cbf198d6cfcdbd8447301f1c24500b95a22cf38ee));
+        assertEq(digestHash, bytes32(0xc7b0656c76580037ecdb295dc2853ed637fbe9fa28fb9370b9c46f3af263b153));
 
         IBLSKeyChecker.BLSKeyWithProof memory keyWithProof;
         keyWithProof.blsG1PublicKeys = new uint256[2][](2);
@@ -43,8 +43,8 @@ contract BLSKeyCheckerTest is Test {
         keyWithProof.aggG2PublicKey[1][1] =
             11404740616800698491602595484707113839683705372417228495600050288329164748570;
         keyWithProof.aggG2PublicKey[1][0] = 6295226055133679941129620269193586277360989159404994532519051774500585286957;
-        keyWithProof.signature[0] = 8400162431896328668528602589477548786729295659593539444922830499112187583569;
-        keyWithProof.signature[1] = 18128394053716939711564381393116973421552062454346489225479782466687403840305;
+        keyWithProof.signature[0] = 14241513117207009207462807081901324027050753047754368460071596134640222275923;
+        keyWithProof.signature[1] = 18004051656820227831367841997927928243949150848123937083522728348263826886221;
 
         vm.startPrank(operator);
         bool result = blsKeyChecker.checkBLSKeyWithProof(operator, keyWithProof);
