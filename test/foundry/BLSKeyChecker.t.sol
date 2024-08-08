@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 
 import "../../contracts/mock/BLSKeyCheckerMock.sol";
+import "./helpers/BLSProofHelper.sol";
 
 contract BLSKeyCheckerTest is Test {
     BLSKeyCheckerMock blsKeyChecker;
@@ -50,5 +51,20 @@ contract BLSKeyCheckerTest is Test {
         bool result = blsKeyChecker.checkBLSKeyWithProof(operator, keyWithProof);
         assert(result);
         vm.stopPrank();
+
+        // Test BLSProofHelper
+        uint256[] memory privateKeys = new uint256[](2);
+        privateKeys[0] = 0x00000000000000000000000000000000000000000000000000000000499602d3;
+        privateKeys[1] = 0x00000000000000000000000000000000000000000000000000000000499602d4;
+
+        IBLSKeyChecker.BLSKeyWithProof memory keyWithProofGenerated =
+            BLSProofHelper.generateBLSKeyWithProof(privateKeys, digestHash);
+        assertEq(keyWithProofGenerated.blsG1PublicKeys.length, keyWithProof.blsG1PublicKeys.length);
+        for (uint256 i; i < keyWithProof.blsG1PublicKeys.length; i++) {
+            assertEq(keyWithProofGenerated.blsG1PublicKeys[i][0], keyWithProof.blsG1PublicKeys[i][0]);
+            assertEq(keyWithProofGenerated.blsG1PublicKeys[i][1], keyWithProof.blsG1PublicKeys[i][1]);
+        }
+        assertEq(keyWithProofGenerated.signature[0], keyWithProof.signature[0]);
+        assertEq(keyWithProofGenerated.signature[1], keyWithProof.signature[1]);
     }
 }

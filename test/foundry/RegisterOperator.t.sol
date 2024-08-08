@@ -10,8 +10,8 @@ contract RegisterOperatorTest is LagrangeDeployer {
         uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
         vm.deal(operator, 1e19);
-        uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0] = _readKnownBlsPubKey(1);
+        uint256[] memory blsPrivateKeys = new uint256[](1);
+        blsPrivateKeys[0] = _readKnownBlsPrivateKey(1);
         uint256 amount = 1e15;
 
         // add operator to whitelist
@@ -39,7 +39,11 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION - 1);
-        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
+        lagrangeService.register(
+            operator,
+            _calcProofForBLSKeys(operator, blsPrivateKeys, bytes32("salt"), block.timestamp + 60),
+            operatorSignature
+        );
         lagrangeService.subscribe(CHAIN_ID);
         lagrangeService.subscribe(CHAIN_ID + 1);
 
@@ -73,8 +77,8 @@ contract RegisterOperatorTest is LagrangeDeployer {
         uint256 privateKey = 111;
         address operator = vm.addr(privateKey);
         vm.deal(operator, 1e19);
-        uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0] = _readKnownBlsPubKey(1);
+        uint256[] memory blsPrivateKeys = new uint256[](1);
+        blsPrivateKeys[0] = _readKnownBlsPrivateKey(1);
         uint256 amount = 1e16;
 
         // add operator to whitelist
@@ -101,7 +105,11 @@ contract RegisterOperatorTest is LagrangeDeployer {
         stakeManager.deposit(IERC20(address(token)), amount);
 
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION);
-        lagrangeService.register(operator, _calcProofForBLSKeys(operator, blsPubKeys), operatorSignature);
+        lagrangeService.register(
+            operator,
+            _calcProofForBLSKeys(operator, blsPrivateKeys, bytes32("salt"), block.timestamp + 60),
+            operatorSignature
+        );
 
         // it should fail because the committee is in freeze period
         vm.roll(START_EPOCH + EPOCH_PERIOD - FREEZE_DURATION + 1);
@@ -124,11 +132,12 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         // re-register operator
         vm.roll(START_EPOCH + EPOCH_PERIOD);
-        IBLSKeyChecker.BLSKeyWithProof memory keyWithProof = _calcProofForBLSKeys(operator, blsPubKeys);
+        IBLSKeyChecker.BLSKeyWithProof memory keyWithProof =
+            _calcProofForBLSKeys(operator, blsPrivateKeys, bytes32("salt"), block.timestamp + 60);
         vm.expectRevert("BLSKeyChecker.checkBLSKeyWithProof: salt already spent");
         lagrangeService.register(operator, keyWithProof, operatorSignature);
 
-        keyWithProof = _calcProofForBLSKeys(operator, blsPubKeys, bytes32("salt2"));
+        keyWithProof = _calcProofForBLSKeys(operator, blsPrivateKeys, bytes32("salt2"), block.timestamp + 60);
         vm.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
         lagrangeService.register(operator, keyWithProof, operatorSignature);
         // new operator signature
@@ -142,7 +151,9 @@ contract RegisterOperatorTest is LagrangeDeployer {
             operatorSignature.signature = abi.encodePacked(r, s, v);
         }
         lagrangeService.register(
-            operator, _calcProofForBLSKeys(operator, blsPubKeys, bytes32("salt2")), operatorSignature
+            operator,
+            _calcProofForBLSKeys(operator, blsPrivateKeys, bytes32("salt2"), block.timestamp + 60),
+            operatorSignature
         );
         lagrangeService.subscribe(CHAIN_ID);
 
@@ -182,10 +193,10 @@ contract RegisterOperatorTest is LagrangeDeployer {
         address[] memory operators = new address[](1);
         operators[0] = operator;
         uint256 amount = 1e15;
-        uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0] = _readKnownBlsPubKey(1);
+        uint256[] memory blsPrivateKeys = new uint256[](1);
+        blsPrivateKeys[0] = _readKnownBlsPrivateKey(1);
 
-        _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
+        _registerOperator(operator, privateKey, amount, blsPrivateKeys, CHAIN_ID);
 
         // check if the operator is subscribed on such chains
         assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operator), true);
@@ -218,10 +229,10 @@ contract RegisterOperatorTest is LagrangeDeployer {
 
         for (uint256 i; i < count; i++) {
             uint256 amount = 1e15;
-            uint256[2][] memory blsPubKeys = new uint256[2][](1);
-            blsPubKeys[0] = _readKnownBlsPubKey(_blsKeyCounter++);
+            uint256[] memory blsPrivateKeys = new uint256[](1);
+            blsPrivateKeys[0] = _readKnownBlsPrivateKey(_blsKeyCounter++);
 
-            _registerOperator(operators[i], privateKeys[i], amount, blsPubKeys, CHAIN_ID);
+            _registerOperator(operators[i], privateKeys[i], amount, blsPrivateKeys, CHAIN_ID);
 
             // check if the operator is subscribed on such chains
             assertEq(lagrangeCommittee.subscribedChains(CHAIN_ID, operators[i]), true);
@@ -247,10 +258,10 @@ contract RegisterOperatorTest is LagrangeDeployer {
         address[] memory operators = new address[](1);
         operators[0] = operator;
         uint256 amount = 1e15;
-        uint256[2][] memory blsPubKeys = new uint256[2][](1);
-        blsPubKeys[0] = _readKnownBlsPubKey(1);
+        uint256[] memory blsPrivateKeys = new uint256[](1);
+        blsPrivateKeys[0] = _readKnownBlsPrivateKey(1);
 
-        _registerOperator(operator, privateKey, amount, blsPubKeys, CHAIN_ID);
+        _registerOperator(operator, privateKey, amount, blsPrivateKeys, CHAIN_ID);
         vm.prank(operator);
         lagrangeService.subscribe(CHAIN_ID + 1);
 
