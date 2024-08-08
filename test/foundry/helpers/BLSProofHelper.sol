@@ -12,20 +12,10 @@ library BLSProofHelper {
         view
         returns (IBLSKeyChecker.BLSKeyWithProof memory keyWithProof)
     {
-        uint256 length = privateKeys.length;
-        keyWithProof.blsG1PublicKeys = new uint256[2][](length);
-        for (uint256 i; i < length; i++) {
-            BN254.G1Point memory pubKey = BN254.generatorG1().scalar_mul(privateKeys[i]);
-            keyWithProof.blsG1PublicKeys[i] = [pubKey.X, pubKey.Y];
-        }
+        keyWithProof.blsG1PublicKeys = calcG1PubKeys(privateKeys);
         // TODO: need to calculate aggG2PublicKey
 
-        BN254.G1Point memory aggSignature;
-        for (uint256 i; i < length; i++) {
-            aggSignature = aggSignature.plus(BN254.hashToG1(messageHash).scalar_mul(privateKeys[i]));
-        }
-        keyWithProof.signature[0] = aggSignature.X;
-        keyWithProof.signature[1] = aggSignature.Y;
+        keyWithProof.signature = generateBLSSignature(privateKeys, messageHash);
     }
 
     function calcG1PubKey(uint256 privateKey) internal view returns (uint256[2] memory g1PubKey) {

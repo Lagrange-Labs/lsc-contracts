@@ -46,9 +46,6 @@ contract LagrangeDeployer is Test {
 
     uint256 internal adminPrivateKey;
 
-    // mapping(bytes32 => IBLSKeyChecker.BLSKeyWithProof[]) private knownBlsGroups;
-    // mapping(uint256 => uint256[6]) private knownBlsPubKeys; // G1 : [0, 1] , G2(single aggr): [2, 3, 4, 5]
-
     uint256[2][] private knownG1PubKeys;
     IBLSKeyChecker.BLSKeyWithProof[] private knownG2PubKeys; // G1 : [0, 1] , G2(single aggr): [2, 3, 4, 5]
 
@@ -487,7 +484,7 @@ contract LagrangeDeployer is Test {
         return BLSProofHelper.calcG1PubKey(privateKey);
     }
 
-    function _readKnownBlsPrivateKey(uint256 keyId) internal view returns (uint256 blsPrivateKey) {
+    function _readKnownBlsPrivateKey(uint256 keyId) internal pure returns (uint256 blsPrivateKey) {
         return keyId + 0x00000000000000000000000000000000000000000000000000000000499602d2; // i + 1234567891
     }
 }
