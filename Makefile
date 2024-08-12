@@ -64,7 +64,7 @@ distribute:
 # Build docker image
 
 stop:
-	cd docker && docker-compose down --remove-orphans
+	cd docker && docker compose down --remove-orphans
 
 docker-build: stop
 	sudo chmod -R go+rxw docker/geth_db && cd docker && docker build . -t lagrange/contracts
