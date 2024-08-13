@@ -66,7 +66,7 @@ contract LagrangeDeployer is Test {
         address sender = vm.addr(adminPrivateKey); // admin
         vm.startPrank(sender);
 
-        // deploy proxy admin for ability to upgrade proxy contracts
+        // deploy proxy admin for the ability to upgrade proxy contracts
         proxyAdmin = new ProxyAdmin();
         token = new WETH9();
 
@@ -361,7 +361,7 @@ contract LagrangeDeployer is Test {
         multipliers[0] = IVoteWeigher.TokenMultiplier(address(token), 1e9);
         voteWeigher.addQuorumMultiplier(0, multipliers);
 
-        // add tokens to whitelist
+        // add tokens to the whitelist
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
         stakeManager.addTokensToWhitelist(tokens);

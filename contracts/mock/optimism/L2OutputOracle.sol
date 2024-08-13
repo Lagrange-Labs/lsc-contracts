@@ -75,7 +75,7 @@ contract L2OutputOracle is Initializable {
     ///         order to be accepted. This function may only be called by the Proposer.
     /// @param _outputRoot    The L2 output of the checkpoint block.
     /// @param _l2BlockNumber The L2 block number that resulted in _outputRoot.
-    /// @param _l1BlockHash   A block hash which must be included in the current chain.
+    /// @param _l1BlockHash   A block hash that must be included in the current chain.
     /// @param _l1BlockNumber The block number with the specified block hash.
     function proposeL2Output(bytes32 _outputRoot, uint256 _l2BlockNumber, bytes32 _l1BlockHash, uint256 _l1BlockNumber)
         external
@@ -183,7 +183,7 @@ contract L2OutputOracle is Initializable {
     }
     //include
     /// @notice Returns the block number of the latest submitted L2 output proposal.
-    ///         If no proposals been submitted yet then this function will return the starting
+    ///         If no proposals have been submitted yet then this function will return the starting
     ///         block number.
     /// @return Latest submitted L2 block number.
 

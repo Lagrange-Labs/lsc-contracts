@@ -59,10 +59,10 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
 
     /// upload the evidence to punish the operator.
     function uploadEvidence(Evidence calldata evidence) external {
-        // check the operator is registered or not
+        // check whether the operator is registered or not
         // TODO
 
-        // check the operator is slashed or not
+        // check whether the operator is slashed or not
 
         require(checkCommitSignature(evidence), "The commit signature is not correct");
 
@@ -120,7 +120,7 @@ contract EvidenceVerifier is Initializable, OwnableUpgradeable, IEvidenceVerifie
         return (sigVerify);
     }
 
-    // Slashing condition.  Returns veriifcation of chain's current committee root at a given block.
+    // Slashing condition.  Returns verification of chain's current committee root at a given block.
     function _checkCommitteeRoots(
         bytes32 correctCurrentCommitteeRoot,
         bytes32 currentCommitteeRoot,
