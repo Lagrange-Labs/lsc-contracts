@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.0;
 
-interface ILagrangeCommittee {
+import {IBLSKeyChecker} from "./IBLSKeyChecker.sol";
+
+interface ILagrangeCommittee is IBLSKeyChecker {
     struct UnsubscribedParam {
         uint32 chainID;
         uint256 blockNumber;
@@ -59,15 +61,15 @@ interface ILagrangeCommittee {
         uint96 maxWeight
     ) external;
 
-    function addOperator(address operator, address signAddress, uint256[2][] memory blsPubKeys) external;
+    function addOperator(address operator, address signAddress, BLSKeyWithProof memory blsKeyWithProof) external;
 
     function removeOperator(address operator) external;
 
     function unsubscribeByAdmin(address[] memory operators, uint32 chainID) external;
 
-    function addBlsPubKeys(address operator, uint256[2][] memory additionalBlsPubKeys) external;
+    function addBlsPubKeys(address operator, BLSKeyWithProof memory blsKeyWithProof) external;
 
-    function updateBlsPubKey(address operator, uint32 index, uint256[2] memory blsPubKey) external;
+    function updateBlsPubKey(address operator, uint32 index, BLSKeyWithProof memory blsKeyWithProof) external;
 
     function removeBlsPubKeys(address operator, uint32[] memory indices) external;
 
@@ -113,6 +115,9 @@ interface ILagrangeCommittee {
         uint96 minWeight,
         uint96 maxWeight
     );
+
+    // Fired on BlsKeys are added/removed/updated
+    event BlsKeyUpdated(address indexed operator, uint256 orgLength, uint256 added, uint256 removed);
 
     // Fired on successful rotation of committee
     event UpdateCommittee(uint256 indexed chainID, uint256 indexed epochNumber, bytes32 current);

@@ -5,7 +5,7 @@
 /* eslint-disable */
 // forgefmt: disable-start
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 interface IOutbox {
     function roots(bytes32) external view returns (bytes32); // maps root hashes => L2 block hash

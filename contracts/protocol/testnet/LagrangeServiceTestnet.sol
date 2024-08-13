@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
-import "../protocol/LagrangeService.sol";
+import "../LagrangeService.sol";
 
 contract LagrangeServiceTestnet is LagrangeService {
     constructor(

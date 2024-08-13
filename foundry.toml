@@ -5,6 +5,8 @@ libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
 gas_reports = ["*"]
 
+solc_version = "0.8.20"
+
 # Enables or disables the optimizer
 optimizer = true
 # The number of optimizer runs

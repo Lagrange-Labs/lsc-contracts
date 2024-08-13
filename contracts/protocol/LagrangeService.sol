@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -10,6 +10,7 @@ import {IStakeManager} from "../interfaces/IStakeManager.sol";
 import {ILagrangeCommittee} from "../interfaces/ILagrangeCommittee.sol";
 import {ILagrangeService} from "../interfaces/ILagrangeService.sol";
 import {IVoteWeigher} from "../interfaces/IVoteWeigher.sol";
+import {IBLSKeyChecker} from "../interfaces/IBLSKeyChecker.sol";
 
 contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService {
     mapping(address => bool) public operatorWhitelist;
@@ -69,11 +70,11 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     /// Add the operator to the service.
     function register(
         address signAddress,
-        uint256[2][] calldata blsPubKeys,
+        IBLSKeyChecker.BLSKeyWithProof calldata blsKeyWithProof,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhitelisted {
         address _operator = msg.sender;
-        committee.addOperator(_operator, signAddress, blsPubKeys);
+        committee.addOperator(_operator, signAddress, blsKeyWithProof);
         uint32 serveUntilBlock = type(uint32).max;
         stakeManager.lockStakeUntil(_operator, serveUntilBlock);
         avsDirectory.registerOperatorToAVS(_operator, operatorSignature);
@@ -81,18 +82,21 @@ contract LagrangeService is Initializable, OwnableUpgradeable, ILagrangeService 
     }
 
     /// Add extra BlsPubKeys
-    function addBlsPubKeys(uint256[2][] calldata additionalBlsPubKeys) external onlyWhitelisted {
+    function addBlsPubKeys(IBLSKeyChecker.BLSKeyWithProof calldata blsKeyWithProof) external onlyWhitelisted {
         address _operator = msg.sender;
-        committee.addBlsPubKeys(_operator, additionalBlsPubKeys);
+        committee.addBlsPubKeys(_operator, blsKeyWithProof);
         uint32 serveUntilBlock = type(uint32).max;
         stakeManager.lockStakeUntil(_operator, serveUntilBlock);
         emit OperatorRegistered(_operator, serveUntilBlock);
     }
 
     /// Update the BlsPubKey for the given index
-    function updateBlsPubKey(uint32 index, uint256[2] calldata blsPubKey) external onlyWhitelisted {
+    function updateBlsPubKey(uint32 index, IBLSKeyChecker.BLSKeyWithProof memory blsKeyWithProof)
+        external
+        onlyWhitelisted
+    {
         address _operator = msg.sender;
-        committee.updateBlsPubKey(_operator, index, blsPubKey);
+        committee.updateBlsPubKey(_operator, index, blsKeyWithProof);
     }
 
     /// Remove the BlsPubKeys for the given indices

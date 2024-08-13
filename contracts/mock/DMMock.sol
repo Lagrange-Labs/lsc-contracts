@@ -3,7 +3,7 @@
 /* eslint-disable */
 // forgefmt: disable-start
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -156,9 +156,6 @@ contract DelegationManager is IDelegationManager {
 
     function calculateWithdrawalRoot(Withdrawal memory /*withdrawal*/) external pure returns (bytes32) {}
 
-    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory /*withdrawalsToQueue*/) external {}
-
-
     function getOperatorShares(
         address /*operator*/,
         IStrategy[] memory /*strategies*/
@@ -169,4 +166,6 @@ contract DelegationManager is IDelegationManager {
     function minWithdrawalDelayBlocks() external view returns (uint256) {}
     
     function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external view returns (uint256) {}
+    
+    function beaconChainETHStrategy() external view returns (IStrategy) {}
 }
