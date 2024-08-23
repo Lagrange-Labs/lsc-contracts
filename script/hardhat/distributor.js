@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const fs = require('fs');
 require('dotenv').config();
-const operators = require('../config/operators.json');
+const operators = require('../../config/operators.json');
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const RPC_URL = process.env.RPC_URL;

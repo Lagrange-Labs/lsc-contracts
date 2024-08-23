@@ -6,8 +6,8 @@ import "forge-std/Test.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
+import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
+import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
 
 contract InitCommittee is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));

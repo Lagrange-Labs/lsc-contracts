@@ -45,7 +45,7 @@ async function main() {
   }
 
   try {
-    const config = require('../config/LagrangeService.json');
+    const config = require('../../config/LagrangeService.json');
     operators = [];
 
     op = [];

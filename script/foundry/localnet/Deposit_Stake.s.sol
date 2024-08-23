@@ -5,11 +5,11 @@ import "forge-std/Test.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {WETH9} from "../../contracts/mock/WETH9.sol";
-import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
-import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
-import {VoteWeigher} from "../../contracts/protocol/VoteWeigher.sol";
-import {StakeManager} from "../../contracts/library/StakeManager.sol";
+import {WETH9} from "../../../contracts/mock/WETH9.sol";
+import {LagrangeService} from "../../../contracts/protocol/LagrangeService.sol";
+import {LagrangeCommittee} from "../../../contracts/protocol/LagrangeCommittee.sol";
+import {VoteWeigher} from "../../../contracts/protocol/VoteWeigher.sol";
+import {StakeManager} from "../../../contracts/library/StakeManager.sol";
 
 contract DepositStake is Script, Test {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));

@@ -5,10 +5,10 @@ import "forge-std/Test.sol";
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
-import {DelegationManager} from "../contracts/mock/DMMock.sol";
-import {StrategyManager} from "../contracts/mock/SMMock.sol";
-import {Strategy} from "../contracts/mock/STMock.sol";
-import {BatchStorageMock} from "../contracts/mock/mantle/BatchStorageMock.sol";
+import {DelegationManager} from "../../contracts/mock/DMMock.sol";
+import {StrategyManager} from "../../contracts/mock/SMMock.sol";
+import {Strategy} from "../../contracts/mock/STMock.sol";
+import {BatchStorageMock} from "../../contracts/mock/mantle/BatchStorageMock.sol";
 
 contract DeployMock is Script {
     string public operatorsPath = string(bytes("config/operators.json"));

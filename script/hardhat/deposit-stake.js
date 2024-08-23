@@ -2,7 +2,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 require('dotenv').config();
 
-const operators = require('../config/operators.json');
+const operators = require('../../config/operators.json');
 
 const rpcURL = process.env.RPC_URL;
 
@@ -27,7 +27,7 @@ const batch_size = 10;
   for (let i = 0; i < addresses.length; i += batch_size) {
     const batch = addresses.slice(i, i + batch_size);
     const exec_batch = batch.map((address, index) => {
-      const command = `forge script script/localnet/Deposit_Stake.s.sol:DepositStake --rpc-url ${rpcURL} --private-key ${
+      const command = `forge script script/foundry/localnet/Deposit_Stake.s.sol:DepositStake --rpc-url ${rpcURL} --private-key ${
         privateKeys[i + index]
       } --broadcast -vvvvv --slow`;
       console.log(`Starting to deposit stake for address: ${address}`);

@@ -4,7 +4,7 @@ const ethers = require('ethers');
 const fs = require('fs');
 const bls = require('bls-eth-wasm');
 const blst = require('@noble/bls12-381');
-const config = require('../config/LagrangeService.json');
+const config = require('../../config/LagrangeService.json');
 require('dotenv').config();
 
 const DEFAULT_MNEMONIC =

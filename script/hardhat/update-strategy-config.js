@@ -1,5 +1,5 @@
-const eigenConfig = require('../script/localnet/M1_deploy.config.json');
-const deployedWETH = require('../script/output/deployed_weth9.json');
+const eigenConfig = require('../localnet/M1_deploy.config.json');
+const deployedWETH = require('../output/deployed_weth9.json');
 const fs = require('fs');
 const { ethers } = require('ethers');
 
@@ -24,7 +24,7 @@ for (const strategy of eigenConfig.strategies) {
 
 // Convert the JavaScript object back to a JSON string
 const updatedJsonString = JSON.stringify(eigenConfig, null, 4);
-const filePath = './script/localnet/M1_deploy.config.json';
+const filePath = './script/foundry/localnet/M1_deploy.config.json';
 
 // Write the updated JSON string back to the file
 fs.writeFile(filePath, updatedJsonString, 'utf8', (err) => {

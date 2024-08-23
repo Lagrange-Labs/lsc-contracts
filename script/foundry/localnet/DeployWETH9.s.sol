@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-import {WETH9} from "../../contracts/mock/WETH9.sol";
+import {WETH9} from "../../../contracts/mock/WETH9.sol";
 
 contract DeployWETH9 is Script, Test {
     function run() public {
