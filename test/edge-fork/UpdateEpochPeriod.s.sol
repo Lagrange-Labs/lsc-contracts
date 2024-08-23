@@ -82,7 +82,8 @@ contract UpdateEpochPeriod is Script {
                 testCases[14].blockNumber = _blockNumber + 20000;
             }
             for (uint256 i; i < testCases.length; i++) {
-                testCases[i].epochNumber = lagrangeCommittee.getEpochNumber(testCases[i].chainID, testCases[i].blockNumber);
+                testCases[i].epochNumber =
+                    lagrangeCommittee.getEpochNumber(testCases[i].chainID, testCases[i].blockNumber);
             }
         }
 
@@ -102,9 +103,10 @@ contract UpdateEpochPeriod is Script {
             for (uint256 i; i < testCases.length; i++) {
                 uint256 epochNumber = lagrangeCommittee.getEpochNumber(testCases[i].chainID, testCases[i].blockNumber);
                 if (testCases[i].epochNumber != epochNumber) {
-                    (uint256 startBlock,,,uint256 duration,,,,) = lagrangeCommittee.committeeParams(testCases[i].chainID);
+                    (uint256 startBlock,,, uint256 duration,,,,) =
+                        lagrangeCommittee.committeeParams(testCases[i].chainID);
                     uint256 latestEpoch = lagrangeCommittee.updatedEpoch(testCases[i].chainID);
-                    (bytes32 root, uint224 updatedBlock, uint32 leafCount) = 
+                    (bytes32 root, uint224 updatedBlock, uint32 leafCount) =
                         lagrangeCommittee.committees(testCases[i].chainID, latestEpoch);
                     if (updatedBlock <= testCases[i].blockNumber) {
                         uint256 expectedBlockNumber = (testCases[i].blockNumber - updatedBlock) / duration + latestEpoch;

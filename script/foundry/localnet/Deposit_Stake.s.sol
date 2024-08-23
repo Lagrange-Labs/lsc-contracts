@@ -1,7 +1,6 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "forge-std/Test.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -11,7 +10,7 @@ import {LagrangeCommittee} from "../../../contracts/protocol/LagrangeCommittee.s
 import {VoteWeigher} from "../../../contracts/protocol/VoteWeigher.sol";
 import {StakeManager} from "../../../contracts/library/StakeManager.sol";
 
-contract DepositStake is Script, Test {
+contract DepositStake is Script {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
     string public configPath = string(bytes("config/LagrangeService.json"));
 

@@ -22,14 +22,13 @@ import {EigenAdapter} from "../../contracts/library/EigenAdapter.sol";
 import {StakeManager} from "../../contracts/library/StakeManager.sol";
 
 import "forge-std/Script.sol";
-import "forge-std/Test.sol";
 
 import {IOutbox} from "../../contracts/mock/arbitrum/IOutbox.sol";
 import {Outbox} from "../../contracts/mock/arbitrum/Outbox.sol";
 import {L2OutputOracle} from "../../contracts/mock/optimism/L2OutputOracle.sol";
 import {IL2OutputOracle} from "../../contracts/mock/optimism/IL2OutputOracle.sol";
 
-contract Deploy is Script, Test {
+contract Deploy is Script {
     string public deployMockDataPath = string(bytes("script/output/deployed_mock.json"));
     string public deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));

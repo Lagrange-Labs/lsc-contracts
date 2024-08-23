@@ -48,11 +48,11 @@ contract RotateAndRevert is Script, Test {
             vm.prank(owner);
             lagrangeCommittee.registerChain(
                 chainID,
-                1234000, // genesisBlock, 
+                1234000, // genesisBlock,
                 epochPeriod,
-                100, // freezeDuration, 
-                0, // quorumNumber, 
-                5, // minWeight, 
+                100, // freezeDuration,
+                0, // quorumNumber,
+                5, // minWeight,
                 50 // maxWeight
             );
         }
@@ -61,7 +61,7 @@ contract RotateAndRevert is Script, Test {
         {
             for (uint256 i; i < 5; i++) {
                 assertEq(lagrangeCommittee.subscribedChains(chainID, operators[i]), false);
-                
+
                 vm.prank(operators[i]);
                 lagrangeService.subscribe(chainID);
 
@@ -75,7 +75,7 @@ contract RotateAndRevert is Script, Test {
             vm.prank(owner);
             vm.expectRevert("Block number is prior to committee freeze window.");
             lagrangeCommittee.update(chainID, 1);
-            
+
             vm.roll(_blockNumber + epochPeriod - 1);
             vm.prank(owner);
             lagrangeCommittee.update(chainID, 1);
@@ -87,11 +87,11 @@ contract RotateAndRevert is Script, Test {
             lagrangeCommittee.updateChain(
                 chainID,
                 0, // l1Bias,
-                1234000, // genesisBlock, 
+                1234000, // genesisBlock,
                 newEpochPeriod,
-                100, // freezeDuration, 
-                0, // quorumNumber, 
-                5, // minWeight, 
+                100, // freezeDuration,
+                0, // quorumNumber,
+                5, // minWeight,
                 50 // maxWeight
             );
         }
@@ -102,7 +102,7 @@ contract RotateAndRevert is Script, Test {
             vm.prank(owner);
             vm.expectRevert("Block number is prior to committee freeze window.");
             lagrangeCommittee.update(chainID, 2);
-            
+
             vm.roll(_blockNumber + epochPeriod + newEpochPeriod - 1);
             vm.prank(owner);
             lagrangeCommittee.update(chainID, 2);
@@ -117,7 +117,7 @@ contract RotateAndRevert is Script, Test {
             vm.roll(_blockNumber + epochPeriod + newEpochPeriod);
             vm.prank(operators[0]);
             lagrangeService.unsubscribe(chainID);
-            
+
             assertEq(lagrangeCommittee.subscribedChains(chainID, operators[0]), false);
         }
 
@@ -134,9 +134,9 @@ contract RotateAndRevert is Script, Test {
         // 8. revert epoch
         {
             uint32 leafCount;
-            (,,leafCount) = lagrangeCommittee.committees(chainID, 1);
+            (,, leafCount) = lagrangeCommittee.committees(chainID, 1);
             assertEq(leafCount, 5);
-            (,,leafCount) = lagrangeCommittee.committees(chainID, 2);
+            (,, leafCount) = lagrangeCommittee.committees(chainID, 2);
             assertEq(leafCount, 5);
 
             vm.startPrank(owner);
@@ -144,9 +144,9 @@ contract RotateAndRevert is Script, Test {
             lagrangeCommittee.revertEpoch(chainID, 1);
             vm.stopPrank();
 
-            (,,leafCount) = lagrangeCommittee.committees(chainID, 1);
+            (,, leafCount) = lagrangeCommittee.committees(chainID, 1);
             assertEq(leafCount, 0);
-            (,,leafCount) = lagrangeCommittee.committees(chainID, 2);
+            (,, leafCount) = lagrangeCommittee.committees(chainID, 2);
             assertEq(leafCount, 0);
         }
 

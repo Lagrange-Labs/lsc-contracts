@@ -1,6 +1,6 @@
 pragma solidity ^0.8.20;
 
-import "../../script/update/BaseScript.s.sol";
+import "../../script/foundry/update/BaseScript.s.sol";
 
 import "@safe/contracts/interfaces/ISafe.sol";
 import {Enum} from "@safe/contracts/libraries/Enum.sol";
@@ -51,7 +51,8 @@ contract TransferOwnershipTest is BaseScript {
 
             address to = address(lagrangeService);
             uint256 value = 0;
-            bytes memory data = abi.encodeWithSelector(bytes4(keccak256("addOperatorsToWhitelist(address[])")), testOperators);
+            bytes memory data =
+                abi.encodeWithSelector(bytes4(keccak256("addOperatorsToWhitelist(address[])")), testOperators);
             uint256 nonce = safe.nonce();
 
             bytes32 txHash =
@@ -73,7 +74,6 @@ contract TransferOwnershipTest is BaseScript {
             safe.execTransaction(
                 to, value, data, Enum.Operation.Call, 0, 0, 0, address(0), payable(address(0)), signatures
             );
-
 
             signatures = bytes.concat(signatures, _signatures[threshold - 1]);
             safe.execTransaction(
@@ -109,5 +109,4 @@ contract TransferOwnershipTest is BaseScript {
 
         return (privateKeys, addresses);
     }
-
 }

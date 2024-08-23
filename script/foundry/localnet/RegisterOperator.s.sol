@@ -1,7 +1,6 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "forge-std/Test.sol";
 
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
@@ -11,9 +10,8 @@ import {StrategyManager} from "eigenlayer-contracts/src/contracts/core/StrategyM
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-// TODO: referecen the deploy script
-
-contract RegisterOperator is Script, Test {
+// TODO: reference the deploy script
+contract RegisterOperator is Script {
     string public deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
     string public deployLGRPath = string(bytes("script/output/deployed_lgr.json"));
 

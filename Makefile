@@ -16,7 +16,7 @@ generate-accounts:
 # Deploy scripts
 
 deploy-eigenlayer:
-	forge script script/foundry/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url ${RPC_URL}  --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
+	forge script script/foundry/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 deploy-weth9:
 	forge script script/foundry/localnet/DeployWETH9.s.sol:DeployWETH9 --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
@@ -84,7 +84,7 @@ give-permission:
 	sudo chmod -R go+rxw docker/geth_db
 
 # Deploy
-deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee  deploy-register
+deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee deploy-register
 
 deploy-mock-localnet: run-geth init-accounts generate-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee
 
@@ -105,12 +105,3 @@ solhint:
 	npx solhint "contracts/protocol/*.sol"
 
 .PHONY: format
-
-# Register one random operator
-generate-one-operator:
-	node script/hardhat/generate-operator-config.js
-
-register-one-operator: generate-one-operator
-	export RPC_URL=${RPC_URL} && node script/hardhat/register-one-operator.js
-
-.PHONY: generate-one-operator register-one-operator
