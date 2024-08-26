@@ -8,28 +8,27 @@ import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
-import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeServiceTestnet} from "../contracts/protocol/testnet/LagrangeServiceTestnet.sol"; // for sepolia
-import {VoteWeigher} from "../contracts/protocol/VoteWeigher.sol";
-import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
-import {LagrangeCommitteeTestnet} from "../contracts/protocol/testnet/LagrangeCommitteeTestnet.sol"; // for holesky
-import {EvidenceVerifier} from "../contracts/protocol/EvidenceVerifier.sol";
+import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
+import {LagrangeServiceTestnet} from "../../contracts/protocol/testnet/LagrangeServiceTestnet.sol"; // for sepolia
+import {VoteWeigher} from "../../contracts/protocol/VoteWeigher.sol";
+import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
+import {LagrangeCommitteeTestnet} from "../../contracts/protocol/testnet/LagrangeCommitteeTestnet.sol"; // for holesky
+import {EvidenceVerifier} from "../../contracts/protocol/EvidenceVerifier.sol";
 
-import {IStakeManager} from "../contracts/interfaces/IStakeManager.sol";
-import {IVoteWeigher} from "../contracts/interfaces/IVoteWeigher.sol";
+import {IStakeManager} from "../../contracts/interfaces/IStakeManager.sol";
+import {IVoteWeigher} from "../../contracts/interfaces/IVoteWeigher.sol";
 
-import {EigenAdapter} from "../contracts/library/EigenAdapter.sol";
-import {StakeManager} from "../contracts/library/StakeManager.sol";
+import {EigenAdapter} from "../../contracts/library/EigenAdapter.sol";
+import {StakeManager} from "../../contracts/library/StakeManager.sol";
 
 import "forge-std/Script.sol";
-import "forge-std/Test.sol";
 
-import {IOutbox} from "../contracts/mock/arbitrum/IOutbox.sol";
-import {Outbox} from "../contracts/mock/arbitrum/Outbox.sol";
-import {L2OutputOracle} from "../contracts/mock/optimism/L2OutputOracle.sol";
-import {IL2OutputOracle} from "../contracts/mock/optimism/IL2OutputOracle.sol";
+import {IOutbox} from "../../contracts/mock/arbitrum/IOutbox.sol";
+import {Outbox} from "../../contracts/mock/arbitrum/Outbox.sol";
+import {L2OutputOracle} from "../../contracts/mock/optimism/L2OutputOracle.sol";
+import {IL2OutputOracle} from "../../contracts/mock/optimism/IL2OutputOracle.sol";
 
-contract Deploy is Script, Test {
+contract Deploy is Script {
     string public deployMockDataPath = string(bytes("script/output/deployed_mock.json"));
     string public deployDataPath = string(bytes("script/output/M1_deployment_data.json"));
     string public serviceDataPath = string(bytes("config/LagrangeService.json"));

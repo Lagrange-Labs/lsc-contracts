@@ -2,15 +2,15 @@ const ethers = require('ethers');
 
 require('dotenv').config();
 
-const serviceConfig = require('../config/LagrangeService.json');
+const serviceConfig = require('../../config/LagrangeService.json');
 
 const serviceABI =
-  require('../out/LagrangeService.sol/LagrangeService.json').abi;
+  require('../../out/LagrangeService.sol/LagrangeService.json').abi;
 const committeeABI =
-  require('../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
+  require('../../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
 const avsDirectoryABI =
-  require('../out/IAVSDirectory.sol/IAVSDirectory.json').abi;
-const deployedAddresses = require('../script/output/deployed_lgr.json');
+  require('../../out/IAVSDirectory.sol/IAVSDirectory.json').abi;
+const deployedAddresses = require('../output/deployed_lgr.json');
 
 const operator = '0x3Ea592963Db02A3b6a68211676492F137987caeE';
 const blsPubKey =

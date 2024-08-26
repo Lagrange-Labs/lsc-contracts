@@ -1,6 +1,6 @@
-const deployedMock = require('../script/output/deployed_mock.json');
-const deployedWETH = require('../script/output/deployed_weth9.json');
-const deployedEigens = require('../script/output/M1_deployment_data.json');
+const deployedMock = require('../output/deployed_mock.json');
+const deployedWETH = require('../output/deployed_weth9.json');
+const deployedEigens = require('../output/M1_deployment_data.json');
 
 const fs = require('fs');
 

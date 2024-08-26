@@ -2,12 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "forge-std/Test.sol";
 
-import {IVoteWeigher} from "../contracts/interfaces/IVoteWeigher.sol";
-import {StakeManager} from "../contracts/library/StakeManager.sol";
+import {IVoteWeigher} from "../../contracts/interfaces/IVoteWeigher.sol";
+import {StakeManager} from "../../contracts/library/StakeManager.sol";
 
-contract AddQuorum is Script, Test {
+contract AddQuorum is Script {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
     string public configPath = string(bytes("config/LagrangeService.json"));
 

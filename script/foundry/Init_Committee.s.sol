@@ -1,15 +1,14 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "forge-std/Test.sol";
 
 import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import {LagrangeService} from "../contracts/protocol/LagrangeService.sol";
-import {LagrangeCommittee} from "../contracts/protocol/LagrangeCommittee.sol";
+import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
+import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
 
-contract InitCommittee is Script, Test {
+contract InitCommittee is Script {
     string public deployedLGRPath = string(bytes("script/output/deployed_lgr.json"));
     string public configPath = string(bytes("config/LagrangeService.json"));
 

@@ -3,15 +3,15 @@ const ethers = require('ethers');
 require('dotenv').config();
 
 const serviceABI =
-  require('../out/LagrangeService.sol/LagrangeService.json').abi;
+  require('../../out/LagrangeService.sol/LagrangeService.json').abi;
 const committeeABI =
-  require('../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
+  require('../../out/LagrangeCommittee.sol/LagrangeCommittee.json').abi;
 const avsDirectoryABI =
-  require('../out/IAVSDirectory.sol/IAVSDirectory.json').abi;
-const deployedAddresses = require('../script/output/deployed_lgr.json');
-const m1DeployedAddresses = require('../script/output/M1_deployment_data.json');
+  require('../../out/IAVSDirectory.sol/IAVSDirectory.json').abi;
+const deployedAddresses = require('../output/deployed_lgr.json');
+const m1DeployedAddresses = require('../output/M1_deployment_data.json');
 
-const operators = require('../config/operators.json');
+const operators = require('../../config/operators.json');
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 

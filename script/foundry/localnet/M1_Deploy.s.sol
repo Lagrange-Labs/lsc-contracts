@@ -28,7 +28,7 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/M1_Deploy.s.sol:Deployer_M1 --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
+// forge script script/foundry/M1_Deploy.s.sol:Deployer_M1 --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
 contract Deployer_M1 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -40,7 +40,7 @@ contract Deployer_M1 is Script, Test {
         string tokenSymbol;
     }
 
-    string public deployConfigPath = string(bytes("script/localnet/M1_deploy.config.json"));
+    string public deployConfigPath = string(bytes("script/foundry/localnet/M1_deploy.config.json"));
 
     // EigenLayer Contracts
     ProxyAdmin public eigenLayerProxyAdmin;

@@ -2,11 +2,11 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import {LagrangeCommittee} from "../../contracts/protocol/LagrangeCommittee.sol";
-import {LagrangeService} from "../../contracts/protocol/LagrangeService.sol";
-import {LagrangeCommitteeTestnet} from "../../contracts/protocol/testnet/LagrangeCommitteeTestnet.sol";
-import {LagrangeServiceTestnet} from "../../contracts/protocol/testnet/LagrangeServiceTestnet.sol";
-import {VoteWeigher} from "../../contracts/protocol/VoteWeigher.sol";
+import {LagrangeCommittee} from "../../../contracts/protocol/LagrangeCommittee.sol";
+import {LagrangeService} from "../../../contracts/protocol/LagrangeService.sol";
+import {LagrangeCommitteeTestnet} from "../../../contracts/protocol/testnet/LagrangeCommitteeTestnet.sol";
+import {LagrangeServiceTestnet} from "../../../contracts/protocol/testnet/LagrangeServiceTestnet.sol";
+import {VoteWeigher} from "../../../contracts/protocol/VoteWeigher.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";

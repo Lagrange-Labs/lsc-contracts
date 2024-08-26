@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { ethers } = require('hardhat');
-const deployed_verifiers = require('../script/output/deployed_verifiers.json');
+const deployed_verifiers = require('../output/deployed_verifiers.json');
 
 async function main() {
   const raw = fs.readFileSync('script/output/deployed_lgr.json');

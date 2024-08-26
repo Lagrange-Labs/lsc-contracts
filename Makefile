@@ -6,58 +6,58 @@ run-geth:
 	cd docker && DEV_PERIOD=1 docker compose up -d geth --wait
 
 init-accounts:
-	node util/init-accounts.js
+	node script/hardhat/init-accounts.js
 
 generate-accounts: 
-	node util/generate-accounts.js
+	node script/hardhat/generate-accounts.js
 
 .PHONY: run-geth init-accounts
 
 # Deploy scripts
 
 deploy-eigenlayer:
-	forge script script/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url ${RPC_URL}  --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
+	forge script script/foundry/localnet/M1_Deploy.s.sol:Deployer_M1 --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 deploy-weth9:
-	forge script script/localnet/DeployWETH9.s.sol:DeployWETH9 --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv --slow
+	forge script script/foundry/localnet/DeployWETH9.s.sol:DeployWETH9 --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 add-strategy:
-	forge script script/localnet/AddStrategy.s.sol:AddStrategy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv --slow
+	forge script script/foundry/localnet/AddStrategy.s.sol:AddStrategy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 register-operator:
-	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/register-operator.js
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node script/hardhat/register-operator.js
 
 deploy-lagrange:
-	forge script script/Deploy_LGR.s.sol:Deploy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv --slow
+	forge script script/foundry/Deploy_LGR.s.sol:Deploy --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 deploy-verifiers:
 	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && npx hardhat run util/deploy-verifiers.js
 
 add-quorum:
-	forge script script/Add_Quorum.s.sol:AddQuorum --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv --slow
+	forge script script/foundry/Add_Quorum.s.sol:AddQuorum --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 init-committee:
-	forge script script/Init_Committee.s.sol:InitCommittee --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv --slow
+	forge script script/foundry/Init_Committee.s.sol:InitCommittee --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 deposit-stake:
-	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deposit-stake.js
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node script/hardhat/deposit-stake.js
 
 .PHONY: deploy-weth9 deploy-eigenlayer add-strategy register-operator deploy-lagrange add-quorum init-committee deposit-stake
 
 deploy-register:
-	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/deploy-register.js
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node script/hardhat/deploy-register.js
 
 deploy-mock:
-	forge script script/Deploy_Mock.s.sol:DeployMock --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvvv --slow
+	forge script script/foundry/Deploy_Mock.s.sol:DeployMock --rpc-url ${RPC_URL} --private-key ${PRIVATE_KEY} --broadcast -vvvv --slow
 
 update-strategy-config:
-	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node util/update-strategy-config.js
+	export PRIVATE_KEY=${PRIVATE_KEY} && export RPC_URL=${RPC_URL} && node script/hardhat/update-strategy-config.js
 
 update-config:
-	node util/update-config.js
+	node script/hardhat/update-config.js
 
 distribute:
-	node util/distributor.js
+	node script/hardhat/distributor.js
 
 .PHONY: deploy-mock deploy-register update-config update-strategy-config distribute
 
@@ -73,10 +73,8 @@ docker-build: stop
 
 # Test
 test:
-	forge test -vvvvv
+	forge test -vvvv
 	npx hardhat test
-test-gas:
-	forge script ./script/TestGas.s.sol:TestGas -vvvv --slow
 .PHONY: test
 
 clean: stop
@@ -86,7 +84,7 @@ give-permission:
 	sudo chmod -R go+rxw docker/geth_db
 
 # Deploy
-deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee  deploy-register
+deploy-eigen-localnet: run-geth init-accounts generate-accounts deploy-weth9 update-strategy-config deploy-eigenlayer add-strategy register-operator deploy-lagrange update-config add-quorum init-committee deploy-register
 
 deploy-mock-localnet: run-geth init-accounts generate-accounts deploy-mock deploy-lagrange update-config add-quorum deploy-register init-committee
 
@@ -107,12 +105,3 @@ solhint:
 	npx solhint "contracts/protocol/*.sol"
 
 .PHONY: format
-
-# Register one random operator
-generate-one-operator:
-	node util/generate-operator-config.js
-
-register-one-operator: generate-one-operator
-	export RPC_URL=${RPC_URL} && node util/register-one-operator.js
-
-.PHONY: generate-one-operator register-one-operator
