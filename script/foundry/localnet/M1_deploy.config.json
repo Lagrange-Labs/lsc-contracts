@@ -1,9 +1,9 @@
 {
     "multisig_addresses": {
-        "communityMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
-        "operationsMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
-        "pauserMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
-        "executorMultisig": "0x6E654b122377EA7f592bf3FD5bcdE9e8c1B1cEb9",
+        "communityMultisig": "0x7AD2A77bA6b6D4862cb1750589aB99E47e8e0530",
+        "operationsMultisig": "0x7AD2A77bA6b6D4862cb1750589aB99E47e8e0530",
+        "pauserMultisig": "0x7AD2A77bA6b6D4862cb1750589aB99E47e8e0530",
+        "executorMultisig": "0x7AD2A77bA6b6D4862cb1750589aB99E47e8e0530",
         "timelock": ""
     },
     "strategies": [
@@ -29,7 +29,7 @@
             "max_deposits": 0
         },
         {
-            "token_address": "0xbB9dDB1020F82F93e45DA0e2CFbd27756DA36956",
+            "token_address": "0x80d0fbE1426B0C04f6f11D91A6E0CFbdA7d2c501",
             "token_name": "Wrapped Ether",
             "token_symbol": "WETH",
             "max_per_deposit": 1200000000000000000,
