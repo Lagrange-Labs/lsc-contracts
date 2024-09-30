@@ -1,0 +1,15 @@
+{
+  "addresses": {
+    "evidenceVerifier": "0x15F749152b8e40Eded6A4A2c6510ee296F9739be",
+    "evidenceVerifierImp": "0x07e5412c93606BFf7b6Fc0dF618B06F0cc07De12",
+    "lagrangeCommittee": "0x499a7076c6a5303Be87875010bB94367506F6Da1",
+    "lagrangeCommitteeImp": "0xd52a5b3c7c3727803E654322F9A95F980B360c21",
+    "lagrangeService": "0x45fA4F94220389b71B4c38B707A0AC02CE2e67A8",
+    "lagrangeServiceImp": "0x36cA6b01672b7Aa25e08d2AbEE5D5C3842c0228E",
+    "proxyAdmin": "0x2191dbb20c4Be804F4c0aefB7Be4247384Ee7838",
+    "stakeManager": "0xB00Fc30d86b00C96beEeAC83d1F86d40f169DB16",
+    "stakeManagerImp": "0x203eB43D074da15Afd9895DcD44ec5Df9c92A748",
+    "voteWeigher": "0xE8c35638bc7f17870A179b7c3045cf872D3Bdb56",
+    "voteWeigherImp": "0xff9824c83eE206EbbDb4d4D03536Dc9bc0DCf7a5"
+  }
+}

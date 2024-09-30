@@ -26,7 +26,7 @@ abstract contract BaseScript is Script, Test {
             if (block.chainid == 1) {
                 deployDataPath = string(bytes("script/output/deployed_main.json"));
             } else if (block.chainid == 11155111) {
-                deployDataPath = string(bytes("script/output/deployed_sepolia.json"));
+                deployDataPath = string(bytes("script/output/deployed_sepolia_polymer.json"));
             } else if (block.chainid == 17000) {
                 deployDataPath = string(bytes("script/output/deployed_holesky.json"));
             } else {
