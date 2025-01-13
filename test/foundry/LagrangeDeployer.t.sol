@@ -413,11 +413,15 @@ contract LagrangeDeployer is Test {
 
         (uint256 startBlock,,, uint256 duration, uint256 freezeDuration,,,) = lagrangeCommittee.committeeParams(chainID);
         vm.roll(startBlock + duration - freezeDuration - 1);
-        lagrangeService.register(
-            operator,
-            _calcProofForBLSKeys(operator, blsPrivateKeys, bytes32("salt"), block.timestamp + 60),
-            operatorSignature
-        );
+
+        IBLSKeyChecker.BLSKeyWithProof memory proof =
+            _calcProofForBLSKeys(operator, blsPrivateKeys, bytes32("salt"), block.timestamp + 60);
+
+        if (blsPrivateKeys.length != 1) {
+            vm.expectRevert("Exactly one BLS key is required per operator");
+        }
+
+        lagrangeService.register(operator, proof, operatorSignature);
 
         lagrangeCommittee.getEpochNumber(chainID, block.number);
         lagrangeCommittee.isLocked(chainID);

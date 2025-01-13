@@ -88,6 +88,7 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
 
     // Adds additional BLS public keys to an operator
     function addBlsPubKeys(address operator, BLSKeyWithProof calldata blsKeyWithProof) external onlyService {
+        revert("Not implemented");
         _validateBlsPubKeys(blsKeyWithProof.blsG1PublicKeys);
         _addBlsPubKeys(operator, blsKeyWithProof);
     }
@@ -586,7 +587,7 @@ contract LagrangeCommittee is BLSKeyChecker, Initializable, OwnableUpgradeable, 
     }
 
     function _validateBlsPubKeys(uint256[2][] memory _blsPubKeys) internal pure {
-        require(_blsPubKeys.length != 0, "Empty BLS Public Keys.");
+        require(_blsPubKeys.length == 1, "Exactly one BLS key is required per operator");
         uint256 _length = _blsPubKeys.length;
         for (uint256 i; i < _length; i++) {
             require(_blsPubKeys[i][0] != 0 && _blsPubKeys[i][1] != 0, "Invalid BLS Public Key.");
